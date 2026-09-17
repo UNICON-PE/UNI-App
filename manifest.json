@@ -1,0 +1,10 @@
+{
+  "name": "UNI App — UNICON",
+  "short_name": "UNI App",
+  "description": "Canal de atención al colaborador en campo",
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#0028AA",
+  "background_color": "#0028AA",
+  "icons": []
+}

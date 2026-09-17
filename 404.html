@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <script>
+    // SPA redirect para GitHub Pages: redirige al index con la ruta como query
+    var path = window.location.pathname;
+    window.location.replace(window.location.origin + '/?p=' + encodeURIComponent(path));
+  </script>
+</head>
+<body></body>
+</html>
