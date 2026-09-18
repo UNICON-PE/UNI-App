@@ -1,1029 +1,15 @@
+/* UniconApp PILOTO — Bundle generado el 2026-09-18T00:33:52.378Z */
+
 /* UniconApp — Bundle generado el 2026-09-17T22:18:26.555Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
 /* Líneas originales del JSX: 10418 — CERO simplificaciones */
 
-/* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
-const Truck = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("path", {
-  "d": "M1 3h15v13H1z"
-}), React.createElement("path", {
-  "d": "M16 8h4l3 3v5h-7V8z"
-}), React.createElement("circle", {
-  "cx": "5.5",
-  "cy": "18.5",
-  "r": "2.5"
-}), React.createElement("circle", {
-  "cx": "18.5",
-  "cy": "18.5",
-  "r": "2.5"
-}));
-const Bell = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("path", {
-  "d": "M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"
-}), React.createElement("path", {
-  "d": "M13.73 21a2 2 0 0 1-3.46 0"
-}));
-const ClipboardCheck = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("rect", {
-  "width": "8",
-  "height": "4",
-  "x": "8",
-  "y": "2",
-  "rx": "1",
-  "ry": "1"
-}), React.createElement("path", {
-  "d": "M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"
-}), React.createElement("path", {
-  "d": "m9 14 2 2 4-4"
-}));
-const MessageCircle = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("path", {
-  "d": "M7.9 20A9 9 0 1 0 4 16.1L2 22z"
-}));
-const AlertTriangle = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("path", {
-  "d": "m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"
-}), React.createElement("path", {
-  "d": "M12 9v4"
-}), React.createElement("path", {
-  "d": "M12 17h.01"
-}));
-const LogOut = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("path", {
-  "d": "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"
-}), React.createElement("polyline", {
-  "points": "16 17 21 12 16 7"
-}), React.createElement("line", {
-  "x1": "21",
-  "x2": "9",
-  "y1": "12",
-  "y2": "12"
-}));
-const Send = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("path", {
-  "d": "m22 2-7 20-4-9-9-4Z"
-}), React.createElement("path", {
-  "d": "M22 2 11 13"
-}));
-const ChevronRight = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("path", {
-  "d": "m9 18 6-6-6-6"
-}));
-const ChevronLeft = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("path", {
-  "d": "m15 18-6-6 6-6"
-}));
-const Check = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("path", {
-  "d": "M20 6 9 17l-5-5"
-}));
-const Clock = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("circle", {
-  "cx": "12",
-  "cy": "12",
-  "r": "10"
-}), React.createElement("polyline", {
-  "points": "12 6 12 12 16 14"
-}));
-const Phone = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("path", {
-  "d": "M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
-}));
-const MapPin = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("path", {
-  "d": "M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"
-}), React.createElement("circle", {
-  "cx": "12",
-  "cy": "10",
-  "r": "3"
-}));
-const Key = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("circle", {
-  "cx": "7.5",
-  "cy": "15.5",
-  "r": "5.5"
-}), React.createElement("path", {
-  "d": "m21 2-9.3 9.3"
-}), React.createElement("path", {
-  "d": "m15.5 7.5 3 3L22 7l-3-3"
-}));
-const Droplets = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("path", {
-  "d": "M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z"
-}), React.createElement("path", {
-  "d": "M12.56 14.69c1.62 0 2.94-1.34 2.94-2.97 0-.85-.42-1.65-1.25-2.33S13 8.13 12.56 7c-.44 1.13-.94 2.1-1.69 2.76-.75.67-1.25 1.48-1.25 2.33 0 1.63 1.32 2.97 2.94 2.97z",
-  "transform": "translate(3.5 -1.5)"
-}));
-const Play = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("polygon", {
-  "points": "6 3 20 12 6 21 6 3"
-}));
-const Square = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("rect", {
-  "width": "18",
-  "height": "18",
-  "x": "3",
-  "y": "3",
-  "rx": "2"
-}));
-const User = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("path", {
-  "d": "M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"
-}), React.createElement("circle", {
-  "cx": "12",
-  "cy": "7",
-  "r": "4"
-}));
-const Search = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("circle", {
-  "cx": "11",
-  "cy": "11",
-  "r": "8"
-}), React.createElement("path", {
-  "d": "m21 21-4.3-4.3"
-}));
-const Filter = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("polygon", {
-  "points": "22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"
-}));
-const RefreshCw = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("path", {
-  "d": "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"
-}), React.createElement("path", {
-  "d": "M21 3v5h-5"
-}), React.createElement("path", {
-  "d": "M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"
-}), React.createElement("path", {
-  "d": "M3 21v-5h5"
-}));
-const X = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("path", {
-  "d": "M18 6 6 18"
-}), React.createElement("path", {
-  "d": "m6 6 12 12"
-}));
-const Shield = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("path", {
-  "d": "M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"
-}));
-const CheckCircle2 = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("circle", {
-  "cx": "12",
-  "cy": "12",
-  "r": "10"
-}), React.createElement("path", {
-  "d": "m9 12 2 2 4-4"
-}));
-const Circle = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("circle", {
-  "cx": "12",
-  "cy": "12",
-  "r": "10"
-}));
-const Timer = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("line", {
-  "x1": "10",
-  "x2": "14",
-  "y1": "2",
-  "y2": "2"
-}), React.createElement("line", {
-  "x1": "12",
-  "x2": "15",
-  "y1": "14",
-  "y2": "11"
-}), React.createElement("circle", {
-  "cx": "12",
-  "cy": "14",
-  "r": "8"
-}));
-const ArrowRight = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("path", {
-  "d": "M5 12h14"
-}), React.createElement("path", {
-  "d": "m12 5 7 7-7 7"
-}));
-const Building2 = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("path", {
-  "d": "M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"
-}), React.createElement("path", {
-  "d": "M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"
-}), React.createElement("path", {
-  "d": "M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"
-}), React.createElement("path", {
-  "d": "M10 6h4"
-}), React.createElement("path", {
-  "d": "M10 10h4"
-}), React.createElement("path", {
-  "d": "M10 14h4"
-}), React.createElement("path", {
-  "d": "M10 18h4"
-}));
-const Users = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("path", {
-  "d": "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
-}), React.createElement("circle", {
-  "cx": "9",
-  "cy": "7",
-  "r": "4"
-}), React.createElement("path", {
-  "d": "M22 21v-2a4 4 0 0 0-3-3.87"
-}), React.createElement("path", {
-  "d": "M16 3.13a4 4 0 0 1 0 7.75"
-}));
-const Inbox = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("polyline", {
-  "points": "22 12 16 12 14 15 10 15 8 12 2 12"
-}), React.createElement("path", {
-  "d": "M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"
-}));
-const HardHat = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("path", {
-  "d": "M2 18a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v2z"
-}), React.createElement("path", {
-  "d": "M10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5"
-}), React.createElement("path", {
-  "d": "M4 15v-3a6 6 0 0 1 6-6h0"
-}), React.createElement("path", {
-  "d": "M14 6h0a6 6 0 0 1 6 6v3"
-}));
-const Wrench = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("path", {
-  "d": "M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"
-}));
-const Package = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("path", {
-  "d": "m7.5 4.27 9 5.15"
-}), React.createElement("path", {
-  "d": "M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"
-}), React.createElement("path", {
-  "d": "m3.3 7 8.7 5 8.7-5"
-}), React.createElement("path", {
-  "d": "M12 22V12"
-}));
-const HelpCircle = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("circle", {
-  "cx": "12",
-  "cy": "12",
-  "r": "10"
-}), React.createElement("path", {
-  "d": "M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"
-}), React.createElement("path", {
-  "d": "M12 17h.01"
-}));
-const Home = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("path", {
-  "d": "m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"
-}), React.createElement("polyline", {
-  "points": "9 22 9 12 15 12 15 22"
-}));
-const Coffee = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("path", {
-  "d": "M10 2v2"
-}), React.createElement("path", {
-  "d": "M14 2v2"
-}), React.createElement("path", {
-  "d": "M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a2 2 0 0 1 2 2v1a2 2 0 0 1-2 2h-1"
-}), React.createElement("path", {
-  "d": "M6 2v2"
-}));
-const FileText = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("path", {
-  "d": "M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"
-}), React.createElement("path", {
-  "d": "M14 2v4a2 2 0 0 0 2 2h4"
-}), React.createElement("path", {
-  "d": "M10 9H8"
-}), React.createElement("path", {
-  "d": "M16 13H8"
-}), React.createElement("path", {
-  "d": "M16 17H8"
-}));
-const Plus = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("path", {
-  "d": "M5 12h14"
-}), React.createElement("path", {
-  "d": "M12 5v14"
-}));
-const Info = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("circle", {
-  "cx": "12",
-  "cy": "12",
-  "r": "10"
-}), React.createElement("path", {
-  "d": "M12 16v-4"
-}), React.createElement("path", {
-  "d": "M12 8h.01"
-}));
-const ListChecks = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("path", {
-  "d": "m3 17 2 2 4-4"
-}), React.createElement("path", {
-  "d": "m3 7 2 2 4-4"
-}), React.createElement("path", {
-  "d": "M13 6h8"
-}), React.createElement("path", {
-  "d": "M13 12h8"
-}), React.createElement("path", {
-  "d": "M13 18h8"
-}));
-const Megaphone = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("path", {
-  "d": "m3 11 18-5v12L3 13v-2z"
-}), React.createElement("path", {
-  "d": "M11.6 16.8a3 3 0 1 1-5.8-1.6"
-}));
-const Radio = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("path", {
-  "d": "M4.9 19.1C1 15.2 1 8.8 4.9 4.9"
-}), React.createElement("path", {
-  "d": "M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.4"
-}), React.createElement("circle", {
-  "cx": "12",
-  "cy": "12",
-  "r": "2"
-}), React.createElement("path", {
-  "d": "M16.2 7.8c2.3 2.3 2.3 6.1 0 8.4"
-}), React.createElement("path", {
-  "d": "M19.1 4.9C23 8.8 23 15.1 19.1 19"
-}));
-const Camera = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("path", {
-  "d": "M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"
-}), React.createElement("circle", {
-  "cx": "12",
-  "cy": "13",
-  "r": "3"
-}));
-const ChevronDown = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("path", {
-  "d": "m6 9 6 6 6-6"
-}));
 const {
   useState,
   useEffect,
   useRef
 } = React;
-/* lucide-react icons replaced by SVG components below */
+/* lucide-react icons replaced by SVG components */
 
 /* ===================== MARCA UNICON ===================== */
 const AZUL = "#0028AA";
@@ -1172,35 +158,41 @@ const EMOJI_MAP = Object.fromEntries(REACTIONS.map(r => [r.id, r.node]));
 
 /* ===================== DATA MOCK (plantilla DNI → planta) ===================== */
 const DRIVERS = {
-  "45678912": {
-    nombre: "Juan Pérez Huamán",
-    unidad: "M-142",
-    planta: "San Juan",
-    chom: "Carlos Abanto"
+  "47698231": {
+    nombre: "Miguel Flores",
+    unidad: "M-101",
+    planta: "San Isidro",
+    chom: "Diego Jara"
   },
-  "45671234": {
-    nombre: "Ricardo Flores Gutiérrez",
-    unidad: "M-108",
-    planta: "San Juan",
-    chom: "Carlos Abanto"
+  "49875345": {
+    nombre: "Angel Martinez",
+    unidad: "M-103",
+    planta: "San Isidro",
+    chom: "Diego Jara"
   },
-  "40123456": {
-    nombre: "Luis Quispe Mamani",
-    unidad: "M-087",
-    planta: "Ancieta",
-    chom: "Manuel Urbina"
+  "45670221": {
+    nombre: "Kurt Uzategui",
+    unidad: "M-100",
+    planta: "San Isidro",
+    chom: "Diego Jara"
   },
-  "43219876": {
-    nombre: "Pedro Rojas Díaz",
-    unidad: "M-215",
-    planta: "San Juan",
-    chom: "Carlos Abanto"
+  "49864899": {
+    nombre: "Chetu Cherubini",
+    unidad: "M-110",
+    planta: "San Isidro",
+    chom: "Diego Jara"
   },
-  "41567890": {
-    nombre: "Miguel Torres Sánchez",
-    unidad: "M-310",
-    planta: "San Juan",
-    chom: "Carlos Abanto"
+  "44149231": {
+    nombre: "Miguel Dávila",
+    unidad: "M-112",
+    planta: "San Isidro",
+    chom: "Diego Jara"
+  },
+  "44414324": {
+    nombre: "Karl Aguirre",
+    unidad: "M-115",
+    planta: "San Isidro",
+    chom: "Diego Jara"
   }
 };
 
@@ -7711,11 +6703,11 @@ const synthesizeAnswer = (question, paragraphs, intent, domain) => {
 
 /* Perfiles administrativos: AZT, Trabajadora Social, Ingeniero de Seguridad, Jefe de Planta, Despachador, Mantenimiento */
 const ADMINS = {
-  "10203040": {
-    nombre: "Charles Berges",
+  "44433221": {
+    nombre: "Diego Jara",
     cargo: "AZT",
-    plantas: ["San Juan", "Ancieta"],
-    bio: "Administrador de Zona de Transporte. Responsable de la gestión operativa de los choferes en planta San Juan y Ancieta.",
+    plantas: ["San Isidro"],
+    bio: "Administrador de Zona de Transporte. Responsable de la gestión operativa de los choferes en planta San Isidro.",
     contacto: "987 654 321"
   },
   "10203041": {
@@ -7755,7 +6747,7 @@ const ADMINS = {
   }
 };
 /* Plantas donde un mixer puede estar operando (distinto de su planta de origen) */
-const PLANTAS_OPERACION = ["Villa", "San Juan", "Ancieta", "Meiggs", "Maravillas"];
+const PLANTAS_OPERACION = ["Villa", "San Juan", "Ancieta", "Meiggs", "Maravillas", "San Isidro"];
 const PLANT_CONFIG = {
   "San Juan": {
     parqueo: ["Patio A", "Patio B", "Zona lavadero", "Frente a báscula", "Salida norte"],
@@ -7795,6 +6787,26 @@ const PLANT_CONFIG = {
       "CHOM Líder": "995 121 111",
       "Canal AAA (emergencias)": "0800-AAA-99",
       "Planillas": "994 232 111"
+    }
+  },
+  "San Isidro": {
+    parqueo: ["Patio 1", "Patio 2", "Zona de espera"],
+    lavadero: ["Lavadero principal"],
+    tecnicos: ["[Técnico 1]", "[Técnico 2]"],
+    obras: ["[Obra 1]", "[Obra 2]", "Otra…"],
+    contactos: {
+      "Despacho día": "[Teléfono]",
+      "Despacho tarde": "[Teléfono]",
+      "Despacho noche": "[Teléfono]",
+      "AZT día": "[Teléfono]",
+      "AZT noche": "[Teléfono]",
+      "Mecánico de turno": "[Teléfono]",
+      "Llantero de turno": "[Teléfono]",
+      "Bienestar Social": "[Teléfono]",
+      "SGI": "[Teléfono]",
+      "CHOM Líder": "[Teléfono]",
+      "Canal AAA (emergencias)": "0800-AAA-99",
+      "Planillas": "[Teléfono]"
     }
   }
 };
@@ -9036,7 +8048,7 @@ function LoginScreen({
     className: "font-semibold text-gray-600"
   }, "Choferes (San Juan):")), /*#__PURE__*/React.createElement("div", {
     className: "pl-2"
-  }, "45678912 — Juan Pérez Huamán"), /*#__PURE__*/React.createElement("div", {
+  }, "47698231 — Miguel Flores"), /*#__PURE__*/React.createElement("div", {
     className: "pl-2"
   }, "45671234 — Ricardo Flores Gutiérrez"), /*#__PURE__*/React.createElement("div", {
     className: "mt-1"
@@ -9044,7 +8056,7 @@ function LoginScreen({
     className: "font-semibold text-gray-600"
   }, "AZT (San Juan):")), /*#__PURE__*/React.createElement("div", {
     className: "pl-2"
-  }, "10203040 — Charles Berges ", /*#__PURE__*/React.createElement("span", {
+  }, "44433221 — Diego Jara ", /*#__PURE__*/React.createElement("span", {
     className: "text-[10px] text-gray-300"
   }, "(ingresa directo al panel)"))), /*#__PURE__*/React.createElement("button", {
     onClick: onLogin,
@@ -14291,11 +13303,11 @@ function AvisosAdmin({
 }
 function CambioSede() {
   const [rows, setRows] = useState([{
-    dni: "45678912",
-    nombre: "Juan Pérez Huamán",
-    unidad: "M-142",
-    actual: "San Juan",
-    nueva: "San Juan"
+    dni: "47698231",
+    nombre: "Miguel Flores",
+    unidad: "M-101",
+    actual: "San Isidro",
+    nueva: "San Isidro"
   }, {
     dni: "40123456",
     nombre: "Luis Quispe Mamani",
@@ -14974,7 +13986,5 @@ function hhmm() {
   const d = new Date();
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
-
-/* ===== MOUNT POINT ===== */
 const _root = ReactDOM.createRoot(document.getElementById("root"));
 _root.render(React.createElement(UniconApp));
