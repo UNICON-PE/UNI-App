@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-09-22T15:46:33.857Z */
+/* UniconApp — Bundle generado el 2026-09-25T23:30:59.289Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 13064 — CERO simplificaciones */
+/* Líneas originales del JSX: 14430 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -1018,25 +1018,6 @@ const ChevronDown = ({
 }, props), React.createElement("path", {
   "d": "m6 9 6 6 6-6"
 }));
-const ChevronUp = ({
-  size = 24,
-  color = "currentColor",
-  className = "",
-  strokeWidth = 2,
-  ...props
-}) => React.createElement("svg", Object.assign({
-  width: size,
-  height: size,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: color,
-  strokeWidth: strokeWidth,
-  strokeLinecap: "round",
-  strokeLinejoin: "round",
-  className: className
-}, props), React.createElement("path", {
-  "d": "m18 15-6-6-6 6"
-}));
 const Edit = ({
   size = 24,
   color = "currentColor",
@@ -1057,6 +1038,25 @@ const Edit = ({
   "d": "M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
 }), React.createElement("path", {
   "d": "M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"
+}));
+const ChevronUp = ({
+  size = 24,
+  color = "currentColor",
+  className = "",
+  strokeWidth = 2,
+  ...props
+}) => React.createElement("svg", Object.assign({
+  width: size,
+  height: size,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: color,
+  strokeWidth: strokeWidth,
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  className: className
+}, props), React.createElement("path", {
+  "d": "m18 15-6-6-6 6"
 }));
 const {
   useState,
@@ -8204,24 +8204,9 @@ const BOT_DYNAMIC_TEXTS = {
   emergencia_contactos: "Te comparto los contactos de tu planta para reportar la emergencia:\n\n📞 [Nombre y Apellidos] · AZT turno mañana · [Teléfono]\n📞 [Nombre y Apellidos] · AZT turno noche · [Teléfono]\n📞 [Nombre y Apellidos] · SGI · [Teléfono]\n\nSi no logras comunicarte con tu AZT o tu SGI, por favor llama al AAA.\n\n📞 AAA · [Teléfono]"
 };
 
-/* ==== BASE DE DATOS DE RUTAS Y ACCESOS A OBRAS ====
-   Se alimenta desde el formulario "Responder" en el Canal de Avisos. */
-const RUTAS_OBRAS_INICIALES = {
-  "Obra San Borja": {
-    ruta: "Ingresa por Av. Aviación, luego dobla a la izquierda en Av. San Luis. La obra está a 200m a mano derecha.",
-    ubicacion: "https://waze.com/ul?q=Obra+San+Borja+Lima",
-    tener_cuenta: "Hay tráfico pesado entre 7-9 am. Portón de mixer al fondo del pasaje.",
-    fecha: Date.now() - 3 * 24 * 60 * 60 * 1000,
-    autor: "Miguel Flores"
-  },
-  "Torre Central": {
-    ruta: "Vía Expresa hasta salida Angamos. Sigues por Angamos hasta cruce con Petit Thouars.",
-    ubicacion: "https://goo.gl/maps/TorreCentralLima",
-    tener_cuenta: "Descarga solo hasta las 10 pm por normativa municipal. Espacio ajustado, ir con precaución.",
-    fecha: Date.now() - 10 * 24 * 60 * 60 * 1000,
-    autor: "Angel Martinez"
-  }
-};
+// La base de datos de rutas y accesos a obras (rutas_obras) vive en Supabase real — se alimenta
+// automáticamente desde el formulario "Responder" en el Canal de Avisos (ver enviarRespuestaRuta
+// en PanelAvisos) y se consulta en vivo desde UniBot (ver flujoRutaObra).
 
 /* ==== SIMULACIÓN DE REPORTES DE FIN DE VUELTA (para consulta ¿dónde está mi mixer?) ==== */
 const REPORTES_FIN_VUELTA_DEMO = {
@@ -8395,70 +8380,81 @@ async function ejecutarAjusteManualParaPrueba() {
   const {
     data: perfilesChoferes,
     error: errorPerfiles
-  } = await sbClient.from("perfiles").select("id, nombre, planta, unidad").in("rol", [...ROLES_CHOFER_SET]);
+  } = await sbClient.from("perfiles").select("id, nombre, dni, planta, unidad").in("rol", [...ROLES_CHOFER_SET]);
   if (errorPerfiles) return [`❌ Error cargando perfiles: ${errorPerfiles.message}`];
   if (!perfilesChoferes || perfilesChoferes.length === 0) return ["⚠️ No hay choferes registrados."];
   const plantas = [...new Set(perfilesChoferes.map(p => p.planta))];
   for (const planta of plantas) {
     const inicioHoyUTC = new Date(`${hoy}T05:00:00.000Z`);
     const {
-      data: avisosImagen
-    } = await sbClient.from("avisos").select("archivo_url, created_at").eq("planta", planta).eq("archivo_tipo", "imagen").gte("created_at", inicioHoyUTC.toISOString()).order("created_at", {
+      data: avisosArchivo
+    } = await sbClient.from("avisos").select("archivo_url, archivo_nombre, created_at").eq("planta", planta).eq("archivo_tipo", "archivo").gte("created_at", inicioHoyUTC.toISOString()).order("created_at", {
       ascending: false
-    }).limit(1);
-    const imagen = avisosImagen?.[0];
-    if (!imagen?.archivo_url) {
+    });
+    const excel = (avisosArchivo || []).find(a => esArchivoExcel(a.archivo_nombre));
+    if (!excel?.archivo_url) {
       resumen.push(`📍 ${planta}: sin citación publicada hoy.`);
       continue;
     }
-    const filasTabla = await leerTablaCitacionCompleta(imagen.archivo_url);
+    const filasTabla = await leerTablaCitacionDesdeExcel(excel.archivo_url);
     if (!filasTabla || filasTabla.length === 0) {
-      resumen.push(`📍 ${planta}: Gemini no pudo leer la tabla.`);
+      resumen.push(`📍 ${planta}: no se pudo leer la tabla del Excel.`);
       continue;
     }
-    resumen.push(`📍 ${planta}: Gemini leyó ${filasTabla.length} filas de la tabla.`);
+    resumen.push(`📍 ${planta}: se leyeron ${filasTabla.length} filas de la tabla.`);
     const choferesPlanta = perfilesChoferes.filter(p => p.planta === planta);
     for (const chofer of choferesPlanta) {
-      const filaCoincidente = filasTabla.find(f => nombresCoinciden(chofer.nombre, f.nombre));
-      if (!filaCoincidente || !filaCoincidente.mixer) {
-        resumen.push(`   • ${chofer.nombre}: no aparece en la tabla, se mantiene ${chofer.unidad || "(sin mixer)"}.`);
+      const filaCoincidente = emparejarChoferConFila(chofer, filasTabla);
+      if (!filaCoincidente) {
+        resumen.push(`   • ${chofer.nombre}: no aparece en la tabla.`);
         continue;
       }
-      let mixerNuevo = String(filaCoincidente.mixer).trim();
-      if (mixerNuevo && !/^M-/i.test(mixerNuevo)) mixerNuevo = `M-${mixerNuevo}`;
-      const mixerActual = String(chofer.unidad || "").trim();
-      if (mixerNuevo === mixerActual) {
-        resumen.push(`   • ${chofer.nombre}: sin cambio (${mixerActual}).`);
-        continue;
+      if (!filaCoincidente.mixer) {
+        resumen.push(`   • ${chofer.nombre}: sin mixer en la tabla, se mantiene ${chofer.unidad || "(sin mixer)"}.`);
+      } else {
+        let mixerNuevo = String(filaCoincidente.mixer).trim();
+        if (mixerNuevo && !/^M-/i.test(mixerNuevo)) mixerNuevo = `M-${mixerNuevo}`;
+        const mixerActual = String(chofer.unidad || "").trim();
+        if (mixerNuevo === mixerActual) {
+          resumen.push(`   • ${chofer.nombre}: sin cambio de mixer (${mixerActual}).`);
+        } else {
+          const {
+            error: errorUpdate
+          } = await sbClient.rpc("actualizar_unidad_chofer", {
+            p_chofer_id: chofer.id,
+            p_unidad_nueva: mixerNuevo
+          });
+          if (errorUpdate) {
+            resumen.push(`   • ${chofer.nombre}: ❌ falló el RPC de mixer (${errorUpdate.message}).`);
+          } else {
+            const {
+              error: errorLog
+            } = await sbClient.from("log_cambios_mixer").insert({
+              chofer_id: chofer.id,
+              chofer_nombre: chofer.nombre,
+              planta,
+              mixer_anterior: mixerActual || null,
+              mixer_nuevo: mixerNuevo,
+              fecha_citacion: hoy
+            });
+            resumen.push(`   • ${chofer.nombre}: ✅ mixer ${mixerActual || "(vacío)"} → ${mixerNuevo}${errorLog ? ` (log falló: ${errorLog.message})` : ""}`);
+          }
+        }
       }
-      const {
-        error: errorUpdate
-      } = await sbClient.rpc("actualizar_unidad_chofer", {
-        p_chofer_id: chofer.id,
-        p_unidad_nueva: mixerNuevo
-      });
-      if (errorUpdate) {
-        resumen.push(`   • ${chofer.nombre}: ❌ falló el RPC (${errorUpdate.message}).`);
-        continue;
+
+      // Reasignación de planta: el AZT anotó en la columna CITACIÓN que este chofer debe
+      // presentarse en OTRA planta mañana (ver parseCitacionConPosiblePlanta). Actualizar
+      // perfiles.planta dispara automáticamente la pantalla azul "¡Fuiste reasignado!" en
+      // ChoferApp, vía el listener de Realtime que ya existía para reasignaciones manuales.
+      if (filaCoincidente.plantaCitacion && filaCoincidente.plantaCitacion !== chofer.planta) {
+        const {
+          error: errorPlanta
+        } = await sbClient.rpc("actualizar_planta_chofer", {
+          p_chofer_id: chofer.id,
+          p_planta_nueva: filaCoincidente.plantaCitacion
+        });
+        resumen.push(errorPlanta ? `   • ${chofer.nombre}: ❌ falló el RPC de planta (${errorPlanta.message}).` : `   • ${chofer.nombre}: ✅ reasignado de planta ${chofer.planta} → ${filaCoincidente.plantaCitacion}.`);
       }
-      const {
-        data: verificacion
-      } = await sbClient.from("perfiles").select("unidad").eq("id", chofer.id).maybeSingle();
-      if (verificacion?.unidad !== mixerNuevo) {
-        resumen.push(`   • ${chofer.nombre}: ❌ el RPC no dio error pero el mixer sigue en "${verificacion?.unidad}" (revisar permisos/RPC).`);
-        continue;
-      }
-      const {
-        error: errorLog
-      } = await sbClient.from("log_cambios_mixer").insert({
-        chofer_id: chofer.id,
-        chofer_nombre: chofer.nombre,
-        planta,
-        mixer_anterior: mixerActual || null,
-        mixer_nuevo: mixerNuevo,
-        fecha_citacion: hoy
-      });
-      resumen.push(`   • ${chofer.nombre}: ✅ ${mixerActual || "(vacío)"} → ${mixerNuevo}${errorLog ? ` (log falló: ${errorLog.message})` : ""}`);
     }
   }
   return resumen;
@@ -8494,7 +8490,7 @@ async function ejecutarAjusteAutomaticoMixers() {
 
   const {
     data: perfilesChoferes
-  } = await sbClient.from("perfiles").select("id, nombre, planta, unidad").in("rol", [...ROLES_CHOFER_SET]);
+  } = await sbClient.from("perfiles").select("id, nombre, dni, planta, unidad").in("rol", [...ROLES_CHOFER_SET]);
   if (!perfilesChoferes || perfilesChoferes.length === 0) return;
   const plantas = [...new Set(perfilesChoferes.map(p => p.planta))];
   const plantasProcesadas = [];
@@ -8502,61 +8498,80 @@ async function ejecutarAjusteAutomaticoMixers() {
     // Imagen de citación más reciente publicada HOY en el canal de esa planta.
     const inicioHoyUTC = new Date(`${hoy}T05:00:00.000Z`); // 00:00 hora Perú = 05:00 UTC
     const {
-      data: avisosImagen
-    } = await sbClient.from("avisos").select("archivo_url, created_at").eq("planta", planta).eq("archivo_tipo", "imagen").gte("created_at", inicioHoyUTC.toISOString()).order("created_at", {
+      data: avisosArchivo
+    } = await sbClient.from("avisos").select("archivo_url, archivo_nombre, created_at").eq("planta", planta).eq("archivo_tipo", "archivo").gte("created_at", inicioHoyUTC.toISOString()).order("created_at", {
       ascending: false
-    }).limit(1);
-    const imagen = avisosImagen?.[0];
-    if (!imagen?.archivo_url) continue; // esta planta no publicó citación hoy — se mantienen todos los mixers actuales
+    });
+    const excel = (avisosArchivo || []).find(a => esArchivoExcel(a.archivo_nombre));
+    if (!excel?.archivo_url) continue; // esta planta no publicó citación hoy — se mantienen todos los mixers actuales
 
-    const filasTabla = await leerTablaCitacionCompleta(imagen.archivo_url);
-    if (!filasTabla || filasTabla.length === 0) continue; // Gemini no pudo leer la tabla — no se toca nada, se reintentará mañana con la siguiente citación
+    const filasTabla = await leerTablaCitacionDesdeExcel(excel.archivo_url);
+    if (!filasTabla || filasTabla.length === 0) continue; // no se pudo leer el Excel — no se toca nada, se reintentará mañana con la siguiente citación
 
     const choferesPlanta = perfilesChoferes.filter(p => p.planta === planta);
     for (const chofer of choferesPlanta) {
-      const filaCoincidente = filasTabla.find(f => nombresCoinciden(chofer.nombre, f.nombre));
-      if (!filaCoincidente || !filaCoincidente.mixer) continue; // no aparece en la tabla de hoy — se mantiene su mixer actual
-      // Gemini a veces devuelve solo el número (ej. "322") sin el prefijo "M-" que usa el resto
-      // de la base de datos (ej. "M-322") — se normaliza aquí para mantener el formato consistente.
-      let mixerNuevo = String(filaCoincidente.mixer).trim();
-      if (mixerNuevo && !/^M-/i.test(mixerNuevo)) mixerNuevo = `M-${mixerNuevo}`;
-      const mixerActual = String(chofer.unidad || "").trim();
-      if (mixerNuevo === mixerActual) continue; // sin cambio real
+      const filaCoincidente = emparejarChoferConFila(chofer, filasTabla);
+      if (!filaCoincidente) continue; // no aparece en la tabla de hoy
 
-      // Se usa una función RPC dedicada en vez de un UPDATE directo: el ajuste puede dispararse
-      // con la sesión de un chofer normal (quien haga login primero después de las 23:59), y las
-      // políticas de RLS de perfiles solo permiten UPDATE a roles admin/gestion_humana o a la
-      // propia persona sobre su propio perfil — un chofer normal no podría actualizar el mixer de
-      // otro chofer con un UPDATE directo. La función, marcada security definer en la base de
-      // datos, solo sabe cambiar el campo unidad y nada más, sin exponer el resto de la fila.
-      const {
-        error: errorUpdate
-      } = await sbClient.rpc("actualizar_unidad_chofer", {
-        p_chofer_id: chofer.id,
-        p_unidad_nueva: mixerNuevo
-      });
-      if (errorUpdate) {
-        console.warn(`No se pudo actualizar el mixer de ${chofer.nombre}:`, errorUpdate.message);
-        continue;
+      if (filaCoincidente.mixer) {
+        // El Excel a veces trae solo el número (ej. "322") sin el prefijo "M-" que usa el resto
+        // de la base de datos (ej. "M-322") — se normaliza aquí para mantener el formato consistente.
+        let mixerNuevo = String(filaCoincidente.mixer).trim();
+        if (mixerNuevo && !/^M-/i.test(mixerNuevo)) mixerNuevo = `M-${mixerNuevo}`;
+        const mixerActual = String(chofer.unidad || "").trim();
+        if (mixerNuevo !== mixerActual) {
+          // Se usa una función RPC dedicada en vez de un UPDATE directo: el ajuste puede
+          // dispararse con la sesión de un chofer normal (quien haga login primero después de las
+          // 23:59), y las políticas de RLS de perfiles solo permiten UPDATE a roles admin/gestión
+          // humana o a la propia persona sobre su propio perfil — un chofer normal no podría
+          // actualizar el mixer de otro chofer con un UPDATE directo. La función, marcada security
+          // definer en la base de datos, solo sabe cambiar el campo unidad y nada más.
+          const {
+            error: errorUpdate
+          } = await sbClient.rpc("actualizar_unidad_chofer", {
+            p_chofer_id: chofer.id,
+            p_unidad_nueva: mixerNuevo
+          });
+          if (errorUpdate) {
+            console.warn(`No se pudo actualizar el mixer de ${chofer.nombre}:`, errorUpdate.message);
+          } else {
+            // Se relee el perfil para confirmar que el cambio realmente se aplicó: un UPDATE
+            // bloqueado por una política de RLS a veces no reporta error (0 filas afectadas no
+            // cuenta como error para Postgres), así que confiar solo en errorUpdate puede ocultar
+            // un fallo silencioso.
+            const {
+              data: verificacion
+            } = await sbClient.from("perfiles").select("unidad").eq("id", chofer.id).maybeSingle();
+            if (verificacion?.unidad !== mixerNuevo) {
+              console.warn(`El mixer de ${chofer.nombre} no quedó actualizado tras el RPC (sigue en "${verificacion?.unidad}")`);
+            } else {
+              await sbClient.from("log_cambios_mixer").insert({
+                chofer_id: chofer.id,
+                chofer_nombre: chofer.nombre,
+                planta,
+                mixer_anterior: mixerActual || null,
+                mixer_nuevo: mixerNuevo,
+                fecha_citacion: hoy
+              });
+            }
+          }
+        }
       }
-      // Se relee el perfil para confirmar que el cambio realmente se aplicó: un UPDATE bloqueado
-      // por una política de RLS a veces no reporta error (0 filas afectadas no cuenta como error
-      // para Postgres), así que confiar solo en errorUpdate puede ocultar un fallo silencioso.
-      const {
-        data: verificacion
-      } = await sbClient.from("perfiles").select("unidad").eq("id", chofer.id).maybeSingle();
-      if (verificacion?.unidad !== mixerNuevo) {
-        console.warn(`El mixer de ${chofer.nombre} no quedó actualizado tras el RPC (sigue en "${verificacion?.unidad}")`);
-        continue;
+
+      // Reasignación de planta: el AZT anotó en la columna CITACIÓN que este chofer debe
+      // presentarse en OTRA planta mañana (ver parseCitacionConPosiblePlanta). Actualizar
+      // perfiles.planta dispara automáticamente la pantalla azul "¡Fuiste reasignado!" en
+      // ChoferApp, vía el listener de Realtime que ya existía para reasignaciones manuales — no
+      // hace falta ninguna UI nueva para esto.
+      if (filaCoincidente.plantaCitacion && filaCoincidente.plantaCitacion !== chofer.planta) {
+        const {
+          error: errorPlanta
+        } = await sbClient.rpc("actualizar_planta_chofer", {
+          p_chofer_id: chofer.id,
+          p_planta_nueva: filaCoincidente.plantaCitacion
+        });
+        if (errorPlanta) console.warn(`No se pudo reasignar la planta de ${chofer.nombre}:`, errorPlanta.message);
       }
-      await sbClient.from("log_cambios_mixer").insert({
-        chofer_id: chofer.id,
-        chofer_nombre: chofer.nombre,
-        planta,
-        mixer_anterior: mixerActual || null,
-        mixer_nuevo: mixerNuevo,
-        fecha_citacion: hoy
-      });
     }
     plantasProcesadas.push(planta);
   }
@@ -8954,7 +8969,7 @@ function NotifPanel({
     style: {
       color: AZUL
     }
-  }, "Marcar todas como leídas")), /*#__PURE__*/React.createElement("div", {
+  }, "Marcar todas como le\xEDdas")), /*#__PURE__*/React.createElement("div", {
     className: "flex-1 overflow-y-auto"
   }, notifs.length === 0 && /*#__PURE__*/React.createElement("div", {
     className: "text-center text-gray-400 py-12 px-4"
@@ -8963,9 +8978,9 @@ function NotifPanel({
     className: "mx-auto mb-2 opacity-40"
   }), /*#__PURE__*/React.createElement("p", {
     className: "text-sm"
-  }, "No tienes notificaciones aún."), /*#__PURE__*/React.createElement("p", {
+  }, "No tienes notificaciones a\xFAn."), /*#__PURE__*/React.createElement("p", {
     className: "text-[11px] mt-1"
-  }, "Aquí verás avisos cuando resuelvan tu incidencia, cambien tu planta o encuentren algo que perdiste.")), notifs.map(n => {
+  }, "Aqu\xED ver\xE1s avisos cuando resuelvan tu incidencia, cambien tu planta o encuentren algo que perdiste.")), notifs.map(n => {
     const I = iconOf(n.tipo);
     const c = colorOf(n.tipo);
     return /*#__PURE__*/React.createElement("button", {
@@ -9210,6 +9225,26 @@ function ChoferApp({
     loginError: loginError,
     loginLoading: loginLoading
   });
+
+  // La sesión de Supabase Auth sigue siendo válida tras una reasignación de planta (solo cambió
+  // el campo `planta` en perfiles, no la cuenta) — no hace falta pedir el DNI de nuevo ni pasar
+  // por login_por_dni: alcanza con releer el perfil y seguir con la misma sesión.
+  const continuarTrasReasignacion = async () => {
+    const {
+      data
+    } = await sbClient.from("perfiles").select("nombre, unidad, planta, rol, foto_url").eq("id", driver.id).maybeSingle();
+    if (data) {
+      setDriver(d => ({
+        ...d,
+        nombre: data.nombre,
+        unidad: data.unidad || "M-000",
+        planta: data.planta || d.planta,
+        rol: data.rol,
+        foto_url: data.foto_url || null
+      }));
+    }
+    setReasignado(null);
+  };
   if (reasignado) {
     return /*#__PURE__*/React.createElement("div", {
       className: "fixed inset-0 flex items-center justify-center p-6 z-[999]",
@@ -9233,12 +9268,12 @@ function ChoferApp({
       }
     }, "Tu cuenta fue desactivada"), /*#__PURE__*/React.createElement("p", {
       className: "text-sm text-gray-600 mb-6"
-    }, "Contacta a tu AZT o a Gestión Humana si crees que esto es un error.")) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("h2", {
+    }, "Contacta a tu AZT o a Gesti\xF3n Humana si crees que esto es un error.")) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("h2", {
       className: "text-xl font-black mb-2",
       style: {
         color: AZUL
       }
-    }, "¡Fuiste reasignado!"), /*#__PURE__*/React.createElement("p", {
+    }, "\xA1Fuiste reasignado!"), /*#__PURE__*/React.createElement("p", {
       className: "text-sm text-gray-600 mb-1"
     }, "Ahora perteneces a la planta:"), /*#__PURE__*/React.createElement("p", {
       className: "text-2xl font-black mb-6",
@@ -9247,19 +9282,19 @@ function ChoferApp({
       }
     }, reasignado.plantaNueva), /*#__PURE__*/React.createElement("p", {
       className: "text-xs text-gray-400 mb-6"
-    }, "Vuelve a ingresar sesión para ver tus avisos, contactos y datos actualizados.")), /*#__PURE__*/React.createElement("button", {
-      onClick: () => {
+    }, "Vuelve a ingresar sesi\xF3n para ver tus avisos, contactos y datos actualizados.")), /*#__PURE__*/React.createElement("button", {
+      onClick: reasignado.desactivado ? () => {
         sbClient.auth.signOut();
         setDriver(null);
         setReasignado(null);
         setDni("");
-      },
+      } : continuarTrasReasignacion,
       className: "w-full py-3 rounded-xl font-bold",
       style: {
         background: AZUL,
         color: "white"
       }
-    }, "Volver a ingresar")));
+    }, reasignado.desactivado ? "Volver a ingresar" : "Continuar")));
   }
   const CHANNELS = [{
     id: "avisos",
@@ -9404,7 +9439,7 @@ function ChoferApp({
     }
   }, /*#__PURE__*/React.createElement(LogOut, {
     size: 16
-  }), " Cerrar sesión")), showMain && /*#__PURE__*/React.createElement("main", {
+  }), " Cerrar sesi\xF3n")), showMain && /*#__PURE__*/React.createElement("main", {
     className: "flex flex-col flex-1 min-w-0 overflow-hidden"
   }, channel ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(ChannelHeader, {
     showBack: !isDesktop,
@@ -9450,7 +9485,7 @@ function ChoferApp({
     color: AZUL
   })), /*#__PURE__*/React.createElement("p", {
     className: "text-sm font-semibold text-gray-600"
-  }, "Elige una opción del menú para comenzar")))));
+  }, "Elige una opci\xF3n del men\xFA para comenzar")))));
 }
 function ChannelHeader({
   onBack,
@@ -9583,7 +9618,7 @@ function LoginScreen({
   }, "Ingresa con tu DNI"), /*#__PURE__*/React.createElement("input", {
     value: dni,
     onChange: e => setDni(e.target.value.replace(/\D/g, "").slice(0, 8)),
-    placeholder: "Nº de DNI",
+    placeholder: "N\xBA de DNI",
     inputMode: "numeric",
     className: "w-full mt-1 mb-1 px-4 py-3.5 rounded-xl border text-base tracking-wide outline-none",
     style: {
@@ -9685,9 +9720,9 @@ function LoginScreen({
       }
     }, "UNI App"), /*#__PURE__*/React.createElement("p", {
       className: "text-sm text-gray-500 mt-1.5 text-center"
-    }, "Canal de atención al colaborador en campo")), formulario, /*#__PURE__*/React.createElement("p", {
+    }, "Canal de atenci\xF3n al colaborador en campo")), formulario, /*#__PURE__*/React.createElement("p", {
       className: "text-[11px] text-gray-400 text-center mt-4"
-    }, "Tu planta y contactos se cargan automáticamente según tu DNI.")));
+    }, "Tu planta y contactos se cargan autom\xE1ticamente seg\xFAn tu DNI.")));
   }
 
   // Móvil: bloque azul y tarjeta con su tamaño natural de siempre. Sin scroll ni
@@ -9717,14 +9752,14 @@ function LoginScreen({
     style: {
       color: "rgba(255,255,255,0.75)"
     }
-  }, "Canal de atención al colaborador en campo")), /*#__PURE__*/React.createElement("div", {
+  }, "Canal de atenci\xF3n al colaborador en campo")), /*#__PURE__*/React.createElement("div", {
     className: "w-full bg-white rounded-t-3xl px-6 pt-8 pb-8 flex-1",
     style: {
       animation: "slideUpCard 0.4s ease-out"
     }
   }, /*#__PURE__*/React.createElement("style", null, `@keyframes slideUpCard { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }`), formulario, /*#__PURE__*/React.createElement("p", {
     className: "text-[11px] text-gray-400 text-center mt-4"
-  }, "Tu planta y contactos se cargan automáticamente según tu DNI.")));
+  }, "Tu planta y contactos se cargan autom\xE1ticamente seg\xFAn tu DNI.")));
 }
 
 /* ============  CANAL DE AVISOS (chat WhatsApp, solo reacciones)  ============ */
@@ -9744,6 +9779,8 @@ function PanelAvisos({
   yo,
   planta,
   puedePublicar,
+  plantasAdmin,
+  esAZT,
   isDesktop = true
 }) {
   const [avisosData, setAvisosData] = useState(() => cacheAvisosPorPlanta[planta] || []);
@@ -9761,6 +9798,8 @@ function PanelAvisos({
   const [text, setText] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [attachMenuOpen, setAttachMenuOpen] = useState(false);
+  const [crearEncuestaAbierta, setCrearEncuestaAbierta] = useState(false);
+  const [subirCitacionAbierta, setSubirCitacionAbierta] = useState(false);
   const [adjuntos, setAdjuntos] = useState([]); // [{ id, file, tipo: "imagen"|"archivo", previewUrl, ext }]
   const [lecturaLista, setLecturaLista] = useState(false);
   const [listoParaMostrar, setListoParaMostrar] = useState(false); // el chat permanece oculto (pero montado) hasta que el scroll ya quedó posicionado, para no mostrar el salto visual "aparece arriba, luego baja"
@@ -9795,7 +9834,9 @@ function PanelAvisos({
     ...aviso,
     reaccionesDeAviso: reacciones.filter(r => r.aviso_id === aviso.id),
     miReaccion: reacciones.find(r => r.aviso_id === aviso.id && r.chofer_id === miId)?.emoji || null,
-    respuestaPropia: respuestas.find(r => r.aviso_id === aviso.id && r.chofer_id === miId) || null
+    // Ya no es "mi" respuesta — es LA respuesta (solo puede haber una por consulta, ver
+    // enviarRespuestaRuta), y se muestra a todos dentro del mismo mensaje, no solo a quien la escribió.
+    respuestaRuta: respuestas.find(r => r.aviso_id === aviso.id) || null
   });
   useEffect(() => {
     primerNoLeidoIdRef.current = primerNoLeidoId;
@@ -9893,7 +9934,7 @@ function PanelAvisos({
       const nueva = payload.new;
       actualizarAvisos(prev => prev.map(a => a.id !== nueva.aviso_id ? a : {
         ...a,
-        respuestaPropia: nueva.chofer_id === miId ? nueva : a.respuestaPropia
+        respuestaRuta: nueva
       }));
     };
     const canal = sbClient.channel(`avisos-panel-${plantaEfectiva}`).on("postgres_changes", {
@@ -10497,13 +10538,42 @@ function PanelAvisos({
   };
   const enviarRespuestaRuta = async aviso => {
     if (!respRuta.trim() || !respUbic.trim() || !respTener.trim() || !miId) return;
-    await sbClient.from("aviso_respuestas_ruta").insert({
+    const ruta = respRuta.trim(),
+      ubicacion = respUbic.trim(),
+      aTenerEnCuenta = respTener.trim();
+    const {
+      error
+    } = await sbClient.from("aviso_respuestas_ruta").insert({
       aviso_id: aviso.id,
       chofer_id: miId,
-      ruta: respRuta.trim(),
-      ubicacion: respUbic.trim(),
-      a_tener_en_cuenta: respTener.trim()
+      ruta,
+      ubicacion,
+      a_tener_en_cuenta: aTenerEnCuenta
     });
+    if (error) {
+      // Restricción única en aviso_id: solo puede haber UNA respuesta por consulta. Si otro
+      // participante respondió una fracción de segundo antes, este insert falla — se avisa en vez
+      // de fallar en silencio (la respuesta ya existente le va a aparecer sola al recargar/Realtime).
+      alert(error.code === "23505" ? "Alguien más ya respondió esta consulta justo antes que tú." : `No se pudo guardar la respuesta: ${error.message}`);
+      return;
+    }
+    // Alimenta la base real de UNIBOT (rutas_obras) para que la próxima persona que pregunte por
+    // esta misma obra reciba la respuesta directo, sin tener que volver a publicar en el canal.
+    if (aviso.obra_consultada) {
+      await sbClient.from("rutas_obras").upsert({
+        obra_normalizada: aviso.obra_consultada,
+        obra: (aviso.contenido?.match(/acceso a (.+)\?$/) || [])[1] || aviso.obra_consultada,
+        planta: aviso.planta,
+        ruta,
+        ubicacion,
+        a_tener_en_cuenta: aTenerEnCuenta,
+        autor_id: miId,
+        autor_nombre: autorLabel,
+        aviso_id: aviso.id
+      }, {
+        onConflict: "obra_normalizada"
+      });
+    }
     setResponderFor(null);
     setRespRuta("");
     setRespUbic("");
@@ -10562,7 +10632,7 @@ function PanelAvisos({
       background: "white",
       color: "#166534"
     }
-  }, "📎 Suelta aquí para adjuntar")), busquedaAbierta ? /*#__PURE__*/React.createElement("div", {
+  }, "\uD83D\uDCCE Suelta aqu\xED para adjuntar")), busquedaAbierta ? /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-2 px-3 py-2 shrink-0",
     style: {
       background: "white",
@@ -10599,7 +10669,7 @@ function PanelAvisos({
       width: 26,
       height: 26
     },
-    title: "Anterior (más antiguo)"
+    title: "Anterior (m\xE1s antiguo)"
   }, /*#__PURE__*/React.createElement(ChevronUp, {
     size: 16,
     color: "#374151"
@@ -10611,7 +10681,7 @@ function PanelAvisos({
       width: 26,
       height: 26
     },
-    title: "Siguiente (más reciente)"
+    title: "Siguiente (m\xE1s reciente)"
   }, /*#__PURE__*/React.createElement(ChevronDown, {
     size: 16,
     color: "#374151"
@@ -10652,17 +10722,17 @@ function PanelAvisos({
     className: "text-center"
   }, /*#__PURE__*/React.createElement("span", {
     className: "text-[11px] text-gray-600 bg-white/70 rounded-full px-3 py-1"
-  }, "Canal informativo · solo lectura")), loading ? /*#__PURE__*/React.createElement("div", {
+  }, "Canal informativo \xB7 solo lectura")), loading ? /*#__PURE__*/React.createElement("div", {
     className: "text-center text-xs text-gray-400 py-6"
   }, "Cargando avisos...") : avisosData.length === 0 ? /*#__PURE__*/React.createElement("div", {
     className: "text-center text-xs text-gray-400 py-6"
-  }, "Aún no hay avisos publicados en esta planta.") : avisosData.map(a => {
+  }, "A\xFAn no hay avisos publicados en esta planta.") : avisosData.map(a => {
     const reactsAgrupadas = {};
     a.reaccionesDeAviso.forEach(r => {
       reactsAgrupadas[r.emoji] = (reactsAgrupadas[r.emoji] || 0) + 1;
     });
     const totalR = Object.values(reactsAgrupadas).reduce((s, n) => s + n, 0);
-    const esConsultaRuta = a.contenido?.includes("¿Cómo llegar a");
+    const esConsultaRuta = !!a.obra_consultada;
     const esPropio = a.autor_id === miId;
     const citada = a.responde_a_id ? avisosData.find(x => x.id === a.responde_a_id) : null;
     return /*#__PURE__*/React.createElement(React.Fragment, {
@@ -10680,7 +10750,7 @@ function PanelAvisos({
       style: {
         background: "#16a34a"
       }
-    }, countNoLeidos, " mensaje", countNoLeidos === 1 ? "" : "s", " no leído", countNoLeidos === 1 ? "" : "s"), /*#__PURE__*/React.createElement("div", {
+    }, countNoLeidos, " mensaje", countNoLeidos === 1 ? "" : "s", " no le\xEDdo", countNoLeidos === 1 ? "" : "s"), /*#__PURE__*/React.createElement("div", {
       className: "flex-1 h-px",
       style: {
         background: "#16a34a"
@@ -10706,7 +10776,7 @@ function PanelAvisos({
         top: 2,
         right: 4
       }
-    }, /*#__PURE__*/React.createElement("button", {
+    }, puedePublicar ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("button", {
       onClick: e => {
         e.stopPropagation();
         if (menuAbierto === a.id) {
@@ -10746,16 +10816,36 @@ function PanelAvisos({
         setPickerFor(pickerFor === a.id ? null : a.id);
       },
       className: "text-left px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
-    }, "😊 Reaccionar"), /*#__PURE__*/React.createElement("button", {
+    }, "\uD83D\uDE0A Reaccionar"), /*#__PURE__*/React.createElement("button", {
       onClick: () => iniciarRespuesta(a),
       className: "text-left px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
-    }, "↩️ Responder"), esPropio && /*#__PURE__*/React.createElement("button", {
+    }, "\u21A9\uFE0F Responder"), esPropio && /*#__PURE__*/React.createElement("button", {
       onClick: () => iniciarEdicion(a),
       className: "text-left px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
-    }, "✏️ Editar"), esPropio && /*#__PURE__*/React.createElement("button", {
+    }, "\u270F\uFE0F Editar"), esPropio && /*#__PURE__*/React.createElement("button", {
       onClick: () => pedirBorrar(a),
       className: "text-left px-3 py-2 text-sm font-medium text-red-600 hover:bg-gray-100"
-    }, "🗑️ Eliminar"))), a.autor_id === miId ? /*#__PURE__*/React.createElement("div", {
+    }, "\uD83D\uDDD1\uFE0F Eliminar"))) :
+    /*#__PURE__*/
+    // Roles no administrativos (choferes, operadores de bomba, auxiliares de
+    // tubería, etc. — cualquier sesión con puedePublicar=false) no publican ni
+    // responden citando: solo reaccionan. Un botón "+" abre el picker de emojis
+    // directo, sin el menú de Reaccionar/Responder que solo aplica a quien publica.
+    React.createElement("button", {
+      onClick: e => {
+        e.stopPropagation();
+        setPickerFor(pickerFor === a.id ? null : a.id);
+      },
+      className: "rounded-full flex items-center justify-center opacity-60 group-hover:opacity-100",
+      style: {
+        width: 20,
+        height: 20,
+        background: "rgba(0,0,0,.06)"
+      }
+    }, /*#__PURE__*/React.createElement(Plus, {
+      size: 13,
+      color: "#374151"
+    }))), a.autor_id === miId ? /*#__PURE__*/React.createElement("div", {
       className: "text-[11px] font-bold pr-5",
       style: {
         color: AZUL
@@ -10818,13 +10908,50 @@ function PanelAvisos({
       style: {
         color: AZUL
       }
-    }, "Descargar ⬇"))), a.contenido && /*#__PURE__*/React.createElement("div", {
+    }, "Descargar \u2B07"))), a.archivo_tipo === "encuesta" && a.encuesta_id && /*#__PURE__*/React.createElement(EncuestaCard, {
+      encuestaId: a.encuesta_id,
+      yo: yo,
+      esAdmin: puedePublicar
+    }), a.contenido && a.archivo_tipo !== "encuesta" && /*#__PURE__*/React.createElement("div", {
       className: "text-sm text-gray-800 whitespace-pre-wrap mt-0.5",
       style: {
         overflowWrap: "break-word",
         wordBreak: "break-word"
       }
-    }, renderConBusqueda(a.contenido, a.id)), esConsultaRuta && !puedePublicar && !a.respuestaPropia && /*#__PURE__*/React.createElement("div", {
+    }, renderConBusqueda(a.contenido, a.id)), esConsultaRuta && a.respuestaRuta &&
+    /*#__PURE__*/
+    // La respuesta vive DENTRO del mismo mensaje (no como mensaje aparte) — una vez
+    // que alguien respondió, nadie más puede (restricción única en la base de datos).
+    React.createElement("div", {
+      className: "mt-2 rounded-lg p-2.5 text-xs",
+      style: {
+        background: "#f0f4ff",
+        border: "1px solid #dbe4fe",
+        overflowWrap: "anywhere"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "font-semibold text-gray-700 mb-1"
+    }, "Para llegar, ten en cuenta lo siguiente:"), /*#__PURE__*/React.createElement("div", {
+      className: "mb-0.5"
+    }, "\uD83D\uDDFA\uFE0F ", /*#__PURE__*/React.createElement("span", {
+      className: "font-semibold"
+    }, "Ruta:"), " ", a.respuestaRuta.ruta), /*#__PURE__*/React.createElement("div", {
+      className: "mb-0.5"
+    }, "\uD83D\uDCCC ", /*#__PURE__*/React.createElement("span", {
+      className: "font-semibold"
+    }, "Ubicaci\xF3n:"), " ", /*#__PURE__*/React.createElement("a", {
+      href: a.respuestaRuta.ubicacion,
+      target: "_blank",
+      rel: "noopener noreferrer",
+      onClick: e => e.stopPropagation(),
+      style: {
+        color: "#2563eb",
+        textDecoration: "underline",
+        overflowWrap: "anywhere"
+      }
+    }, a.respuestaRuta.ubicacion)), /*#__PURE__*/React.createElement("div", null, "\uD83D\uDEA7 ", /*#__PURE__*/React.createElement("span", {
+      className: "font-semibold"
+    }, "A tener en cuenta:"), " ", a.respuestaRuta.a_tener_en_cuenta)), esConsultaRuta && !a.respuestaRuta && yo && /*#__PURE__*/React.createElement("div", {
       className: "mt-2"
     }, responderFor === a.id ? /*#__PURE__*/React.createElement("div", {
       className: "space-y-1.5 rounded-lg p-2",
@@ -10835,7 +10962,7 @@ function PanelAvisos({
     }, /*#__PURE__*/React.createElement("input", {
       value: respRuta,
       onChange: e => setRespRuta(e.target.value),
-      placeholder: "Ruta: cómo llegar…",
+      placeholder: "Ruta: c\xF3mo llegar\u2026",
       className: "w-full px-2 py-1.5 text-xs rounded border",
       style: {
         borderColor: "#d5d9e4"
@@ -10843,7 +10970,7 @@ function PanelAvisos({
     }), /*#__PURE__*/React.createElement("input", {
       value: respUbic,
       onChange: e => setRespUbic(e.target.value),
-      placeholder: "Ubicación (link Waze/Maps)…",
+      placeholder: "Ubicaci\xF3n (link Waze/Maps)\u2026",
       className: "w-full px-2 py-1.5 text-xs rounded border",
       style: {
         borderColor: "#d5d9e4"
@@ -10851,7 +10978,7 @@ function PanelAvisos({
     }), /*#__PURE__*/React.createElement("input", {
       value: respTener,
       onChange: e => setRespTener(e.target.value),
-      placeholder: "A tener en cuenta…",
+      placeholder: "A tener en cuenta\u2026",
       className: "w-full px-2 py-1.5 text-xs rounded border",
       style: {
         borderColor: "#d5d9e4"
@@ -10876,9 +11003,7 @@ function PanelAvisos({
         background: AMARILLO,
         color: AZUL
       }
-    }, "💬 Responder")), esConsultaRuta && a.respuestaPropia && /*#__PURE__*/React.createElement("div", {
-      className: "mt-1 text-[10px] text-green-600 font-semibold"
-    }, "✅ Ya respondida"), /*#__PURE__*/React.createElement("div", {
+    }, "\uD83D\uDCAC Responder")), /*#__PURE__*/React.createElement("div", {
       className: "text-[10px] text-gray-400 text-right mt-1"
     }, a.editado && /*#__PURE__*/React.createElement("span", {
       className: "italic mr-1"
@@ -10953,7 +11078,7 @@ function PanelAvisos({
     style: {
       color: "#92400e"
     }
-  }, "✏️ Editando mensaje"), /*#__PURE__*/React.createElement("button", {
+  }, "\u270F\uFE0F Editando mensaje"), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       setEditandoId(null);
       setText("");
@@ -11043,26 +11168,47 @@ function PanelAvisos({
       fileImagenRef.current?.click();
     },
     className: "flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-semibold text-gray-800 hover:bg-gray-100"
-  }, "🖼️ Imagen (JPG, PNG)"), /*#__PURE__*/React.createElement("button", {
+  }, "\uD83D\uDDBC\uFE0F Imagen (JPG, PNG)"), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       setAttachMenuOpen(false);
       fileDocRef.current?.click();
     },
     className: "flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-semibold text-gray-800 hover:bg-gray-100"
-  }, "📎 Documento (Word, Excel, PPT)"), /*#__PURE__*/React.createElement("button", {
+  }, "\uD83D\uDCCE Documento (Word, Excel, PPT)"), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       setAttachMenuOpen(false);
       filePdfRef.current?.click();
     },
     className: "flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-semibold text-gray-800 hover:bg-gray-100"
-  }, "📄 PDF")), /*#__PURE__*/React.createElement("button", {
+  }, "\uD83D\uDCC4 PDF"), puedePublicar && (!plantasAdmin || plantasAdmin.length <= 1) && /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setAttachMenuOpen(false);
+      setCrearEncuestaAbierta(true);
+    },
+    className: "flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-semibold text-gray-800 hover:bg-gray-100"
+  }, "\uD83D\uDCCA Encuesta"), esAZT && (!plantasAdmin || plantasAdmin.length <= 1) && /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setAttachMenuOpen(false);
+      setSubirCitacionAbierta(true);
+    },
+    className: "flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-semibold text-gray-800 hover:bg-gray-100"
+  }, "\uD83D\uDCCB Subir citaci\xF3n general")), crearEncuestaAbierta && /*#__PURE__*/React.createElement(ModalCrearEncuesta, {
+    planta: planta,
+    plantasAdmin: plantasAdmin,
+    yo: yo,
+    onClose: () => setCrearEncuestaAbierta(false)
+  }), subirCitacionAbierta && /*#__PURE__*/React.createElement(ModalSubirCitacionGeneral, {
+    plantasAdmin: plantasAdmin,
+    yo: yo,
+    onClose: () => setSubirCitacionAbierta(false)
+  }), /*#__PURE__*/React.createElement("button", {
     onClick: () => setAttachMenuOpen(v => !v),
     className: "w-11 h-11 rounded-full flex items-center justify-center shrink-0",
     style: {
       background: "#f3f4f6",
       color: "#374151"
     }
-  }, "📎"), /*#__PURE__*/React.createElement("input", {
+  }, "\uD83D\uDCCE"), /*#__PURE__*/React.createElement("input", {
     ref: fileImagenRef,
     type: "file",
     multiple: true,
@@ -11117,6 +11263,23 @@ function PanelAvisos({
         send();
       }
     },
+    onPaste: e => {
+      // Permite pegar una captura de pantalla o imagen copiada (Ctrl+V) directo desde
+      // el portapapeles, igual que adjuntar un archivo — antes solo se podía pegar texto.
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      const archivosImagen = [];
+      for (const item of items) {
+        if (item.kind === "file" && item.type.startsWith("image/")) {
+          const file = item.getAsFile();
+          if (file) archivosImagen.push(file);
+        }
+      }
+      if (archivosImagen.length) {
+        e.preventDefault();
+        agregarArchivos(archivosImagen);
+      }
+    },
     placeholder: `Escribe un aviso para todos los choferes de la planta ${plantaEfectiva}....`,
     rows: 1,
     className: "flex-1 px-4 py-3 rounded-2xl border text-sm outline-none resize-none",
@@ -11142,7 +11305,7 @@ function PanelAvisos({
     style: {
       borderColor: "#e6e8ee"
     }
-  }, "Este es un canal de avisos de tu planta. Solo puedes reaccionar a los mensajes 👇 con los emojis de UNICON", /*#__PURE__*/React.createElement("div", {
+  }, "Este es un canal de avisos de tu planta. Solo puedes reaccionar a los mensajes \uD83D\uDC47 con los emojis de UNICON", /*#__PURE__*/React.createElement("div", {
     className: "flex justify-center gap-3 mt-2"
   }, REACTIONS.map(r => /*#__PURE__*/React.createElement(r.node, {
     key: r.id,
@@ -11163,6 +11326,564 @@ function PanelAvisos({
       borderRadius: 8
     }
   })));
+}
+
+/* ============  ENCUESTAS (tipo WhatsApp)  ============ */
+// Modal para que un rol administrativo (puedePublicar=true) cree una encuesta. Selección MÚLTIPLE
+// de plantas (no una sola ni "todas o nada"): si el admin tiene más de una planta asignada
+// (plantasAdmin), puede marcar cualquier combinación de ellas — se crea una encuesta
+// INDEPENDIENTE por cada planta marcada (cada una con su propio conteo de votos).
+function ModalCrearEncuesta({
+  planta,
+  plantasAdmin,
+  yo,
+  onClose
+}) {
+  const [pregunta, setPregunta] = useState("");
+  const [opciones, setOpciones] = useState(["", ""]);
+  const opcionesPlanta = plantasAdmin && plantasAdmin.length > 1 ? plantasAdmin : [planta];
+  // Preseleccionada la planta desde la que se abrió el modal (si vino de un canal específico); si
+  // se abrió desde el punto transversal (sin `planta`), arranca con todas marcadas.
+  const [destinos, setDestinos] = useState(() => new Set(planta ? [planta] : opcionesPlanta));
+  const [enviando, setEnviando] = useState(false);
+  const [error, setError] = useState("");
+  const togglePlanta = p => setDestinos(prev => {
+    const next = new Set(prev);
+    next.has(p) ? next.delete(p) : next.add(p);
+    return next;
+  });
+  const todasMarcadas = destinos.size === opcionesPlanta.length;
+  const toggleTodas = () => setDestinos(todasMarcadas ? new Set() : new Set(opcionesPlanta));
+  const actualizarOpcion = (i, valor) => setOpciones(prev => prev.map((o, idx) => idx === i ? valor : o));
+  const agregarOpcion = () => {
+    if (opciones.length < 10) setOpciones(prev => [...prev, ""]);
+  };
+  const quitarOpcion = i => setOpciones(prev => prev.filter((_, idx) => idx !== i));
+  const publicar = async () => {
+    const preguntaLimpia = pregunta.trim();
+    const opcionesLimpias = opciones.map(o => o.trim()).filter(Boolean);
+    if (!preguntaLimpia) {
+      setError("Escribe la pregunta de la encuesta.");
+      return;
+    }
+    if (opcionesLimpias.length < 2) {
+      setError("Agrega al menos 2 opciones.");
+      return;
+    }
+    if (destinos.size === 0) {
+      setError("Selecciona al menos una planta.");
+      return;
+    }
+    setEnviando(true);
+    setError("");
+    const plantasDestino = [...destinos];
+    // grupoId conecta las encuestas cuando se publica para varias plantas a la vez: cada planta
+    // sigue teniendo su propia encuesta INDEPENDIENTE (su propio conteo de votos, tal como se
+    // decidió), pero comparten grupo_id para que ModalVerVotos pueda armar las pestañas
+    // "Todos"/por planta y el Excel combinado sin tener que adivinar cuáles van juntas.
+    const grupoId = crypto.randomUUID();
+    const errores = [];
+    for (const p of plantasDestino) {
+      const {
+        data: encuesta,
+        error: errEncuesta
+      } = await sbClient.from("encuestas").insert({
+        planta: p,
+        autor_id: yo.id,
+        autor_nombre: yo.nombre,
+        pregunta: preguntaLimpia,
+        opciones: opcionesLimpias,
+        grupo_id: grupoId
+      }).select().single();
+      if (errEncuesta || !encuesta) {
+        errores.push(`${p}: ${errEncuesta?.message || "no se pudo crear"}`);
+        continue;
+      }
+      const {
+        error: errAviso
+      } = await sbClient.from("avisos").insert({
+        titulo: "Encuesta",
+        contenido: `📊 Encuesta: ${preguntaLimpia}`,
+        planta: p,
+        autor_id: yo.id,
+        autor_nombre: yo.nombre,
+        archivo_tipo: "encuesta",
+        encuesta_id: encuesta.id
+      });
+      if (errAviso) errores.push(`${p}: ${errAviso.message}`);
+    }
+    setEnviando(false);
+    // Se muestra el error real de Supabase (ej. "relation encuestas does not exist" si falta
+    // correr la migración, o el texto exacto de la política RLS que bloqueó el insert) en vez de
+    // un mensaje genérico — así se puede diagnosticar sin tener que adivinar la causa.
+    if (errores.length) {
+      setError(errores.join(" · "));
+      return;
+    }
+    onClose();
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 flex items-center justify-center p-4",
+    style: {
+      background: "rgba(0,0,0,.5)",
+      zIndex: 70
+    },
+    onClick: onClose
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-2xl p-5 w-full max-w-sm",
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between mb-3"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "font-bold text-base",
+    style: {
+      color: AZUL
+    }
+  }, "\uD83D\uDCCA Nueva encuesta"), /*#__PURE__*/React.createElement("button", {
+    onClick: onClose
+  }, /*#__PURE__*/React.createElement(X, {
+    size: 18,
+    color: "#6b7280"
+  }))), /*#__PURE__*/React.createElement("label", {
+    className: "text-xs font-semibold text-gray-600"
+  }, "Pregunta"), /*#__PURE__*/React.createElement("input", {
+    value: pregunta,
+    onChange: e => setPregunta(e.target.value),
+    placeholder: "Ej. \xBFQu\xE9 turno prefieren para la charla?",
+    className: "w-full px-3 py-2 mt-1 mb-3 text-sm rounded-lg border",
+    style: {
+      borderColor: "#d5d9e4"
+    }
+  }), /*#__PURE__*/React.createElement("label", {
+    className: "text-xs font-semibold text-gray-600"
+  }, "Opciones"), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-1.5 mt-1 mb-2"
+  }, opciones.map((o, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    className: "flex items-center gap-1.5"
+  }, /*#__PURE__*/React.createElement("input", {
+    value: o,
+    onChange: e => actualizarOpcion(i, e.target.value),
+    placeholder: `Opción ${i + 1}`,
+    className: "flex-1 px-3 py-1.5 text-sm rounded-lg border",
+    style: {
+      borderColor: "#d5d9e4"
+    }
+  }), opciones.length > 2 && /*#__PURE__*/React.createElement("button", {
+    onClick: () => quitarOpcion(i),
+    className: "text-gray-400 hover:text-red-500"
+  }, /*#__PURE__*/React.createElement(X, {
+    size: 16
+  }))))), opciones.length < 10 && /*#__PURE__*/React.createElement("button", {
+    onClick: agregarOpcion,
+    className: "text-xs font-semibold mb-3",
+    style: {
+      color: AZUL
+    }
+  }, "\u2795 Agregar opci\xF3n"), /*#__PURE__*/React.createElement("div", {
+    className: "mb-3"
+  }, /*#__PURE__*/React.createElement("label", {
+    className: "text-xs font-semibold text-gray-600 block mb-1"
+  }, "Publicar en (selecci\xF3n m\xFAltiple)"), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-1.5"
+  }, opcionesPlanta.length > 1 && /*#__PURE__*/React.createElement("button", {
+    onClick: toggleTodas,
+    className: "px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1",
+    style: {
+      background: todasMarcadas ? AZUL : "#e6e8ee",
+      color: todasMarcadas ? "white" : "#374151"
+    }
+  }, todasMarcadas && /*#__PURE__*/React.createElement(Check, {
+    size: 11
+  }), " Todas (", opcionesPlanta.length, ")"), opcionesPlanta.map(p => /*#__PURE__*/React.createElement("button", {
+    key: p,
+    onClick: () => togglePlanta(p),
+    className: "px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1",
+    style: {
+      background: destinos.has(p) ? AZUL : "#f3f4f6",
+      color: destinos.has(p) ? "white" : "#374151"
+    }
+  }, destinos.has(p) && /*#__PURE__*/React.createElement(Check, {
+    size: 11
+  }), " ", p)))), error && /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-semibold text-red-600 mb-2"
+  }, error), /*#__PURE__*/React.createElement("button", {
+    onClick: publicar,
+    disabled: enviando,
+    className: "w-full py-2.5 rounded-xl font-bold text-sm disabled:opacity-50",
+    style: {
+      background: AMARILLO,
+      color: AZUL
+    }
+  }, enviando ? "Publicando..." : "Publicar encuesta")));
+}
+
+// Muestra una encuesta dentro del Canal de Avisos, con el estilo de encuesta tipo WhatsApp pero
+// en la paleta de la app (tarjeta AZUL en vez de verde): pregunta, opciones con círculo de
+// selección + barra de progreso + conteo, resaltando la opción que el usuario actual votó.
+// Cualquiera puede tocar una opción para votar (una sola a la vez — votar de nuevo mueve el voto,
+// no lo suma). "Ver votos" (nombre, DNI, foto y desglose por planta) es SOLO para quien publica
+// (esAdmin) — el resto de la gente solo ve los conteos y barras, no la identidad de cada voto.
+function EncuestaCard({
+  encuestaId,
+  yo,
+  esAdmin
+}) {
+  const [encuesta, setEncuesta] = useState(null);
+  const [votos, setVotos] = useState([]);
+  const [votando, setVotando] = useState(false);
+  const [verVotosAbierto, setVerVotosAbierto] = useState(false);
+  useEffect(() => {
+    let vigente = true;
+    (async () => {
+      const {
+        data
+      } = await sbClient.from("encuestas").select("id, planta, grupo_id, pregunta, opciones, autor_nombre, created_at").eq("id", encuestaId).maybeSingle();
+      if (vigente && data) setEncuesta(data);
+    })();
+    return () => {
+      vigente = false;
+    };
+  }, [encuestaId]);
+  const cargarVotosRef = useRef(null);
+  useEffect(() => {
+    let vigente = true;
+    const cargarVotos = async () => {
+      const {
+        data
+      } = await sbClient.from("encuesta_votos").select("votante_id, opcion_index").eq("encuesta_id", encuestaId);
+      if (vigente) setVotos(data || []);
+    };
+    cargarVotosRef.current = cargarVotos;
+    cargarVotos();
+    // No depender solo de Realtime para reflejar el propio voto: si la tabla encuesta_votos no
+    // tiene la replicación activada en Supabase (paso aparte de las políticas RLS, fácil de
+    // olvidar), el evento nunca llega y la tarjeta se queda con el conteo viejo hasta que se
+    // vuelve a montar — por eso votar() también recarga directo después de guardar.
+    const canal = sbClient.channel(`encuesta-votos-${encuestaId}`).on("postgres_changes", {
+      event: "*",
+      schema: "public",
+      table: "encuesta_votos",
+      filter: `encuesta_id=eq.${encuestaId}`
+    }, cargarVotos).subscribe();
+    return () => {
+      vigente = false;
+      sbClient.removeChannel(canal);
+    };
+  }, [encuestaId]);
+  if (!encuesta) return /*#__PURE__*/React.createElement("div", {
+    className: "text-xs text-gray-400 mt-1 mb-1"
+  }, "Cargando encuesta...");
+  const totalVotos = votos.length;
+  const miVoto = votos.find(v => v.votante_id === yo?.id);
+  const horaTexto = new Date(encuesta.created_at).toLocaleTimeString("es-PE", {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+  const votar = async i => {
+    if (!yo?.id || votando) return;
+    setVotando(true);
+    const {
+      error
+    } = await sbClient.from("encuesta_votos").upsert({
+      encuesta_id: encuestaId,
+      votante_id: yo.id,
+      opcion_index: i
+    }, {
+      onConflict: "encuesta_id,votante_id"
+    });
+    if (error) {
+      alert(`No se pudo registrar tu voto: ${error.message}`);
+    } else {
+      await cargarVotosRef.current?.(); // refresco inmediato, sin esperar al evento de Realtime
+    }
+    setVotando(false);
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl mt-1 mb-1 overflow-hidden shadow-sm",
+    style: {
+      background: AZUL,
+      minWidth: 240,
+      maxWidth: 290
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "px-3 pt-3 pb-1"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-white font-bold text-[14px] leading-snug mb-1"
+  }, "\uD83D\uDCCA ", encuesta.pregunta), /*#__PURE__*/React.createElement("div", {
+    className: "text-[10.5px]",
+    style: {
+      color: "rgba(255,255,255,.6)"
+    }
+  }, "Toca una opci\xF3n para votar")), /*#__PURE__*/React.createElement("div", {
+    className: "px-3 pt-2 pb-1"
+  }, encuesta.opciones.map((op, i) => {
+    const n = votos.filter(v => v.opcion_index === i).length;
+    const pct = totalVotos ? Math.round(n / totalVotos * 100) : 0;
+    const esMiVoto = miVoto?.opcion_index === i;
+    return /*#__PURE__*/React.createElement("button", {
+      key: i,
+      onClick: () => votar(i),
+      disabled: votando,
+      className: "w-full text-left mb-2.5 last:mb-1 disabled:opacity-70"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center justify-between mb-1 gap-2"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center gap-2 min-w-0"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "rounded-full flex items-center justify-center shrink-0",
+      style: {
+        width: 17,
+        height: 17,
+        border: `2px solid ${esMiVoto ? AMARILLO : "rgba(255,255,255,.5)"}`,
+        background: esMiVoto ? AMARILLO : "transparent"
+      }
+    }, esMiVoto && /*#__PURE__*/React.createElement(Check, {
+      size: 10,
+      color: AZUL
+    })), /*#__PURE__*/React.createElement("span", {
+      className: "text-white text-[13px] font-medium truncate"
+    }, op)), /*#__PURE__*/React.createElement("span", {
+      className: "text-[11px] font-bold shrink-0",
+      style: {
+        color: "rgba(255,255,255,.75)"
+      }
+    }, n)), /*#__PURE__*/React.createElement("div", {
+      className: "rounded-full overflow-hidden",
+      style: {
+        height: 5,
+        background: "rgba(255,255,255,.2)"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        width: `${pct}%`,
+        height: "100%",
+        background: AMARILLO,
+        transition: "width .3s"
+      }
+    })));
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between px-3 pb-2 pt-0.5"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-[10px]",
+    style: {
+      color: "rgba(255,255,255,.55)"
+    }
+  }, totalVotos, " voto", totalVotos === 1 ? "" : "s"), /*#__PURE__*/React.createElement("span", {
+    className: "text-[10px]",
+    style: {
+      color: "rgba(255,255,255,.55)"
+    }
+  }, horaTexto)), esAdmin && /*#__PURE__*/React.createElement("button", {
+    onClick: () => setVerVotosAbierto(true),
+    className: "w-full text-center py-2 text-[12px] font-bold border-t",
+    style: {
+      borderColor: "rgba(255,255,255,.15)",
+      color: AMARILLO
+    }
+  }, "Ver votos"), verVotosAbierto && /*#__PURE__*/React.createElement(ModalVerVotos, {
+    encuesta: encuesta,
+    onClose: () => setVerVotosAbierto(false)
+  }));
+}
+
+// SOLO para quien publica (esAdmin en EncuestaCard): quiénes votaron (foto, nombre, DNI) y cuántos
+// votos van por planta, con pestañas "Todos" + una por planta (cuando la encuesta se publicó para
+// varias a la vez, ver grupo_id) y descarga de Excel (hoja "Todos" + una hoja por planta, columnas
+// Planta / Nombres y Apellidos / Respuesta).
+function ModalVerVotos({
+  encuesta,
+  onClose
+}) {
+  const [grupo, setGrupo] = useState(null); // [{id, planta}] de todas las encuestas del mismo lanzamiento
+  const [votos, setVotos] = useState([]);
+  const [personas, setPersonas] = useState({}); // { [perfilId]: {nombre, dni, foto_url} }
+  // Arranca marcada la planta que se está observando en este momento (la de esta tarjeta), no
+  // "Todos" — es la pestaña más relevante para quien abrió "Ver votos" desde ahí.
+  const [tab, setTab] = useState(encuesta.planta);
+  const [cargando, setCargando] = useState(true);
+  const [descargando, setDescargando] = useState(false);
+  useEffect(() => {
+    let vigente = true;
+    (async () => {
+      setCargando(true);
+      let encuestasGrupo = [{
+        id: encuesta.id,
+        planta: encuesta.planta
+      }];
+      if (encuesta.grupo_id) {
+        const {
+          data
+        } = await sbClient.from("encuestas").select("id, planta").eq("grupo_id", encuesta.grupo_id);
+        if (data?.length) encuestasGrupo = data;
+      }
+      const ids = encuestasGrupo.map(e => e.id);
+      const {
+        data: votosData
+      } = await sbClient.from("encuesta_votos").select("encuesta_id, votante_id, opcion_index").in("encuesta_id", ids);
+      const votantesIds = [...new Set((votosData || []).map(v => v.votante_id))];
+      const personasMap = {};
+      if (votantesIds.length) {
+        const {
+          data: personasData
+        } = await sbClient.from("perfiles").select("id, nombre, dni, foto_url").in("id", votantesIds);
+        (personasData || []).forEach(p => {
+          personasMap[p.id] = p;
+        });
+      }
+      if (!vigente) return;
+      setGrupo(encuestasGrupo);
+      setVotos(votosData || []);
+      setPersonas(personasMap);
+      setCargando(false);
+    })();
+    return () => {
+      vigente = false;
+    };
+  }, [encuesta.id, encuesta.grupo_id]);
+  const plantaPorEncuestaId = Object.fromEntries((grupo || []).map(e => [e.id, e.planta]));
+  // La planta que se está observando siempre va primera en la lista de botones (misma lógica de
+  // botones que al crear la encuesta, solo que acá empieza marcada la actual en vez de "Todos").
+  const plantasDisponibles = [encuesta.planta, ...new Set((grupo || []).map(e => e.planta).filter(p => p !== encuesta.planta))];
+  const votosConDatos = votos.map(v => ({
+    ...v,
+    planta: plantaPorEncuestaId[v.encuesta_id] || "",
+    nombre: personas[v.votante_id]?.nombre || "(perfil no encontrado)",
+    dni: personas[v.votante_id]?.dni || "",
+    foto_url: personas[v.votante_id]?.foto_url || null,
+    respuesta: encuesta.opciones[v.opcion_index] || ""
+  }));
+  const votosFiltrados = tab === "todos" ? votosConDatos : votosConDatos.filter(v => v.planta === tab);
+  const tallyFiltrado = encuesta.opciones.map((op, i) => ({
+    op,
+    n: votosFiltrados.filter(v => v.opcion_index === i).length
+  }));
+  const descargarExcel = async () => {
+    setDescargando(true);
+    try {
+      const wb = new ExcelJS.Workbook();
+      const headers = ["Planta", "Nombres y Apellidos", encuesta.pregunta];
+      const sheetTodos = wb.addWorksheet("Todos");
+      sheetTodos.addRow(headers);
+      votosConDatos.forEach(v => sheetTodos.addRow([v.planta, v.nombre, v.respuesta]));
+      plantasDisponibles.forEach(p => {
+        const sheet = wb.addWorksheet(String(p).slice(0, 31)); // límite de Excel: 31 caracteres por nombre de hoja
+        sheet.addRow(headers);
+        votosConDatos.filter(v => v.planta === p).forEach(v => sheet.addRow([v.planta, v.nombre, v.respuesta]));
+      });
+      const buffer = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Encuesta_${encuesta.pregunta.replace(/[^\wáéíóúñÁÉÍÓÚÑ ]/g, "").trim().slice(0, 40)}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } finally {
+      setDescargando(false);
+    }
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 flex items-center justify-center p-4",
+    style: {
+      background: "rgba(0,0,0,.5)",
+      zIndex: 70
+    },
+    onClick: onClose
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-2xl w-full max-w-sm max-h-[80vh] flex flex-col",
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between px-4 pt-4 pb-2"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "font-bold text-sm pr-2",
+    style: {
+      color: AZUL
+    }
+  }, "\uD83D\uDCCA ", encuesta.pregunta), /*#__PURE__*/React.createElement("button", {
+    onClick: onClose,
+    className: "shrink-0"
+  }, /*#__PURE__*/React.createElement(X, {
+    size: 18,
+    color: "#6b7280"
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-1.5 px-4 pb-2 overflow-x-auto"
+  }, plantasDisponibles.map(p => /*#__PURE__*/React.createElement("button", {
+    key: p,
+    onClick: () => setTab(p),
+    className: "px-2.5 py-1 rounded-full text-xs font-semibold shrink-0",
+    style: {
+      background: tab === p ? AZUL : "#f3f4f6",
+      color: tab === p ? "white" : "#374151"
+    }
+  }, p)), plantasDisponibles.length > 1 && /*#__PURE__*/React.createElement("button", {
+    onClick: () => setTab("todos"),
+    className: "px-2.5 py-1 rounded-full text-xs font-bold shrink-0",
+    style: {
+      background: tab === "todos" ? AZUL : "#f3f4f6",
+      color: tab === "todos" ? "white" : "#374151"
+    }
+  }, "Todos")), /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 overflow-y-auto px-4"
+  }, cargando ? /*#__PURE__*/React.createElement("div", {
+    className: "text-xs text-gray-400 py-4"
+  }, "Cargando...") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-1.5 py-2"
+  }, tallyFiltrado.map((t, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    className: "text-[11px] px-2 py-1 rounded-lg",
+    style: {
+      background: "#f3f4f6"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "font-semibold text-gray-700"
+  }, t.op, ":"), " ", /*#__PURE__*/React.createElement("span", {
+    className: "font-bold",
+    style: {
+      color: AZUL
+    }
+  }, t.n)))), votosFiltrados.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    className: "text-xs text-gray-400 py-3"
+  }, "Nadie ha votado todav\xEDa.") : /*#__PURE__*/React.createElement("div", {
+    className: "space-y-2 pb-3"
+  }, votosFiltrados.map(v => /*#__PURE__*/React.createElement("div", {
+    key: `${v.encuesta_id}-${v.votante_id}`,
+    className: "flex items-center gap-2.5"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "w-9 h-9 rounded-full overflow-hidden shrink-0 flex items-center justify-center",
+    style: {
+      background: "#e6e8ee"
+    }
+  }, v.foto_url ? /*#__PURE__*/React.createElement("img", {
+    src: v.foto_url,
+    className: "w-full h-full object-cover"
+  }) : /*#__PURE__*/React.createElement(User, {
+    size: 16,
+    color: "#9ca3af"
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "min-w-0 flex-1"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-sm font-semibold text-gray-800 truncate"
+  }, v.nombre), /*#__PURE__*/React.createElement("div", {
+    className: "text-[11px] text-gray-500 truncate"
+  }, "DNI ", v.dni || "—", " \xB7 ", v.respuesta, tab === "todos" ? ` · ${v.planta}` : ""))))))), /*#__PURE__*/React.createElement("div", {
+    className: "p-4 pt-2 border-t",
+    style: {
+      borderColor: "#e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: descargarExcel,
+    disabled: cargando || descargando || votosConDatos.length === 0,
+    className: "w-full py-2.5 rounded-xl font-bold text-sm disabled:opacity-50",
+    style: {
+      background: AMARILLO,
+      color: AZUL
+    }
+  }, descargando ? "Generando..." : "⬇️ Descargar Excel"))));
 }
 
 /* ============  REPORTE DE FIN DE VUELTA  ============ */
@@ -11354,13 +12075,13 @@ function FinDeVuelta({
         active: problema === "si",
         onClick: () => setProblema("si"),
         color: "#e11d48"
-      }, "Sí, reportar")), problema === "si" && /*#__PURE__*/React.createElement("div", {
+      }, "S\xED, reportar")), problema === "si" && /*#__PURE__*/React.createElement("div", {
         className: "mt-3"
       }, /*#__PURE__*/React.createElement(MiniInput, {
         label: "",
         value: problemaTxt,
         onChange: setProblemaTxt,
-        placeholder: "Ej. ruido en la tolva, falla eléctrica…"
+        placeholder: "Ej. ruido en la tolva, falla el\xE9ctrica\u2026"
       }), /*#__PURE__*/React.createElement("textarea", {
         value: coment,
         onChange: e => setComent(e.target.value),
@@ -11513,9 +12234,9 @@ function FinDeVuelta({
     className: "flex items-center justify-between mb-3"
   }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h4", {
     className: "font-bold text-gray-700 text-sm"
-  }, "¿Qué quieres registrar?"), /*#__PURE__*/React.createElement("p", {
+  }, "\xBFQu\xE9 quieres registrar?"), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-gray-400"
-  }, "Toca un botón. Puedes hacer todos los registros que necesites.")), /*#__PURE__*/React.createElement("button", {
+  }, "Toca un bot\xF3n. Puedes hacer todos los registros que necesites.")), /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowHist(true),
     className: "flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold shrink-0",
     style: {
@@ -11627,7 +12348,7 @@ function HistorialModal({
     className: "mx-auto mb-2 opacity-50"
   }), /*#__PURE__*/React.createElement("p", {
     className: "text-sm"
-  }, "Aún no has registrado ningún reporte.")), /*#__PURE__*/React.createElement("div", {
+  }, "A\xFAn no has registrado ning\xFAn reporte.")), /*#__PURE__*/React.createElement("div", {
     className: "space-y-2"
   }, ordenados.map(r => {
     const meta = QUAD_META[r.quad];
@@ -11816,6 +12537,208 @@ function nombresCoinciden(nombrePerfil, nombreTabla) {
   return corto.every(palabra => largo.includes(palabra));
 }
 
+// true si el nombre de archivo corresponde a un Excel (el AZT sube el .xlsx original de la
+// citación al Canal de Avisos, no una foto). Se detecta por nombre porque en la base de datos
+// archivo_tipo solo distingue "imagen" de "archivo" (genérico para PDF/Word/Excel/PowerPoint).
+function esArchivoExcel(nombreArchivo) {
+  return /\.xlsx?$/i.test(String(nombreArchivo || ""));
+}
+
+// Quita tildes y pasa a minúsculas, para comparar encabezados/nombres de columna del Excel sin
+// depender de mayúsculas ni acentos (el Excel real trae encabezados en MAYÚSCULAS).
+function normalizarTextoExcel(s) {
+  return (s || "").toString().normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+}
+
+// Lee el valor de una celda de ExcelJS como texto plano, manejando los casos que no son un
+// string simple: celdas de hora/fecha (devueltas como objeto Date — se formatea a "HH:MM" porque
+// si no se mostraría una fecha completa ilegible), texto enriquecido, y celdas con fórmula.
+function celdaTextoExcel(row, col) {
+  if (!col || col < 1) return "";
+  const v = row.getCell(col).value;
+  if (v == null) return "";
+  if (v instanceof Date) return `${String(v.getUTCHours()).padStart(2, "0")}:${String(v.getUTCMinutes()).padStart(2, "0")}`;
+  if (typeof v === "object") {
+    if (Array.isArray(v.richText)) return v.richText.map(r => r.text).join("").trim();
+    if (v.result !== undefined) return String(v.result).trim(); // celda con fórmula
+  }
+  return String(v).trim();
+}
+
+// Busca en las filas leídas del Excel la que corresponde a un chofer, prefiriendo DNI exacto
+// (más confiable) y usando nombresCoinciden() como respaldo si no hay DNI o no coincide (ej. el
+// chofer aún no tiene DNI cargado en su perfil, o hay un typo en el Excel).
+// Cuando una citación tiene más de MAX_FILAS_CAPTURA choferes, ModalSubirCitacionGeneral la
+// publica como varias imágenes (una por bloque de filas). Cada aviso de tipo "imagen" guarda en
+// dnis_incluidos los DNI de los choferes que salen en ESA imagen específica (columna nueva en
+// Supabase, ver migración), así que se puede identificar con certeza cuál imagen contiene la fila
+// del chofer que pregunta, en vez de adivinar por orden o adjuntar todas.
+function capturaParaChofer(avisosImagen, dni) {
+  if (!dni) return null;
+  const candidatas = (avisosImagen || []).filter(a => Array.isArray(a.dnis_incluidos) && a.dnis_incluidos.includes(String(dni).trim()));
+  if (!candidatas.length) return null;
+  candidatas.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  return candidatas[0];
+}
+
+// Determina la vigencia de una citación a partir de cuándo se publicó su Excel (created_at):
+// el "día objetivo" es SIEMPRE el día calendario siguiente (hora Perú) al que se publicó — el AZT
+// publica de noche la citación del día siguiente. A partir de ahí:
+//  - mientras "ahora" todavía sea el día ANTERIOR al día objetivo → esHoy=false (se dice "mañana")
+//  - ya entrado el día objetivo (pasada la medianoche) → esHoy=true (se dice "hoy" en vez de "mañana")
+//  - pasada la 1pm hora Perú del día objetivo → expirada=true (el turno ya empezó hace horas; se
+//    responde "no encontrada" en vez de mostrar una citación vieja que puede confundir al chofer)
+// Acepta un `ahora` opcional (para el botón de prueba que simula otra hora sin esperar a que llegue de verdad).
+function vigenciaCitacion(createdAtISO, ahora = new Date()) {
+  const AJUSTE_PERU_MS = 5 * 60 * 60 * 1000;
+  const aPeru = d => new Date(d.getTime() - AJUSTE_PERU_MS);
+  const soloFechaUTC = d => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const creadoPeru = aPeru(new Date(createdAtISO));
+  const diaObjetivoPeru = new Date(soloFechaUTC(creadoPeru).getTime() + 24 * 60 * 60 * 1000);
+  const ahoraPeru = aPeru(new Date(ahora));
+  const hoyPeru = soloFechaUTC(ahoraPeru);
+  const esHoy = hoyPeru.getTime() === diaObjetivoPeru.getTime();
+  const yaPaso = hoyPeru.getTime() > diaObjetivoPeru.getTime();
+  const corte1pmPeru = new Date(diaObjetivoPeru.getTime() + 13 * 60 * 60 * 1000);
+  const expirada = yaPaso || esHoy && ahoraPeru.getTime() >= corte1pmPeru.getTime();
+  return {
+    diaObjetivoPeru,
+    esHoy,
+    expirada
+  };
+}
+function emparejarChoferConFila(chofer, filasTabla) {
+  if (chofer?.dni) {
+    const porDni = filasTabla.find(f => f.dni && String(f.dni).trim() === String(chofer.dni).trim());
+    if (porDni) return porDni;
+  }
+  return filasTabla.find(f => nombresCoinciden(chofer?.nombre, f.nombre)) || null;
+}
+
+// Mapea el texto de la columna PLANTA del Excel maestro (que no siempre coincide en formato con
+// PLANTAS_TODAS: mayúsculas, sin tildes, o abreviado) al nombre canónico de planta que usa el
+// resto de la app. Devuelve null si no se reconoce, para no publicar por error en la planta
+// equivocada — esas filas se reportan como "no reconocidas" en vez de adivinar.
+// OJO: "VILLA" a secas (sin "EL SALVADOR") se asume como "Villa Concremax" porque es la otra
+// planta de la app que empieza con "Villa" — confirmar con el AZT si esto cambia.
+const PLANTA_EXCEL_OVERRIDES = {
+  "villa": "Villa Concremax"
+};
+function resolverPlantaExcel(crudo) {
+  const norm = normalizarTextoExcel(crudo);
+  if (!norm) return null;
+  if (PLANTA_EXCEL_OVERRIDES[norm]) return PLANTA_EXCEL_OVERRIDES[norm];
+  return PLANTAS_TODAS.find(p => normalizarTextoExcel(p) === norm) || null;
+}
+
+// La columna CITACIÓN normalmente trae solo una hora, pero el AZT a veces escribe "{Planta} HH:MM"
+// (ej. "Ancieta 09:00") para avisar que ese chofer debe presentarse en OTRA planta al día
+// siguiente, no en la suya. Separa ambos datos: si el texto termina en HH:MM y lo que queda antes
+// coincide con una planta conocida, devuelve esa planta aparte; si no, se trata como una hora normal.
+function parseCitacionConPosiblePlanta(valorCrudo) {
+  const m = /^(.*\S)\s+(\d{1,2}:\d{2})$/.exec(valorCrudo || "");
+  if (!m) return {
+    hora: valorCrudo || "",
+    plantaCitacion: null
+  };
+  const plantaCitacion = resolverPlantaExcel(m[1]);
+  if (!plantaCitacion) return {
+    hora: valorCrudo,
+    plantaCitacion: null
+  }; // el prefijo no es una planta reconocida, se deja tal cual
+  return {
+    hora: m[2],
+    plantaCitacion
+  };
+}
+
+// Lee la tabla de citación COMPLETA directamente del archivo .xlsx que publica el AZT en el
+// Canal de Avisos (columnas: Planta, Apellidos y Nombres, Citación, Mixer, Observación, Detalle),
+// usando ExcelJS (mismo patrón que la carga masiva de personal en GestionHumanaPanel). Reemplaza
+// a leerTablaCitacionCompleta/consultarCitacionConGemini (que leían la misma tabla desde una
+// FOTO de la tabla vía la API de Gemini): con el Excel original no hace falta IA, es instantáneo,
+// gratis y no depende de la cuota/disponibilidad de un servicio externo. Devuelve el mismo
+// formato de fila que devolvía Gemini para no tener que tocar el código que la consume.
+async function leerTablaCitacionDesdeExcel(excelUrl) {
+  try {
+    const resp = await fetch(excelUrl);
+    if (!resp.ok) return null;
+    const buf = await resp.arrayBuffer();
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(buf);
+    const sheet = wb.worksheets[0];
+    if (!sheet) return null;
+
+    // Se ubica la fila de encabezados buscando el texto "Apellidos y Nombres" (en vez de asumir
+    // que es la fila 1) por si el AZT agrega una fila de título arriba, igual que se hace con
+    // "DNI" en la carga masiva de personal.
+    let headerRowNum = -1;
+    let colIndex = null;
+    sheet.eachRow((row, rowNumber) => {
+      if (headerRowNum !== -1) return;
+      const valores = [];
+      row.eachCell({
+        includeEmpty: true
+      }, (cell, colNumber) => {
+        valores[colNumber] = normalizarTextoExcel(cell.value);
+      });
+      const colNombre = valores.findIndex(v => v === "apellidos y nombres");
+      if (colNombre !== -1) {
+        headerRowNum = rowNumber;
+        colIndex = {
+          nombre: colNombre,
+          dni: valores.findIndex(v => v === "dni"),
+          hora: valores.findIndex(v => v === "citacion"),
+          ingreso: valores.findIndex(v => v === "ingreso"),
+          mixer: valores.findIndex(v => v === "mixer"),
+          observacion: valores.findIndex(v => v === "observacion"),
+          detalle: valores.findIndex(v => v === "detalle")
+        };
+      }
+    });
+    // Respaldo si no se encontró el encabezado por texto: orden fijo documentado (Planta,
+    // Apellidos y Nombres, Citación, Mixer, Observación, Detalle) — el Excel maestro real (con
+    // DNI/Ingreso) siempre trae encabezados, así que este respaldo solo aplica a variantes viejas.
+    if (!colIndex) {
+      headerRowNum = 1;
+      colIndex = {
+        nombre: 2,
+        dni: -1,
+        hora: 3,
+        ingreso: -1,
+        mixer: 4,
+        observacion: 5,
+        detalle: 6
+      };
+    }
+    const filas = [];
+    for (let i = headerRowNum + 1; i <= sheet.rowCount; i++) {
+      const row = sheet.getRow(i);
+      const nombre = celdaTextoExcel(row, colIndex.nombre);
+      if (!nombre) continue; // fila vacía, se omite
+      const {
+        hora,
+        plantaCitacion
+      } = parseCitacionConPosiblePlanta(celdaTextoExcel(row, colIndex.hora));
+      filas.push({
+        nombre,
+        dni: celdaTextoExcel(row, colIndex.dni),
+        mixer: celdaTextoExcel(row, colIndex.mixer),
+        hora,
+        plantaCitacion,
+        // no-null si el AZT anotó que este chofer va a OTRA planta mañana
+        ingreso: celdaTextoExcel(row, colIndex.ingreso),
+        observacion: celdaTextoExcel(row, colIndex.observacion),
+        detalle: celdaTextoExcel(row, colIndex.detalle)
+      });
+    }
+    return filas;
+  } catch (e) {
+    console.warn("No se pudo leer la tabla de citación desde el Excel:", e.message);
+    return null;
+  }
+}
+
 // Envía la imagen de la citación (captura de Excel con columnas Planta/Apellidos y Nombres/
 // Citación/Mixer/Observación/Detalle) a Gemini junto con el nombre del chofer, pidiendo que
 // busque su fila y devuelva los datos en JSON. Devuelve null si Gemini no encuentra al chofer
@@ -11863,6 +12786,71 @@ Si una columna (Observación o Detalle) está vacía para esa fila, devuélvela 
     return null;
   }
 }
+
+// Ventana para elegir la obra a la que se dirige el chofer: buscador + lista alfabética del
+// catálogo de su planta (ver GestionObras), con opción de escribir el nombre si no está listada.
+function ModalElegirObra({
+  obras,
+  onElegir,
+  onClose
+}) {
+  const [busqueda, setBusqueda] = useState("");
+  const obrasOrdenadas = [...obras].sort((a, b) => a.localeCompare(b, "es"));
+  const texto = busqueda.trim();
+  const filtradas = texto ? obrasOrdenadas.filter(o => o.toLowerCase().includes(texto.toLowerCase())) : obrasOrdenadas;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 flex items-center justify-center p-4",
+    style: {
+      background: "rgba(0,0,0,.5)",
+      zIndex: 80
+    },
+    onClick: onClose
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-2xl p-4 w-full max-w-sm max-h-[75vh] flex flex-col",
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between mb-3"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "font-bold text-sm",
+    style: {
+      color: AZUL
+    }
+  }, "\xBFA qu\xE9 obra vas?"), /*#__PURE__*/React.createElement("button", {
+    onClick: onClose
+  }, /*#__PURE__*/React.createElement(X, {
+    size: 18,
+    color: "#6b7280"
+  }))), /*#__PURE__*/React.createElement("input", {
+    autoFocus: true,
+    value: busqueda,
+    onChange: e => setBusqueda(e.target.value),
+    onKeyDown: e => {
+      if (e.key === "Enter" && texto) onElegir(texto);
+    },
+    placeholder: "Buscar o escribir el nombre de la obra...",
+    className: "w-full px-3 py-2 mb-2 text-sm rounded-lg border outline-none shrink-0",
+    style: {
+      borderColor: "#d5d9e4"
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 overflow-y-auto"
+  }, filtradas.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    className: "text-xs text-gray-400 py-3"
+  }, texto ? /*#__PURE__*/React.createElement("button", {
+    onClick: () => onElegir(texto),
+    className: "font-semibold underline",
+    style: {
+      color: AZUL
+    }
+  }, "No est\xE1 en la lista \u2014 usar \"", texto, "\"") : "No hay obras registradas para tu planta todavía.") : filtradas.map(o => /*#__PURE__*/React.createElement("button", {
+    key: o,
+    onClick: () => onElegir(o),
+    className: "w-full text-left px-3 py-2.5 rounded-lg text-sm hover:bg-gray-50 border-b",
+    style: {
+      borderColor: "#f0f2f6"
+    }
+  }, o)))));
+}
 function UniBot({
   driver,
   avisos,
@@ -11875,7 +12863,7 @@ function UniBot({
   const [node, setNode] = useState("root");
   // modes: menu | sub | chatProc | chatAccidente | form | ask | alerta | alertaForm |
   //        askVigencia | askBoleta | askConfirmacionSimple | askEmergenciaTipo | askEmergenciaOtros |
-  //        askUnikinSenal | askUnikinResuelto | mixerInput | rutaObraInput | rutaObraPublicar | confirmMatch
+  //        askUnikinSenal | askUnikinResuelto | mixerInput | rutaObraPublicar | confirmMatch
   const [mode, setMode] = useState("menu");
   const [formType, setFormType] = useState(null);
   const [formData, setFormData] = useState({});
@@ -11883,21 +12871,26 @@ function UniBot({
   const [pendingAsk, setPendingAsk] = useState(null);
   const [alertaTipo, setAlertaTipo] = useState(null);
   const [alertaData, setAlertaData] = useState({});
-  const [showBcpMenu, setShowBcpMenu] = useState(true);
+  const [showBcpMenu, setShowBcpMenu] = useState(false); // el menú gigante nunca se abre solo — siempre hay que tocar "Ver Menú", ni siquiera la primera vez
   const [matchEncontrado, setMatchEncontrado] = useState(null); // aviso encontrado que coincide
   // NUEVOS ESTADOS (flujos según Excel PLANTILLA_FINAL_06_DE_SET)
   const [ctxDinamico, setCtxDinamico] = useState(null); // { tipo: "mixer"|"ruta"|"citacion", data: {...} }
-  const [rutasDB, setRutasDB] = useState(RUTAS_OBRAS_INICIALES); // base de datos rutas (persistente en sesión)
   // reportesFV: viene del padre (ChoferApp) para que FinDeVuelta actualice en tiempo real
   const reportesFV = reportesFVProp || REPORTES_FIN_VUELTA_DEMO;
   const [mixerInput, setMixerInput] = useState(""); // input Nº de mixer
-  const [obraInput, setObraInput] = useState(""); // input obra para rutas
+  const [obrasDisponibles, setObrasDisponibles] = useState([]); // catálogo de obras de su planta (ver GestionObras)
+  const [obraModalAbierto, setObraModalAbierto] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState(null); // ver ilustraciones (m.img) en grande, fondo negro
   // HISTORIAL CONVERSACIONAL para UNIKIN (se envía a la API para contexto de follow-ups)
   const [unikinHistory, setUnikinHistory] = useState([]);
   const [unikinArbolNode, setUnikinArbolNode] = useState(null); // nodo actual del árbol UNIKIN
   const [unikinArbolStack, setUnikinArbolStack] = useState([]); // historial de nodos para "Volver"
   const [viewingPdf, setViewingPdf] = useState(null); // { name, url } del PDF abierto
   const scroller = useRef(null);
+  // SOLO PARA PRUEBA — permite simular "ahora" (hora Perú) para validar el vencimiento de la
+  // citación (1pm) y el cambio de "mañana" a "hoy" (medianoche) sin esperar a que llegue esa hora
+  // de verdad. null = usar la hora real. Ver vigenciaCitacion() y BarraSimularHora.
+  const [horaSimulada, setHoraSimulada] = useState(null);
 
   // Menú principal estilo BCP (con descripción corta)
   const MAIN_MENU = [{
@@ -11973,16 +12966,22 @@ function UniBot({
         hora: hhmm(),
         img: payload.img,
         imgCaption: payload.imgCaption,
+        imgMaxWidth: payload.imgMaxWidth,
         pdfs: payload.pdfs,
         imgs: payload.imgs
       }]);
     }
   };
   const fill = t => t.replace("{planta}", driver.planta).replace("{unidad}", driver.unidad).replace("{parqueo}", "Patio A").replace("{llaves}", "en garita");
+
+  // El menú gigante (MAIN_MENU) nunca se abre solo, ni siquiera al entrar por primera vez
+  // (showBcpMenu arranca en false) — siempre hay que tocar el botón chico "Ver Menú". Antes
+  // goHome() lo reabría automáticamente después de cada respuesta y tapaba la respuesta recién
+  // dada en pantallas chicas (celular).
   const goHome = () => {
     setMode("menu");
     setNode("root");
-    setShowBcpMenu(true);
+    setShowBcpMenu(false);
     setUnikinHistory([]);
     setUnikinArbolNode(null);
     setUnikinArbolStack([]);
@@ -12041,11 +13040,16 @@ function UniBot({
       return;
     }
 
-    // 2. RUTAS Y ACCESO A OBRA — pide obra, busca en RUTAS_OBRAS
+    // 2. RUTAS Y ACCESO A OBRA — ventana con buscador (catálogo real de su planta, ver
+    // GestionObras) o escribe el nombre a mano si no está listada; busca en rutas_obras (base real)
     if (opt.id === "op_ruta") {
-      push("bot", "¿Cuál es el nombre de la obra a la que necesitas ir?");
-      setObraInput("");
-      setMode("rutaObraInput");
+      setObraModalAbierto(true);
+      (async () => {
+        const {
+          data
+        } = await sbClient.from("obras_planta").select("obra").eq("planta", driver.planta).order("obra");
+        setObrasDisponibles((data || []).map(o => o.obra));
+      })();
       return;
     }
 
@@ -12074,8 +13078,7 @@ function UniBot({
     if (opt.id === "op_unikin") {
       push("bot_img", {
         texto: BOT_DYNAMIC_TEXTS.unikin_pregunta_senal,
-        img: IMG_SENAL,
-        imgCaption: "Buena señal vs. señal débil"
+        img: IMG_SENAL
       });
       setMode("askUnikinSenal");
       return;
@@ -12131,10 +13134,11 @@ function UniBot({
       return;
     }
 
-    // Consulta fija tipo string simple (solo respuesta del bot, sin confirmación)
+    // Consulta fija tipo string simple (solo respuesta del bot, sin confirmación). El cierre
+    // "¡Espero haberte ayudado!" va DENTRO del mismo globo que la respuesta (no como mensaje
+    // aparte) para que no tape visualmente la respuesta real con un segundo globo encima.
     if (typeof ans === "string") {
-      push("bot", ans);
-      push("bot", "¡Espero haberte ayudado! 🙌\n\nPor favor selecciona \"Ver menú\" para ver todas las opciones disponibles.");
+      push("bot", `${ans}\n\n\n¡Espero haberte ayudado! 🙌\nPor favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
       setTimeout(goHome, 100);
       return;
     }
@@ -12160,37 +13164,56 @@ function UniBot({
     (async () => {
       const {
         data: avisosPlanta
-      } = await sbClient.from("avisos").select("archivo_url, archivo_tipo, created_at").eq("planta", driver.planta).eq("archivo_tipo", "imagen").order("created_at", {
+      } = await sbClient.from("avisos").select("archivo_url, archivo_nombre, archivo_tipo, dnis_incluidos, created_at").eq("planta", driver.planta).in("archivo_tipo", ["archivo", "imagen"]).order("created_at", {
         ascending: false
-      }).limit(1);
-      const imagenReciente = avisosPlanta?.[0];
+      });
+      const excelReciente = (avisosPlanta || []).find(a => a.archivo_tipo === "archivo" && esArchivoExcel(a.archivo_nombre));
+      // Captura (imagen) que SÍ contiene la fila de este chofer — ver capturaParaChofer.
+      const capturaCitacion = capturaParaChofer((avisosPlanta || []).filter(a => a.archivo_tipo === "imagen"), driver.dni);
+      const ahoraEfectiva = horaSimulada || new Date();
       let resultado = null;
-      if (imagenReciente?.archivo_url) {
-        resultado = await consultarCitacionConGemini(imagenReciente.archivo_url, driver.nombre);
+      let vigencia = null;
+      if (excelReciente?.archivo_url) {
+        vigencia = vigenciaCitacion(excelReciente.created_at, ahoraEfectiva);
+        // Pasada la 1pm hora Perú del día que le correspondía a esta citación, ya no se muestra:
+        // el turno de ese día ya empezó hace horas y mostrarla confundiría al chofer con datos viejos.
+        if (!vigencia.expirada) {
+          const filasTabla = await leerTablaCitacionDesdeExcel(excelReciente.archivo_url);
+          resultado = emparejarChoferConFila(driver, filasTabla || []);
+        }
       }
       setMsgs(m => m.filter(msg => !msg.temporal)); // quita el mensaje temporal de "buscando" antes de agregar la respuesta real
 
       if (resultado) {
-        const manana = new Date();
-        manana.setDate(manana.getDate() + 1);
-        const fechaTexto = manana.toLocaleDateString("es-PE", {
+        const fechaTexto = vigencia.diaObjetivoPeru.toLocaleDateString("es-PE", {
           day: "2-digit",
           month: "2-digit",
-          year: "numeric"
+          year: "numeric",
+          timeZone: "UTC"
         });
+        const palabraDia = vigencia.esHoy ? "hoy" : "mañana";
         const primerNombre = (driver.nombre || "").split(" ")[0];
-        const lineas = [`👋 ${primerNombre}, tu citación para mañana es la siguiente:`, "", `📅 Fecha: ${fechaTexto}`, `⏰ Hora: ${resultado.hora}`, `🚛 Mixer: ${resultado.mixer}`];
+        const lineas = [`👋 ${primerNombre}, tu citación para ${palabraDia} es la siguiente:`, "", `📅 Fecha: ${fechaTexto}`];
+        if (resultado.plantaCitacion && resultado.plantaCitacion !== driver.planta) {
+          lineas.push(`⚠️ ${vigencia.esHoy ? "Hoy" : "Mañana"} te presentas en OTRA planta: ${resultado.plantaCitacion}`);
+        }
+        if (resultado.hora) lineas.push(`⏰ Hora: ${resultado.hora}`);
+        if (resultado.ingreso) lineas.push(`🚪 Ingreso: ${resultado.ingreso}`);
+        if (resultado.mixer) lineas.push(`🚛 Mixer: ${resultado.mixer}`);
         if (resultado.observacion) lineas.push("", `📝 Observación: ${resultado.observacion}`);
         if (resultado.detalle) lineas.push(`📌 Detalle: ${resultado.detalle}`);
         lineas.push("", "¡Te esperamos! 🚛");
-        lineas.push("", "👇 Verifícalo aquí:", `[IMGURL:${imagenReciente.archivo_url}]`);
+        if (capturaCitacion?.archivo_url) lineas.push("", "👇 Aquí tu citación:", `[IMGURL:${capturaCitacion.archivo_url}]`);
         push("bot", lineas.join("\n"));
+        push("bot", "¿Resolví tu consulta?");
+        setPendingAsk("op_citacion");
+        setMode("askConfirmacionSimple");
       } else {
-        push("bot", BOT_DYNAMIC_TEXTS.citacion_no_encontrada);
+        // Sin citación publicada todavía no hay nada que "resolver" con Sí/No — es solo un aviso
+        // informativo, así que el cierre va en el mismo globo y se vuelve directo al menú.
+        push("bot", `${BOT_DYNAMIC_TEXTS.citacion_no_encontrada}\n\n¡Espero haberte ayudado! 🙌\nPor favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
+        goHome();
       }
-      push("bot", "¿Resolví tu consulta?");
-      setPendingAsk("op_citacion");
-      setMode("askConfirmacionSimple");
     })();
   };
 
@@ -12216,30 +13239,39 @@ function UniBot({
     }
   };
 
-  // ============ FLUJO RUTAS Y ACCESO A OBRA (dinámico) ============
-  const flujoRutaObra = obra => {
+  // ============ FLUJO RUTAS Y ACCESO A OBRA (dinámico, base real rutas_obras) ============
+  const flujoRutaObra = async obra => {
     push("user", obra);
-    const rutaKey = Object.keys(rutasDB).find(k => k.toLowerCase() === obra.toLowerCase());
-    if (rutaKey) {
-      const ruta = rutasDB[rutaKey];
-      push("bot", BOT_DYNAMIC_TEXTS.ruta_encontrada(rutaKey, ruta));
+    setMode("menu");
+    const obraNorm = normalizarTextoExcel(obra);
+    const {
+      data
+    } = await sbClient.from("rutas_obras").select("*").eq("obra_normalizada", obraNorm).maybeSingle();
+    if (data) {
+      push("bot", BOT_DYNAMIC_TEXTS.ruta_encontrada(data.obra, {
+        ruta: data.ruta,
+        ubicacion: data.ubicacion,
+        tener_cuenta: data.a_tener_en_cuenta
+      }));
       setCtxDinamico({
         tipo: "ruta",
-        obra: rutaKey
+        obra: obraNorm,
+        obraDisplay: data.obra
       });
       setMode("askVigencia");
     } else {
       push("bot", BOT_DYNAMIC_TEXTS.ruta_no_encontrada);
       setCtxDinamico({
         tipo: "ruta",
-        obra
+        obra: obraNorm,
+        obraDisplay: obra
       });
       setMode("rutaObraPublicar");
     }
   };
 
   // ============ RESPUESTA A ¿ESTÁ VIGENTE? (mixer, ruta) ============
-  const responderVigencia = vigente => {
+  const responderVigencia = async vigente => {
     push("user", vigente ? "Sí ✅" : "No ❌");
     const ctx = ctxDinamico;
     if (!ctx) {
@@ -12265,14 +13297,8 @@ function UniBot({
       if (vigente) {
         push("bot", BOT_DYNAMIC_TEXTS.ruta_vigente);
       } else {
-        // eliminar registro y ofrecer publicar en canal
-        setRutasDB(prev => {
-          const copy = {
-            ...prev
-          };
-          delete copy[ctx.obra];
-          return copy;
-        });
+        // borrar de la base real y ofrecer publicar en canal de nuevo
+        await sbClient.from("rutas_obras").delete().eq("obra_normalizada", ctx.obra);
         push("bot", BOT_DYNAMIC_TEXTS.ruta_no_vigente);
         push("bot", BOT_DYNAMIC_TEXTS.ruta_no_encontrada);
         setMode("rutaObraPublicar");
@@ -12285,24 +13311,26 @@ function UniBot({
     setMode("askConfirmacionSimple");
   };
 
-  // ============ PUBLICAR CONSULTA DE RUTA EN CANAL DE AVISOS ============
-  const publicarConsultaRuta = obra => {
-    const nuevoAviso = {
-      id: uid(),
-      planta: driver.planta,
-      autor: "UNIBOT",
-      rol: "Bot",
-      texto: `Compañeros, ¿cómo es el ingreso y acceso a ${obra}?`,
-      hora: hhmm(),
-      reacts: {},
-      mine: null,
-      ts: Date.now(),
-      tipoEspecial: "consultaRuta",
-      obraConsultada: obra,
-      respondida: false
-    };
-    setAvisos(prev => [...prev, nuevoAviso]);
-    push("bot", BOT_DYNAMIC_TEXTS.ruta_publicada_confirmacion);
+  // ============ PUBLICAR CONSULTA DE RUTA EN CANAL DE AVISOS (real) ============
+  const publicarConsultaRuta = async obra => {
+    const obraDisplay = ctxDinamico?.obraDisplay || obra;
+    // Un chofer normal no puede insertar directo en "avisos" (el canal es de solo lectura para
+    // choferes a nivel de RLS, no solo de interfaz) — se usa un RPC security definer, mismo patrón
+    // que actualizar_unidad_chofer/actualizar_planta_chofer, para publicar este único tipo de
+    // mensaje en su nombre.
+    const {
+      error
+    } = await sbClient.rpc("publicar_consulta_ruta", {
+      p_planta: driver.planta,
+      p_chofer_id: driver.id,
+      p_contenido: `Compañeros, ¿cómo es el ingreso y acceso a ${obraDisplay}?`,
+      p_obra_normalizada: normalizarTextoExcel(obraDisplay)
+    });
+    if (error) {
+      push("bot", `No se pudo publicar la consulta (${error.message}). Avisa a tu AZT.`);
+    } else {
+      push("bot", BOT_DYNAMIC_TEXTS.ruta_publicada_confirmacion);
+    }
     push("bot", "¿Resolví tu consulta?");
     setPendingAsk("op_ruta");
     setCtxDinamico(null);
@@ -12347,7 +13375,8 @@ function UniBot({
       push("bot_img", {
         texto: BOT_DYNAMIC_TEXTS.unikin_buena_senal_paso1,
         img: IMG_CERRAR_SESION,
-        imgCaption: "Cerrar sesión en UNIKIN"
+        imgCaption: "Cerrar sesión en UNIKIN",
+        imgMaxWidth: 190
       });
       // Paso 2 (después de un momento)
       setTimeout(() => {
@@ -12355,10 +13384,11 @@ function UniBot({
         setMode("askUnikinResuelto");
       }, 400);
     } else {
+      // Con señal débil no hay nada más que UNIKIN pueda hacer en el momento — no tiene sentido
+      // preguntar "¿Resolví tu consulta?" con Sí/No. Sin texto de cierre acá (el botón "Ver Menú"
+      // que aparece solo, ver goHome, ya se explica solo — no hace falta repetirlo en el mensaje).
       push("bot", BOT_DYNAMIC_TEXTS.unikin_senal_debil);
-      push("bot", "¿Resolví tu consulta?");
-      setPendingAsk("op_unikin");
-      setMode("askConfirmacionSimple");
+      goHome();
     }
   };
   const answerUnikinResuelto = ok => {
@@ -12619,32 +13649,18 @@ function UniBot({
     // CASO 1: Nodo dinámico (tipo: "dinamica") — ej. jor_citacion
     if (targetNode.tipo === "dinamica") {
       if (chipId === "jor_citacion") {
-        // La citación diaria se publica como una foto de la tabla de Excel (columnas Planta,
+        // La citación diaria se publica como el archivo Excel ORIGINAL (columnas Planta,
         // Apellidos y Nombres, Citación, Mixer, Observación, Detalle) en el Canal de Avisos de
-        // la planta. Se toma la imagen más reciente publicada por un AZT/administrativo — el
-        // mensaje de texto que la acompaña puede variar ("les comparto la citación...", etc.),
-        // así que no se filtra por palabras clave como antes: cualquier imagen reciente del
-        // canal de la planta se intenta leer.
-        const imagenesCitacion = avisos.filter(a => a.planta === driver.planta && a.archivo_tipo === "imagen" && a.archivo_url).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        // la planta. Se toma el Excel más reciente publicado por un AZT/administrativo. La prop
+        // `avisos` de este componente es data de demostración del componente raíz (nunca refleja
+        // lo publicado de verdad — ver el mismo comentario en flujoCitacion), así que se consulta
+        // Supabase directamente en vez de filtrar esa prop.
         const chipVolver = {
           label: "↩️ Volver",
           id: unikinArbolNode || "inicio"
         };
-        if (imagenesCitacion.length === 0) {
-          setMsgs(prev => [...prev, {
-            from: "unikin",
-            texto: targetNode.respuesta_no_encontrada,
-            hora: hhmm(),
-            unikinChips: [chipVolver]
-          }]);
-          setUnikinArbolNode(chipId);
-          setTimeout(() => {
-            scroller.current?.scrollTo?.(0, scroller.current?.scrollHeight);
-          }, 100);
-          return;
-        }
 
-        // Mensaje temporal de "buscando" mientras se consulta a Gemini (puede tardar unos segundos).
+        // Mensaje temporal de "buscando" mientras se consulta Supabase y se lee el Excel.
         setMsgs(prev => [...prev, {
           from: "unikin",
           texto: "🔎 Un momento, estoy revisando la citación...",
@@ -12654,24 +13670,51 @@ function UniBot({
         setTimeout(() => {
           scroller.current?.scrollTo?.(0, scroller.current?.scrollHeight);
         }, 100);
-        consultarCitacionConGemini(imagenesCitacion[0].archivo_url, driver.nombre).then(resultado => {
+        (async () => {
+          const {
+            data: avisosPlanta
+          } = await sbClient.from("avisos").select("archivo_url, archivo_nombre, archivo_tipo, dnis_incluidos, created_at").eq("planta", driver.planta).in("archivo_tipo", ["archivo", "imagen"]).order("created_at", {
+            ascending: false
+          });
+          const excelReciente = (avisosPlanta || []).find(a => a.archivo_tipo === "archivo" && esArchivoExcel(a.archivo_nombre));
+          // Captura (imagen) que SÍ contiene la fila de este chofer — ver capturaParaChofer.
+          const capturaCitacion = capturaParaChofer((avisosPlanta || []).filter(a => a.archivo_tipo === "imagen"), driver.dni);
+          const ahoraEfectiva = horaSimulada || new Date();
+          let resultado = null;
+          let vigencia = null;
+          if (excelReciente?.archivo_url) {
+            vigencia = vigenciaCitacion(excelReciente.created_at, ahoraEfectiva);
+            // Pasada la 1pm hora Perú del día que le correspondía a esta citación, ya no se
+            // muestra: el turno de ese día ya empezó hace horas y mostrarla confundiría al chofer.
+            if (!vigencia.expirada) {
+              const filasTabla = await leerTablaCitacionDesdeExcel(excelReciente.archivo_url);
+              resultado = emparejarChoferConFila(driver, filasTabla || []);
+            }
+          }
+
           // Quita el mensaje temporal de "buscando" antes de agregar la respuesta real.
           setMsgs(prev => prev.filter(m => !m.temporal));
           let respText;
           if (resultado) {
-            const manana = new Date();
-            manana.setDate(manana.getDate() + 1);
-            const fechaTexto = manana.toLocaleDateString("es-PE", {
+            const fechaTexto = vigencia.diaObjetivoPeru.toLocaleDateString("es-PE", {
               day: "2-digit",
               month: "2-digit",
-              year: "numeric"
+              year: "numeric",
+              timeZone: "UTC"
             });
+            const palabraDia = vigencia.esHoy ? "hoy" : "mañana";
             const primerNombre = (driver.nombre || "").split(" ")[0];
-            const lineas = [`👋 ${primerNombre}, tu citación para mañana es la siguiente:`, "", `📅 Fecha: ${fechaTexto}`, `⏰ Hora: ${resultado.hora}`, `🚛 Mixer: ${resultado.mixer}`];
+            const lineas = [`👋 ${primerNombre}, tu citación para ${palabraDia} es la siguiente:`, "", `📅 Fecha: ${fechaTexto}`];
+            if (resultado.plantaCitacion && resultado.plantaCitacion !== driver.planta) {
+              lineas.push(`⚠️ ${vigencia.esHoy ? "Hoy" : "Mañana"} te presentas en OTRA planta: ${resultado.plantaCitacion}`);
+            }
+            if (resultado.hora) lineas.push(`⏰ Hora: ${resultado.hora}`);
+            if (resultado.ingreso) lineas.push(`🚪 Ingreso: ${resultado.ingreso}`);
+            if (resultado.mixer) lineas.push(`🚛 Mixer: ${resultado.mixer}`);
             if (resultado.observacion) lineas.push("", `📝 Observación: ${resultado.observacion}`);
             if (resultado.detalle) lineas.push(`📌 Detalle: ${resultado.detalle}`);
             lineas.push("", "¡Te esperamos! 🚛");
-            lineas.push("", "👇 Verifícalo aquí:", `[IMGURL:${imagenesCitacion[0].archivo_url}]`);
+            if (capturaCitacion?.archivo_url) lineas.push("", "👇 Aquí tu citación:", `[IMGURL:${capturaCitacion.archivo_url}]`);
             respText = lineas.join("\n");
           } else {
             respText = targetNode.respuesta_no_encontrada;
@@ -12685,7 +13728,7 @@ function UniBot({
           setTimeout(() => {
             scroller.current?.scrollTo?.(0, scroller.current?.scrollHeight);
           }, 100);
-        });
+        })();
       } else {
         // Otros nodos dinámicos futuros — mostrar respuesta genérica
         const respText = targetNode.respuesta_no_encontrada || targetNode.respuesta || "Información no disponible en este momento.";
@@ -12919,7 +13962,7 @@ function UniBot({
         className: "flex gap-1.5 pl-1"
       }, /*#__PURE__*/React.createElement("span", {
         className: "text-gray-400 shrink-0"
-      }, "•"), /*#__PURE__*/React.createElement("span", null, parseInline(listContent)));
+      }, "\u2022"), /*#__PURE__*/React.createElement("span", null, parseInline(listContent)));
     }
     return /*#__PURE__*/React.createElement(React.Fragment, null, parseInline(line));
   };
@@ -12949,7 +13992,54 @@ function UniBot({
     }
   }, "UNIBOT"), /*#__PURE__*/React.createElement("div", {
     className: "text-[11px] text-green-600"
-  }, "en línea"))), /*#__PURE__*/React.createElement("div", {
+  }, "en l\xEDnea"))), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-1.5 px-2 py-1 border-b shrink-0 overflow-x-auto",
+    style: {
+      background: "#fef3c7",
+      borderColor: "#fde68a"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-[10px] font-bold shrink-0",
+    style: {
+      color: "#92400e"
+    }
+  }, "\uD83D\uDD27 Prueba:"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      // 1:01pm del día AL QUE CORRESPONDE la citación (el día siguiente a cuando se
+      // publicó), no la 1:01pm de hoy — si se probara con la de hoy, casi nunca caería
+      // dentro de la ventana de vencimiento (esa sería una hora ANTES del día objetivo).
+      const ahoraPeru = new Date(Date.now() - 5 * 60 * 60 * 1000);
+      const siguiente1301Peru = new Date(Date.UTC(ahoraPeru.getUTCFullYear(), ahoraPeru.getUTCMonth(), ahoraPeru.getUTCDate() + 1, 13, 1, 0));
+      setHoraSimulada(new Date(siguiente1301Peru.getTime() + 5 * 60 * 60 * 1000));
+    },
+    className: "text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0",
+    style: {
+      background: "#fbbf24",
+      color: "#78350f"
+    }
+  }, "Simular 1:01pm (d\xEDa sig.)"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      const ahoraPeru = new Date(Date.now() - 5 * 60 * 60 * 1000);
+      const siguiente0100Peru = new Date(Date.UTC(ahoraPeru.getUTCFullYear(), ahoraPeru.getUTCMonth(), ahoraPeru.getUTCDate() + 1, 1, 0, 0));
+      setHoraSimulada(new Date(siguiente0100Peru.getTime() + 5 * 60 * 60 * 1000));
+    },
+    className: "text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0",
+    style: {
+      background: "#fbbf24",
+      color: "#78350f"
+    }
+  }, "Simular 1:00am (d\xEDa sig.)"), horaSimulada && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
+    className: "text-[10px] shrink-0",
+    style: {
+      color: "#92400e"
+    }
+  }, "\u2192 ", new Date(horaSimulada.getTime() - 5 * 60 * 60 * 1000).toISOString().slice(0, 16).replace("T", " "), " (Per\xFA)"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setHoraSimulada(null),
+    className: "text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 underline",
+    style: {
+      color: "#78350f"
+    }
+  }, "Quitar"))), /*#__PURE__*/React.createElement("div", {
     ref: scroller,
     className: "flex-1 overflow-y-auto p-3 space-y-2"
   }, msgs.map(m => {
@@ -12970,20 +14060,26 @@ function UniBot({
       alt: "UNIKIN",
       className: "w-full h-full object-contain"
     })), /*#__PURE__*/React.createElement("div", {
-      className: "max-w-[80%] rounded-xl px-3 py-2 shadow-sm text-sm whitespace-pre-wrap",
+      className: m.img ? "rounded-xl px-3 py-2 shadow-sm text-sm whitespace-pre-wrap" : "max-w-[80%] rounded-xl px-3 py-2 shadow-sm text-sm whitespace-pre-wrap",
       style: {
         background: isUser ? WA_SENT : isUnikin ? "#FFF8E7" : "white",
         color: "#1f2937",
         border: isUnikin ? "1px solid #FBBF24" : "none",
         borderTopRightRadius: isUser ? 0 : undefined,
-        borderTopLeftRadius: !isUser ? 0 : undefined
+        borderTopLeftRadius: !isUser ? 0 : undefined,
+        // Los mensajes con imagen usan un ancho fijo y más chico ("estándar"), no el 80%
+        // del panel — antes el texto largo estiraba el globo mucho más que la imagen de
+        // adentro, dejando un espacio en blanco raro al lado de la foto.
+        ...(m.img ? {
+          maxWidth: 300
+        } : {})
       }
     }, isUnikin && /*#__PURE__*/React.createElement("div", {
       className: "text-[10px] font-bold mb-1",
       style: {
         color: "#b45309"
       }
-    }, "UNIKIN · Manual del Chofer"), msgText.split("\n").map((line, li) => {
+    }, "UNIKIN \xB7 Manual del Chofer"), msgText.split("\n").map((line, li) => {
       if (line.startsWith("[IMG:")) {
         const caption = line.replace("[IMG:", "").replace("]", "").trim();
         const imgMap = {
@@ -13029,7 +14125,7 @@ function UniBot({
           onClick: () => window.open(url, "_blank")
         }, /*#__PURE__*/React.createElement("img", {
           src: url,
-          alt: "Citación",
+          alt: "Citaci\xF3n",
           className: "w-full",
           style: {
             maxWidth: 260
@@ -13153,14 +14249,16 @@ function UniBot({
     }), m.img && /*#__PURE__*/React.createElement("div", {
       className: "mt-2 rounded-lg overflow-hidden border",
       style: {
-        borderColor: "#e6e8ee"
-      }
+        borderColor: "#e6e8ee",
+        cursor: "zoom-in"
+      },
+      onClick: () => setLightboxUrl(m.img)
     }, /*#__PURE__*/React.createElement("img", {
       src: m.img,
       alt: m.imgCaption || "Ilustración",
       className: "w-full",
       style: {
-        maxWidth: 220
+        maxWidth: m.imgMaxWidth || 280
       }
     }), m.imgCaption && /*#__PURE__*/React.createElement("div", {
       className: "text-[10px] text-gray-500 px-2 py-1 bg-gray-50 text-center"
@@ -13191,7 +14289,7 @@ function UniBot({
     }
   }, /*#__PURE__*/React.createElement("span", {
     className: "text-xs font-bold text-gray-500"
-  }, "Ver Menú"), /*#__PURE__*/React.createElement(X, {
+  }, "Ver Men\xFA"), /*#__PURE__*/React.createElement(X, {
     size: 14,
     className: "text-gray-400 cursor-pointer",
     onClick: goHome
@@ -13214,7 +14312,22 @@ function UniBot({
   }, m.desc)), /*#__PURE__*/React.createElement(ChevronRight, {
     size: 15,
     className: "text-gray-300 shrink-0"
-  })))), mode === "sub" && current && !current.directorio && /*#__PURE__*/React.createElement("div", {
+  })))), mode === "menu" && !showBcpMenu && node === "root" && /*#__PURE__*/React.createElement("button", {
+    onClick: () => setShowBcpMenu(true),
+    className: "flex items-center gap-2 rounded-full px-5 py-2.5 shadow-sm",
+    style: {
+      background: "white",
+      border: "1px solid #e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement(ListChecks, {
+    size: 18,
+    color: AZUL
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "text-sm font-bold",
+    style: {
+      color: AZUL
+    }
+  }, "Ver Men\xFA")), mode === "sub" && current && !current.directorio && /*#__PURE__*/React.createElement("div", {
     className: "pt-1",
     style: {
       maxWidth: "85%"
@@ -13224,7 +14337,7 @@ function UniBot({
     className: "text-xs flex items-center gap-1 text-gray-500 mb-1.5"
   }, /*#__PURE__*/React.createElement(ChevronLeft, {
     size: 14
-  }), " Menú principal"), /*#__PURE__*/React.createElement("div", {
+  }), " Men\xFA principal"), /*#__PURE__*/React.createElement("div", {
     className: "space-y-1.5"
   }, current.options?.map(o => /*#__PURE__*/React.createElement("button", {
     key: o.id,
@@ -13245,7 +14358,7 @@ function UniBot({
     className: "text-xs flex items-center gap-1 text-gray-500 mb-1 px-1"
   }, /*#__PURE__*/React.createElement(ChevronLeft, {
     size: 14
-  }), " Menú principal"), Object.entries(cfg.contactos).map(([k, v]) => /*#__PURE__*/React.createElement("div", {
+  }), " Men\xFA principal"), Object.entries(cfg.contactos).map(([k, v]) => /*#__PURE__*/React.createElement("div", {
     key: k,
     className: "flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-gray-50"
   }, /*#__PURE__*/React.createElement("span", {
@@ -13267,7 +14380,7 @@ function UniBot({
       color: "#16a34a",
       border: "2px solid #16a34a"
     }
-  }, "Sí ✅"), /*#__PURE__*/React.createElement("button", {
+  }, "S\xED \u2705"), /*#__PURE__*/React.createElement("button", {
     onClick: () => answerAsk(false),
     className: "flex-1 py-2.5 rounded-xl font-semibold text-sm",
     style: {
@@ -13275,7 +14388,7 @@ function UniBot({
       color: "#e11d48",
       border: "2px solid #e11d48"
     }
-  }, "No ❌")), mode === "askConfirmacionSimple" && /*#__PURE__*/React.createElement("div", {
+  }, "No \u274C")), mode === "askConfirmacionSimple" && /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2 pt-1"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => answerConfirmacionSimple(true),
@@ -13285,7 +14398,7 @@ function UniBot({
       color: "#16a34a",
       border: "2px solid #16a34a"
     }
-  }, "Sí ✅"), /*#__PURE__*/React.createElement("button", {
+  }, "S\xED \u2705"), /*#__PURE__*/React.createElement("button", {
     onClick: () => answerConfirmacionSimple(false),
     className: "flex-1 py-2.5 rounded-xl font-semibold text-sm",
     style: {
@@ -13293,7 +14406,7 @@ function UniBot({
       color: "#e11d48",
       border: "2px solid #e11d48"
     }
-  }, "No ❌")), mode === "askVigencia" && /*#__PURE__*/React.createElement("div", {
+  }, "No \u274C")), mode === "askVigencia" && /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2 pt-1"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => responderVigencia(true),
@@ -13303,7 +14416,7 @@ function UniBot({
       color: "#16a34a",
       border: "2px solid #16a34a"
     }
-  }, "Sí, está vigente ✅"), /*#__PURE__*/React.createElement("button", {
+  }, "S\xED, est\xE1 vigente \u2705"), /*#__PURE__*/React.createElement("button", {
     onClick: () => responderVigencia(false),
     className: "flex-1 py-2.5 rounded-xl font-semibold text-sm",
     style: {
@@ -13311,7 +14424,7 @@ function UniBot({
       color: "#e11d48",
       border: "2px solid #e11d48"
     }
-  }, "No, no está vigente ❌")), mode === "askBoleta" && /*#__PURE__*/React.createElement("div", {
+  }, "No, no est\xE1 vigente \u274C")), mode === "askBoleta" && /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2 pt-1"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => answerBoleta(true),
@@ -13321,7 +14434,7 @@ function UniBot({
       color: "#16a34a",
       border: "2px solid #16a34a"
     }
-  }, "Sí, la tengo 📄"), /*#__PURE__*/React.createElement("button", {
+  }, "S\xED, la tengo \uD83D\uDCC4"), /*#__PURE__*/React.createElement("button", {
     onClick: () => answerBoleta(false),
     className: "flex-1 py-2.5 rounded-xl font-semibold text-sm",
     style: {
@@ -13329,7 +14442,7 @@ function UniBot({
       color: "#e11d48",
       border: "2px solid #e11d48"
     }
-  }, "No, no la tengo ❌")), mode === "askUnikinSenal" && /*#__PURE__*/React.createElement("div", {
+  }, "No, no la tengo \u274C")), mode === "askUnikinSenal" && /*#__PURE__*/React.createElement("div", {
     className: "flex flex-col gap-2 pt-1"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => answerUnikinSenal(true),
@@ -13339,7 +14452,7 @@ function UniBot({
       color: "#16a34a",
       border: "2px solid #16a34a"
     }
-  }, "Tengo buena señal 👍"), /*#__PURE__*/React.createElement("button", {
+  }, "Tengo buena se\xF1al \uD83D\uDC4D"), /*#__PURE__*/React.createElement("button", {
     onClick: () => answerUnikinSenal(false),
     className: "w-full py-2.5 rounded-xl font-semibold text-sm",
     style: {
@@ -13347,7 +14460,7 @@ function UniBot({
       color: "#e11d48",
       border: "2px solid #e11d48"
     }
-  }, "Tengo señal débil 📶")), mode === "askUnikinResuelto" && /*#__PURE__*/React.createElement("div", {
+  }, "Tengo se\xF1al d\xE9bil \uD83D\uDCF6")), mode === "askUnikinResuelto" && /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2 pt-1"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => answerUnikinResuelto(true),
@@ -13357,7 +14470,7 @@ function UniBot({
       color: "#16a34a",
       border: "2px solid #16a34a"
     }
-  }, "Sí, se solucionó ✅"), /*#__PURE__*/React.createElement("button", {
+  }, "S\xED, se solucion\xF3 \u2705"), /*#__PURE__*/React.createElement("button", {
     onClick: () => answerUnikinResuelto(false),
     className: "flex-1 py-2.5 rounded-xl font-semibold text-sm",
     style: {
@@ -13365,7 +14478,7 @@ function UniBot({
       color: "#e11d48",
       border: "2px solid #e11d48"
     }
-  }, "No, sigue el problema ❌")), mode === "askEmergenciaTipo" && /*#__PURE__*/React.createElement("div", {
+  }, "No, sigue el problema \u274C")), mode === "askEmergenciaTipo" && /*#__PURE__*/React.createElement("div", {
     className: "flex flex-col gap-2 pt-1"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => answerEmergenciaTipo("amago"),
@@ -13375,7 +14488,7 @@ function UniBot({
       color: "#dc2626",
       border: "2px solid #dc2626"
     }
-  }, "🔥 Amago de incendio en ruta u obra"), /*#__PURE__*/React.createElement("button", {
+  }, "\uD83D\uDD25 Amago de incendio en ruta u obra"), /*#__PURE__*/React.createElement("button", {
     onClick: () => answerEmergenciaTipo("otros"),
     className: "w-full py-2.5 rounded-xl font-semibold text-sm text-left px-3",
     style: {
@@ -13383,13 +14496,13 @@ function UniBot({
       color: "#d97706",
       border: "2px solid #d97706"
     }
-  }, "⚠️ Sismos, derrame u otra emergencia")), mode === "askEmergenciaOtros" && /*#__PURE__*/React.createElement("div", {
+  }, "\u26A0\uFE0F Sismos, derrame u otra emergencia")), mode === "askEmergenciaOtros" && /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-2 pt-1"
   }, /*#__PURE__*/React.createElement("input", {
     value: input,
     onChange: e => setInput(e.target.value),
     onKeyDown: e => e.key === "Enter" && submitEmergenciaOtros(),
-    placeholder: "Describe brevemente tu emergencia…",
+    placeholder: "Describe brevemente tu emergencia\u2026",
     className: "flex-1 px-3 py-2 rounded-full border text-sm outline-none",
     style: {
       borderColor: "#d5d9e4"
@@ -13424,28 +14537,29 @@ function UniBot({
   }, /*#__PURE__*/React.createElement(Send, {
     size: 16,
     color: AZUL
-  }))), mode === "rutaObraInput" && /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center gap-2 pt-1"
-  }, /*#__PURE__*/React.createElement("input", {
-    value: obraInput,
-    onChange: e => setObraInput(e.target.value),
-    onKeyDown: e => e.key === "Enter" && obraInput.trim() && flujoRutaObra(obraInput.trim()),
-    placeholder: "Nombre de la obra…",
-    className: "flex-1 px-3 py-2 rounded-full border text-sm outline-none",
+  }))), obraModalAbierto && /*#__PURE__*/React.createElement(ModalElegirObra, {
+    obras: obrasDisponibles,
+    onElegir: obra => {
+      setObraModalAbierto(false);
+      flujoRutaObra(obra);
+    },
+    onClose: () => setObraModalAbierto(false)
+  }), lightboxUrl && /*#__PURE__*/React.createElement("div", {
+    onClick: () => setLightboxUrl(null),
+    className: "fixed inset-0 flex items-center justify-center",
     style: {
-      borderColor: "#d5d9e4"
+      background: "rgba(0,0,0,.85)",
+      zIndex: 90,
+      cursor: "zoom-out"
     }
-  }), /*#__PURE__*/React.createElement("button", {
-    onClick: () => obraInput.trim() && flujoRutaObra(obraInput.trim()),
-    disabled: !obraInput.trim(),
-    className: "w-9 h-9 rounded-full flex items-center justify-center disabled:opacity-40",
+  }, /*#__PURE__*/React.createElement("img", {
+    src: lightboxUrl,
     style: {
-      background: AMARILLO
+      maxWidth: "90%",
+      maxHeight: "90%",
+      borderRadius: 8
     }
-  }, /*#__PURE__*/React.createElement(Send, {
-    size: 16,
-    color: AZUL
-  }))), mode === "rutaObraPublicar" && /*#__PURE__*/React.createElement("div", {
+  })), mode === "rutaObraPublicar" && /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2 pt-1"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => publicarConsultaRuta(ctxDinamico?.obra || ""),
@@ -13455,7 +14569,7 @@ function UniBot({
       color: AZUL,
       border: "2px solid #FBBF24"
     }
-  }, "Sí, publicar 📢"), /*#__PURE__*/React.createElement("button", {
+  }, "S\xED, publicar \uD83D\uDCE2"), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       push("user", "No");
       push("bot", "Entendido. Puedes seguir consultando desde el menú principal.");
@@ -13473,7 +14587,7 @@ function UniBot({
     value: input,
     onChange: e => setInput(e.target.value),
     onKeyDown: e => e.key === "Enter" && handleAccidenteEspera(),
-    placeholder: "Escribe \"AYUDA\" o vuelve al menú…",
+    placeholder: "Escribe \"AYUDA\" o vuelve al men\xFA\u2026",
     className: "flex-1 px-3 py-2 rounded-full border text-sm outline-none",
     style: {
       borderColor: "#d5d9e4"
@@ -13490,11 +14604,11 @@ function UniBot({
   })), /*#__PURE__*/React.createElement("button", {
     onClick: goHome,
     className: "text-xs text-gray-400 px-1"
-  }, "Menú")), mode === "alerta" && /*#__PURE__*/React.createElement("div", {
+  }, "Men\xFA")), mode === "alerta" && /*#__PURE__*/React.createElement("div", {
     className: "space-y-1.5 pt-1"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-xs text-gray-500"
-  }, "¿Qué alerta quieres compartir?"), /*#__PURE__*/React.createElement("button", {
+  }, "\xBFQu\xE9 alerta quieres compartir?"), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       setAlertaTipo("grifo");
       setAlertaData({});
@@ -13504,7 +14618,7 @@ function UniBot({
     style: {
       border: "1px solid #e6e8ee"
     }
-  }, "⛽ Grifo cerrado o inoperativo"), /*#__PURE__*/React.createElement("button", {
+  }, "\u26FD Grifo cerrado o inoperativo"), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       setAlertaTipo("trafico");
       setAlertaData({});
@@ -13514,7 +14628,7 @@ function UniBot({
     style: {
       border: "1px solid #e6e8ee"
     }
-  }, "🚧 Zona de tráfico"), /*#__PURE__*/React.createElement("button", {
+  }, "\uD83D\uDEA7 Zona de tr\xE1fico"), /*#__PURE__*/React.createElement("button", {
     onClick: goHome,
     className: "text-xs text-gray-400"
   }, "Cancelar")), mode === "alertaForm" && /*#__PURE__*/React.createElement("div", {
@@ -13525,7 +14639,7 @@ function UniBot({
       color: AZUL
     }
   }, alertaTipo === "grifo" ? "⛽ Grifo cerrado o inoperativo" : "🚧 Zona de tráfico"), /*#__PURE__*/React.createElement(MiniInput, {
-    label: "Ubicación: dirección o referencia",
+    label: "Ubicaci\xF3n: direcci\xF3n o referencia",
     value: alertaData.ubicacion || "",
     onChange: v => setAlertaData(Object.assign({}, alertaData, {
       ubicacion: v
@@ -13537,7 +14651,7 @@ function UniBot({
     onChange: v => setAlertaData(Object.assign({}, alertaData, {
       grifo: v
     })),
-    placeholder: "Ej. Primax, Repsol, Pecsa…"
+    placeholder: "Ej. Primax, Repsol, Pecsa\u2026"
   }), /*#__PURE__*/React.createElement("button", {
     onClick: submitAlerta,
     disabled: !alertaData.ubicacion,
@@ -13560,7 +14674,7 @@ function UniBot({
       color: AZUL
     }
   }, formType === "perdido" ? "No encuentro algo que dejé en mi unidad" : "Reportar algo que encontré"), /*#__PURE__*/React.createElement(MiniInput, {
-    label: "Nº de unidad",
+    label: "N\xBA de unidad",
     value: formData.unidad || "",
     onChange: v => setFormData(Object.assign({}, formData, {
       unidad: v
@@ -13572,16 +14686,16 @@ function UniBot({
     onChange: v => setFormData(Object.assign({}, formData, {
       que: v
     })),
-    placeholder: "Conos, casco, tarjeta…"
+    placeholder: "Conos, casco, tarjeta\u2026"
   }), formType === "encontrado" && /*#__PURE__*/React.createElement(MiniInput, {
-    label: "Dónde se deja",
+    label: "D\xF3nde se deja",
     value: formData.donde || "",
     onChange: v => setFormData(Object.assign({}, formData, {
       donde: v
     })),
-    placeholder: "Ej. Garita, oficina AZT, lavadero…"
+    placeholder: "Ej. Garita, oficina AZT, lavadero\u2026"
   }), /*#__PURE__*/React.createElement(MiniInput, {
-    label: "Cómo contactarte",
+    label: "C\xF3mo contactarte",
     value: formData.contacto || "",
     onChange: v => setFormData(Object.assign({}, formData, {
       contacto: v
@@ -13613,7 +14727,7 @@ function UniBot({
       color: "#16a34a",
       border: "2px solid #16a34a"
     }
-  }, "Sí, es eso ✅"), /*#__PURE__*/React.createElement("button", {
+  }, "S\xED, es eso \u2705"), /*#__PURE__*/React.createElement("button", {
     onClick: () => responderMatch(false),
     className: "flex-1 py-2.5 rounded-xl font-semibold text-sm",
     style: {
@@ -13621,7 +14735,7 @@ function UniBot({
       color: "#e11d48",
       border: "2px solid #e11d48"
     }
-  }, "No, no es eso ❌"))), (mode === "chatProc" || mode === "chatAccidente") && /*#__PURE__*/React.createElement("div", {
+  }, "No, no es eso \u274C"))), (mode === "chatProc" || mode === "chatAccidente") && /*#__PURE__*/React.createElement("div", {
     className: "border-t bg-white shrink-0",
     style: {
       borderColor: "#e6e8ee"
@@ -13643,7 +14757,7 @@ function UniBot({
     value: input,
     onChange: e => setInput(e.target.value),
     onKeyDown: e => e.key === "Enter" && sendProc(),
-    placeholder: "Escribe tu consulta o pregunta de seguimiento…",
+    placeholder: "Escribe tu consulta o pregunta de seguimiento\u2026",
     className: "flex-1 px-3 py-2 rounded-full border text-sm outline-none",
     style: {
       borderColor: "#d5d9e4"
@@ -13667,7 +14781,13 @@ function UniBot({
         texto: "¡Espero haberte ayudado, compañero! ¡Que tengas una excelente vuelta! 🚛💪",
         hora: hhmm()
       }]);
-      setTimeout(() => goHome(), 3000);
+      // El globo de cierre (blanco normal, no estilo UNIKIN) y el botón "Ver Menú" aparecen
+      // juntos tras la misma pausa que se usa al "llamar" a UNIKIN (ver handoff a UNIKIN,
+      // 1500ms) — antes salían de inmediato, muy pegados al mensaje de UNIKIN de arriba.
+      setTimeout(() => {
+        push("bot", "¡Genial! 🙌 ¿Tienes otra consulta?\n\nPor favor selecciona \"Ver menú\" para ver todas las opciones disponibles.");
+        goHome();
+      }, 1500);
     },
     className: "flex-1 py-2 rounded-xl text-xs font-semibold",
     style: {
@@ -13675,7 +14795,7 @@ function UniBot({
       color: "#16a34a",
       border: "1px solid #bbf7d0"
     }
-  }, "✓ Ya resolví mi consulta"), /*#__PURE__*/React.createElement("button", {
+  }, "\u2713 Ya resolv\xED mi consulta"), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       setUnikinHistory([]);
       const contacto = responsableDe("op_proc");
@@ -13688,7 +14808,7 @@ function UniBot({
       color: "#dc2626",
       border: "1px solid #fecaca"
     }
-  }, "👤 Necesito ayuda"))), viewingPdf && /*#__PURE__*/React.createElement("div", {
+  }, "\uD83D\uDC64 Necesito ayuda"))), viewingPdf && /*#__PURE__*/React.createElement("div", {
     className: "absolute inset-0 z-50 flex flex-col",
     style: {
       background: "rgba(0,0,0,0.9)"
@@ -13700,7 +14820,7 @@ function UniBot({
     }
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-white text-xs font-semibold truncate flex-1 mr-2"
-  }, "📄 ", viewingPdf.name), /*#__PURE__*/React.createElement("button", {
+  }, "\uD83D\uDCC4 ", viewingPdf.name), /*#__PURE__*/React.createElement("button", {
     onClick: () => setViewingPdf(null),
     className: "w-8 h-8 rounded-full flex items-center justify-center",
     style: {
@@ -13720,7 +14840,7 @@ function UniBot({
     className: "text-sm font-semibold mb-2"
   }, viewingPdf.name), /*#__PURE__*/React.createElement("div", {
     className: "text-xs opacity-70 mb-4"
-  }, "El PDF se descargó a tu dispositivo.", /*#__PURE__*/React.createElement("br", null), "Si no se abrió, búscalo en tu carpeta de descargas."), /*#__PURE__*/React.createElement("button", {
+  }, "El PDF se descarg\xF3 a tu dispositivo.", /*#__PURE__*/React.createElement("br", null), "Si no se abri\xF3, b\xFAscalo en tu carpeta de descargas."), /*#__PURE__*/React.createElement("button", {
     onClick: () => setViewingPdf(null),
     className: "px-4 py-2 rounded-lg text-sm font-semibold",
     style: {
@@ -13760,7 +14880,7 @@ function ChoferIncidentCard({
     className: "text-[11px] text-gray-400"
   }, i.hora)), /*#__PURE__*/React.createElement("div", {
     className: "text-xs text-gray-500"
-  }, i.unidad, " · ", i.obra), (i.afectados || []).length > 0 && /*#__PURE__*/React.createElement("div", {
+  }, i.unidad, " \xB7 ", i.obra), (i.afectados || []).length > 0 && /*#__PURE__*/React.createElement("div", {
     className: "text-[11px] text-amber-700 font-medium mt-0.5 mb-2 flex items-center gap-1"
   }, /*#__PURE__*/React.createElement(Users, {
     size: 12
@@ -13820,7 +14940,7 @@ function ChoferIncidentCard({
     className: "mt-2 text-xs text-gray-400 flex items-center gap-1"
   }, /*#__PURE__*/React.createElement(Clock, {
     size: 12
-  }), " Tu incidencia está siendo atendida. Recibirás la respuesta aquí."));
+  }), " Tu incidencia est\xE1 siendo atendida. Recibir\xE1s la respuesta aqu\xED."));
 }
 function ReporteIncidencias({
   driver,
@@ -14072,11 +15192,11 @@ function ReporteIncidencias({
     className: "text-xs text-gray-500 mb-2 flex items-center gap-1"
   }, /*#__PURE__*/React.createElement(Clock, {
     size: 13
-  }), " Recuerda: la llamada telefónica es el canal principal."), /*#__PURE__*/React.createElement("h4", {
+  }), " Recuerda: la llamada telef\xF3nica es el canal principal."), /*#__PURE__*/React.createElement("h4", {
     className: "text-sm font-bold text-gray-700 mt-4 mb-2"
   }, "Estado de mis incidencias"), mis.length === 0 && /*#__PURE__*/React.createElement("div", {
     className: "text-sm text-gray-400 bg-white rounded-xl p-4 text-center"
-  }, "Aún no tienes incidencias reportadas."), /*#__PURE__*/React.createElement("div", {
+  }, "A\xFAn no tienes incidencias reportadas."), /*#__PURE__*/React.createElement("div", {
     className: "space-y-3"
   }, mis.slice().reverse().map(i => /*#__PURE__*/React.createElement(ChoferIncidentCard, {
     key: i.id,
@@ -14085,7 +15205,7 @@ function ReporteIncidencias({
     onClick: () => setStep("list")
   }), /*#__PURE__*/React.createElement("h4", {
     className: "font-bold text-gray-700 mb-3"
-  }, "¿Qué está pasando?"), /*#__PURE__*/React.createElement("div", {
+  }, "\xBFQu\xE9 est\xE1 pasando?"), /*#__PURE__*/React.createElement("div", {
     className: "space-y-2"
   }, INCIDENT_TYPES.filter(t => t.id !== "auxilio").map(t => /*#__PURE__*/React.createElement("button", {
     key: t.id,
@@ -14119,9 +15239,9 @@ function ReporteIncidencias({
     color: AZUL
   })), /*#__PURE__*/React.createElement("h4", {
     className: "font-bold text-gray-800 text-lg"
-  }, "¿Ya intentaste reportarlo por llamada?"), /*#__PURE__*/React.createElement("p", {
+  }, "\xBFYa intentaste reportarlo por llamada?"), /*#__PURE__*/React.createElement("p", {
     className: "text-sm text-gray-500 mt-1 mb-6 max-w-xs"
-  }, "La llamada telefónica es el canal principal para incidencias urgentes."), /*#__PURE__*/React.createElement("div", {
+  }, "La llamada telef\xF3nica es el canal principal para incidencias urgentes."), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2 w-full max-w-xs"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => afterCall(true),
@@ -14129,14 +15249,14 @@ function ReporteIncidencias({
     style: {
       background: "#16a34a"
     }
-  }, "Sí, ya llamé"), /*#__PURE__*/React.createElement("button", {
+  }, "S\xED, ya llam\xE9"), /*#__PURE__*/React.createElement("button", {
     onClick: () => afterCall(false),
     className: "flex-1 py-3 rounded-xl font-semibold",
     style: {
       background: "#eef1f6",
       color: AZUL
     }
-  }, "No aún")), /*#__PURE__*/React.createElement(BackBtn, {
+  }, "No a\xFAn")), /*#__PURE__*/React.createElement(BackBtn, {
     onClick: () => setStep("pick"),
     className: "mt-6"
   })), step === "contacts" && tipo && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(BackBtn, {
@@ -14149,7 +15269,7 @@ function ReporteIncidencias({
     }
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-sm text-gray-700"
-  }, /*#__PURE__*/React.createElement("b", null, "Primero comunícate por teléfono."), " Estos son los contactos para: ", /*#__PURE__*/React.createElement("br", null), "“", tipo.label, "”.")), contactosPorTipo(tipo, cfg).map(([k, v]) => /*#__PURE__*/React.createElement("a", {
+  }, /*#__PURE__*/React.createElement("b", null, "Primero comun\xEDcate por tel\xE9fono."), " Estos son los contactos para: ", /*#__PURE__*/React.createElement("br", null), "\u201C", tipo.label, "\u201D.")), contactosPorTipo(tipo, cfg).map(([k, v]) => /*#__PURE__*/React.createElement("a", {
     key: k,
     className: "flex items-center justify-between bg-white rounded-xl px-3 py-3 shadow-sm mb-2"
   }, /*#__PURE__*/React.createElement("span", {
@@ -14168,13 +15288,13 @@ function ReporteIncidencias({
       background: AZUL,
       color: "white"
     }
-  }, "Ya llamé, registrar incidencia")), step === "obra" && tipo && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(BackBtn, {
+  }, "Ya llam\xE9, registrar incidencia")), step === "obra" && tipo && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(BackBtn, {
     onClick: () => setStep("askCall")
   }), /*#__PURE__*/React.createElement("h4", {
     className: "font-bold text-gray-700 mb-1"
   }, "Registrar incidencia"), /*#__PURE__*/React.createElement("p", {
     className: "text-sm text-gray-500 mb-4"
-  }, "Solo confirma la obra. El resto se carga automático."), /*#__PURE__*/React.createElement("div", {
+  }, "Solo confirma la obra. El resto se carga autom\xE1tico."), /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-xl p-3 shadow-sm space-y-2 mb-4"
   }, /*#__PURE__*/React.createElement(ReadRow, {
     label: "Tipo",
@@ -14187,7 +15307,7 @@ function ReporteIncidencias({
     value: hhmm()
   })), /*#__PURE__*/React.createElement("div", {
     className: "text-xs font-bold text-gray-600 mb-1"
-  }, "¿En qué obra estás?"), /*#__PURE__*/React.createElement(DropdownConOtro, {
+  }, "\xBFEn qu\xE9 obra est\xE1s?"), /*#__PURE__*/React.createElement(DropdownConOtro, {
     options: cfg.obras,
     value: obra,
     onChange: setObra,
@@ -14204,9 +15324,9 @@ function ReporteIncidencias({
     onClick: () => setStep("pick")
   }), /*#__PURE__*/React.createElement("h4", {
     className: "font-bold text-gray-700 mb-1"
-  }, "Auxilio mecánico"), /*#__PURE__*/React.createElement("p", {
+  }, "Auxilio mec\xE1nico"), /*#__PURE__*/React.createElement("p", {
     className: "text-sm text-gray-500 mb-4"
-  }, "Completa los datos. Tu AZT y el taller serán notificados."), /*#__PURE__*/React.createElement(AuxilioForm, {
+  }, "Completa los datos. Tu AZT y el taller ser\xE1n notificados."), /*#__PURE__*/React.createElement(AuxilioForm, {
     driver: driver,
     onSubmit: submitAuxilio,
     onCancel: () => setStep("pick")
@@ -14225,9 +15345,9 @@ function ReporteIncidencias({
     style: {
       color: AZUL
     }
-  }, "¿Ya registraste esta falla en tu ROP de UNIKIN?"), /*#__PURE__*/React.createElement("p", {
+  }, "\xBFYa registraste esta falla en tu ROP de UNIKIN?"), /*#__PURE__*/React.createElement("p", {
     className: "text-sm text-gray-500 leading-relaxed max-w-xs mb-8"
-  }, "El ROP es el registro OFICIAL que llega a Mantenimiento. Los registros que se realicen acá son solo un complemento."), /*#__PURE__*/React.createElement("div", {
+  }, "El ROP es el registro OFICIAL que llega a Mantenimiento. Los registros que se realicen ac\xE1 son solo un complemento."), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-3 w-full max-w-xs"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => setStep("falla_form"),
@@ -14236,17 +15356,17 @@ function ReporteIncidencias({
       background: "#16a34a",
       color: "white"
     }
-  }, "Sí, ya lo hice"), /*#__PURE__*/React.createElement("button", {
+  }, "S\xED, ya lo hice"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setStep("falla_rop_no"),
     className: "flex-1 py-3.5 rounded-xl font-bold text-sm",
     style: {
       background: "#eef1f6",
       color: AZUL
     }
-  }, "No aún")), /*#__PURE__*/React.createElement("button", {
+  }, "No a\xFAn")), /*#__PURE__*/React.createElement("button", {
     onClick: () => setStep("falla_choice"),
     className: "mt-6 text-sm text-gray-400 hover:text-gray-600"
-  }, "← Volver")), step === "falla_rop_no" && /*#__PURE__*/React.createElement("div", {
+  }, "\u2190 Volver")), step === "falla_rop_no" && /*#__PURE__*/React.createElement("div", {
     className: "flex flex-col items-center text-center pt-10 px-4"
   }, /*#__PURE__*/React.createElement("h4", {
     className: "font-bold text-lg leading-snug max-w-sm mb-3",
@@ -14264,9 +15384,9 @@ function ReporteIncidencias({
     onClick: () => setStep("pick")
   }), /*#__PURE__*/React.createElement("h4", {
     className: "font-bold text-gray-700 mb-1"
-  }, "¿Qué tipo de reporte necesitas?"), /*#__PURE__*/React.createElement("p", {
+  }, "\xBFQu\xE9 tipo de reporte necesitas?"), /*#__PURE__*/React.createElement("p", {
     className: "text-sm text-gray-500 mb-4"
-  }, "Elige según la urgencia de tu situación."), /*#__PURE__*/React.createElement("div", {
+  }, "Elige seg\xFAn la urgencia de tu situaci\xF3n."), /*#__PURE__*/React.createElement("div", {
     className: "space-y-3"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => setStep("falla_rop"),
@@ -14287,9 +15407,9 @@ function ReporteIncidencias({
     className: "flex-1"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-sm font-bold text-gray-800"
-  }, "Falla mecánica"), /*#__PURE__*/React.createElement("div", {
+  }, "Falla mec\xE1nica"), /*#__PURE__*/React.createElement("div", {
     className: "text-[11px] text-gray-500 leading-tight mt-0.5"
-  }, "Un aviso preventivo. Tu unidad sigue operativa pero algo necesita revisión (ruido raro, ajuste, luz que titila, pequeño desgaste).")), /*#__PURE__*/React.createElement(ChevronRight, {
+  }, "Un aviso preventivo. Tu unidad sigue operativa pero algo necesita revisi\xF3n (ruido raro, ajuste, luz que titila, peque\xF1o desgaste).")), /*#__PURE__*/React.createElement(ChevronRight, {
     size: 16,
     className: "text-gray-300"
   })), /*#__PURE__*/React.createElement("button", {
@@ -14314,12 +15434,12 @@ function ReporteIncidencias({
     style: {
       color: "#9f1239"
     }
-  }, "Emergencia mecánica"), /*#__PURE__*/React.createElement("div", {
+  }, "Emergencia mec\xE1nica"), /*#__PURE__*/React.createElement("div", {
     className: "text-[11px] leading-tight mt-0.5",
     style: {
       color: "#9f1239"
     }
-  }, "Tu unidad está detenida o no puede seguir operando (sin luces, fuga de aire/aceite, trompo no acciona, llanta reventada, freno inoperativo).")), /*#__PURE__*/React.createElement(ChevronRight, {
+  }, "Tu unidad est\xE1 detenida o no puede seguir operando (sin luces, fuga de aire/aceite, trompo no acciona, llanta reventada, freno inoperativo).")), /*#__PURE__*/React.createElement(ChevronRight, {
     size: 16,
     className: "text-rose-300"
   })))), step === "falla_form" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(BackBtn, {
@@ -14333,7 +15453,7 @@ function ReporteIncidencias({
     className: "text-[11px] font-bold text-gray-400 uppercase tracking-wider"
   }, "Datos de la falla"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
     className: "text-xs font-semibold text-gray-600"
-  }, "Nº de unidad"), /*#__PURE__*/React.createElement("input", {
+  }, "N\xBA de unidad"), /*#__PURE__*/React.createElement("input", {
     value: fallaMixer,
     onChange: e => setFallaMixer(e.target.value.replace(/[^\d]/g, "")),
     inputMode: "numeric",
@@ -14349,7 +15469,7 @@ function ReporteIncidencias({
     className: "text-xs font-semibold text-gray-600"
   }, "Tipo de falla"), /*#__PURE__*/React.createElement("span", {
     className: "text-[11px] text-gray-400 ml-1"
-  }, "(puedes marcar más de una falla)"), /*#__PURE__*/React.createElement("div", {
+  }, "(puedes marcar m\xE1s de una falla)"), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-2 mt-2"
   }, FALLA_TIPOS.filter(ft => ft !== "Otro").map(ft => {
     const sel = fallaTipos.includes(ft);
@@ -14381,7 +15501,7 @@ function ReporteIncidencias({
     }, "Otro"), selOtro && /*#__PURE__*/React.createElement("input", {
       value: fallaOtroTexto,
       onChange: e => setFallaOtroTexto(e.target.value),
-      placeholder: "¿Cuál?",
+      placeholder: "\xBFCu\xE1l?",
       className: "flex-1 px-2 py-1.5 rounded-lg border text-xs outline-none",
       style: {
         borderColor: fallaOtroTexto ? AZUL : "#d5d9e4",
@@ -14391,7 +15511,7 @@ function ReporteIncidencias({
     }));
   })())), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
     className: "text-xs font-semibold text-gray-600"
-  }, "Descripción breve"), /*#__PURE__*/React.createElement("textarea", {
+  }, "Descripci\xF3n breve"), /*#__PURE__*/React.createElement("textarea", {
     value: fallaComent,
     onChange: e => setFallaComent(e.target.value),
     rows: 3,
@@ -14402,7 +15522,7 @@ function ReporteIncidencias({
     }
   })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
     className: "text-xs font-semibold text-gray-600"
-  }, "¿Dónde estás? (opcional)"), /*#__PURE__*/React.createElement("input", {
+  }, "\xBFD\xF3nde est\xE1s? (opcional)"), /*#__PURE__*/React.createElement("input", {
     value: fallaUbicacion,
     onChange: e => setFallaUbicacion(e.target.value),
     placeholder: "Ej: En planta, camino a obra, puente Atarjea...",
@@ -14426,7 +15546,7 @@ function ReporteIncidencias({
   }, "Enviar reporte")), /*#__PURE__*/React.createElement("button", {
     onClick: () => setStep("falla_rop"),
     className: "w-full mt-3 text-sm text-gray-400 hover:text-gray-600 text-center py-2"
-  }, "‹ Volver")), step === "falla_sent" && /*#__PURE__*/React.createElement("div", {
+  }, "\u2039 Volver")), step === "falla_sent" && /*#__PURE__*/React.createElement("div", {
     className: "flex flex-col items-center text-center pt-10 px-4"
   }, /*#__PURE__*/React.createElement("div", {
     className: "w-16 h-16 rounded-full flex items-center justify-center mb-5",
@@ -14470,7 +15590,7 @@ function ReporteIncidencias({
     style: {
       color: "#9f1239"
     }
-  }, "Las emergencias mecánicas no se reportan por este medio"), /*#__PURE__*/React.createElement("div", {
+  }, "Las emergencias mec\xE1nicas no se reportan por este medio"), /*#__PURE__*/React.createElement("div", {
     className: "text-xs mt-1",
     style: {
       color: "#9f1239"
@@ -14498,7 +15618,7 @@ function ReporteIncidencias({
     className: "flex-1"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-xs text-gray-500"
-  }, "AZT día (mañana)"), /*#__PURE__*/React.createElement("div", {
+  }, "AZT d\xEDa (ma\xF1ana)"), /*#__PURE__*/React.createElement("div", {
     className: "text-sm font-semibold",
     style: {
       color: AZUL
@@ -14535,7 +15655,7 @@ function ReporteIncidencias({
     className: "text-gray-300"
   }))), /*#__PURE__*/React.createElement("div", {
     className: "text-sm font-semibold text-gray-700 mb-2"
-  }, "2. ¿No contestan?"), /*#__PURE__*/React.createElement("button", {
+  }, "2. \xBFNo contestan?"), /*#__PURE__*/React.createElement("button", {
     onClick: () => setChannel && setChannel("bot"),
     className: "w-full flex items-center gap-3 rounded-xl px-3 py-3",
     style: {
@@ -14561,7 +15681,7 @@ function ReporteIncidencias({
     style: {
       color: AZUL
     }
-  }, "UNIBOT — Auxilio mecánico")), /*#__PURE__*/React.createElement(ChevronRight, {
+  }, "UNIBOT \u2014 Auxilio mec\xE1nico")), /*#__PURE__*/React.createElement(ChevronRight, {
     size: 16,
     style: {
       color: AZUL
@@ -14570,7 +15690,7 @@ function ReporteIncidencias({
     onClick: () => setStep("pick")
   }), /*#__PURE__*/React.createElement("h4", {
     className: "font-bold text-gray-700 mb-1"
-  }, "¿Qué servicio no está disponible?"), /*#__PURE__*/React.createElement("p", {
+  }, "\xBFQu\xE9 servicio no est\xE1 disponible?"), /*#__PURE__*/React.createElement("p", {
     className: "text-sm text-gray-500 mb-4"
   }, "Planta ", driver.planta), /*#__PURE__*/React.createElement("div", {
     className: "space-y-2"
@@ -14607,9 +15727,9 @@ function ReporteIncidencias({
     className: "shrink-0 mt-0.5"
   }), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-amber-900 leading-snug"
-  }, "Recuerda que el almuerzo se sirve a partir de las ", /*#__PURE__*/React.createElement("b", null, "11:00 am"), ", con tolerancia hasta las ", /*#__PURE__*/React.createElement("b", null, "11:10 – 11:15 am"), ". Si la comida no llegó o llegó en mal estado, repórtalo acá.")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+  }, "Recuerda que el almuerzo se sirve a partir de las ", /*#__PURE__*/React.createElement("b", null, "11:00 am"), ", con tolerancia hasta las ", /*#__PURE__*/React.createElement("b", null, "11:10 \u2013 11:15 am"), ". Si la comida no lleg\xF3 o lleg\xF3 en mal estado, rep\xF3rtalo ac\xE1.")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
     className: "text-xs font-semibold text-gray-600 block mb-2"
-  }, "¿Cuál es el problema?"), /*#__PURE__*/React.createElement("div", {
+  }, "\xBFCu\xE1l es el problema?"), /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-3 gap-2"
   }, ["Tarde", "Agotado", "Mal estado"].map(opt => /*#__PURE__*/React.createElement("button", {
     key: opt,
@@ -14626,7 +15746,7 @@ function ReporteIncidencias({
     value: comentario,
     onChange: e => setComentario(e.target.value),
     rows: 2,
-    placeholder: "Ej. Desde las 7am no hay agua…",
+    placeholder: "Ej. Desde las 7am no hay agua\u2026",
     className: "w-full mt-1 px-3 py-2 rounded-lg border text-sm outline-none resize-none",
     style: {
       borderColor: "#d5d9e4"
@@ -14688,7 +15808,7 @@ function ReporteIncidencias({
       value: totalAfectados.toString()
     })), /*#__PURE__*/React.createElement("div", {
       className: "text-sm font-semibold text-gray-700 mb-3 text-center"
-    }, "¿Es el mismo problema o uno nuevo?"), /*#__PURE__*/React.createElement("div", {
+    }, "\xBFEs el mismo problema o uno nuevo?"), /*#__PURE__*/React.createElement("div", {
       className: "space-y-2"
     }, /*#__PURE__*/React.createElement("button", {
       onClick: () => {
@@ -14737,7 +15857,7 @@ function ReporteIncidencias({
     className: "font-bold text-gray-800 text-lg mb-2"
   }, "Reporte registrado"), /*#__PURE__*/React.createElement("p", {
     className: "text-sm text-gray-600 max-w-xs leading-relaxed"
-  }, "Tu reporte se ha añadido como refuerzo de la incidencia. Se comunicará a los responsables que el problema continúa y requiere una solución."), /*#__PURE__*/React.createElement("button", {
+  }, "Tu reporte se ha a\xF1adido como refuerzo de la incidencia. Se comunicar\xE1 a los responsables que el problema contin\xFAa y requiere una soluci\xF3n."), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       setDedupConfirmed(false);
       setDedupCandidate(null);
@@ -14772,7 +15892,7 @@ function ReporteIncidencias({
     }
   }, /*#__PURE__*/React.createElement(Phone, {
     size: 18
-  }), " Llamar al Canal AAA · ", cfg.contactos["Canal AAA (emergencias)"])));
+  }), " Llamar al Canal AAA \xB7 ", cfg.contactos["Canal AAA (emergencias)"])));
 }
 function contactosPorTipo(tipo, cfg) {
   const c = cfg.contactos;
@@ -15033,7 +16153,7 @@ function PerfilModal({
     className: "text-center py-10 text-gray-400 text-sm"
   }, "Cargando perfil...") : !perfil ? /*#__PURE__*/React.createElement("div", {
     className: "text-center py-10 text-gray-400 text-sm"
-  }, "No se encontró el perfil.") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, "No se encontr\xF3 el perfil.") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-3 mb-2"
   }, /*#__PURE__*/React.createElement("div", {
     className: "relative flex-shrink-0"
@@ -15097,22 +16217,22 @@ function PerfilModal({
     className: "text-gray-700"
   }, plantaDisplay || "—", perfil.unidad ? ` · Unidad ${perfil.unidad}` : "")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     className: "text-[11px] font-semibold text-gray-400 uppercase mb-1"
-  }, "Teléfono"), /*#__PURE__*/React.createElement("div", {
+  }, "Tel\xE9fono"), /*#__PURE__*/React.createElement("div", {
     className: "text-gray-700"
   }, perfil.telefono ? perfil.telefono.replace(/\D/g, "").replace(/(\d{3})(?=\d)/g, "$1 ") : "No registrado")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     className: "text-[11px] font-semibold text-gray-400 uppercase mb-1"
-  }, "Correo electrónico"), /*#__PURE__*/React.createElement("div", {
+  }, "Correo electr\xF3nico"), /*#__PURE__*/React.createElement("div", {
     className: "text-gray-700"
   }, perfil.email_personal || "No registrado")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     className: "text-[11px] font-semibold text-gray-400 uppercase mb-1 flex items-center justify-between"
-  }, /*#__PURE__*/React.createElement("span", null, "Biografía"), esPropio && !editandoBio && /*#__PURE__*/React.createElement("button", {
+  }, /*#__PURE__*/React.createElement("span", null, "Biograf\xEDa"), esPropio && !editandoBio && /*#__PURE__*/React.createElement("button", {
     onClick: () => setEditandoBio(true),
     className: "text-blue-600 font-semibold normal-case"
   }, "Editar")), editandoBio ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("textarea", {
     value: bioTexto,
     onChange: e => setBioTexto(e.target.value.slice(0, 300)),
     rows: 3,
-    placeholder: "Cuéntanos algo sobre ti...",
+    placeholder: "Cu\xE9ntanos algo sobre ti...",
     className: "w-full px-3 py-2 rounded-lg border text-sm",
     style: {
       borderColor: "#d5d9e4"
@@ -15742,7 +16862,7 @@ function GestionHumanaPanel({
     style: {
       color: AZUL
     }
-  }, "Gestión Humana"), /*#__PURE__*/React.createElement("div", {
+  }, "Gesti\xF3n Humana"), /*#__PURE__*/React.createElement("div", {
     className: "text-[11px] text-gray-400"
   }, "Panel administrativo"))), /*#__PURE__*/React.createElement("div", {
     className: "flex-1 p-2"
@@ -15759,7 +16879,7 @@ function GestionHumanaPanel({
     style: {
       color: AZUL
     }
-  }, "Gestión del Personal"))), /*#__PURE__*/React.createElement("button", {
+  }, "Gesti\xF3n del Personal"))), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       sbClient.auth.signOut();
       setRole("chofer");
@@ -15771,7 +16891,7 @@ function GestionHumanaPanel({
     }
   }, /*#__PURE__*/React.createElement(LogOut, {
     size: 16
-  }), " Cerrar sesión")), /*#__PURE__*/React.createElement("div", {
+  }), " Cerrar sesi\xF3n")), /*#__PURE__*/React.createElement("div", {
     className: "flex-1 p-6 overflow-y-auto"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between mb-4 flex-wrap gap-3"
@@ -15780,9 +16900,9 @@ function GestionHumanaPanel({
     style: {
       color: AZUL
     }
-  }, "Gestión del personal"), /*#__PURE__*/React.createElement("p", {
+  }, "Gesti\xF3n del personal"), /*#__PURE__*/React.createElement("p", {
     className: "text-sm text-gray-500"
-  }, personal.filter(p => p.activo).length, " personas activas · ", PLANTAS_TODAS.length, " plantas")), /*#__PURE__*/React.createElement("div", {
+  }, personal.filter(p => p.activo).length, " personas activas \xB7 ", PLANTAS_TODAS.length, " plantas")), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2"
   }, /*#__PURE__*/React.createElement("input", {
     type: "file",
@@ -15921,7 +17041,7 @@ function GestionHumanaPanel({
     style: {
       borderColor: "#e6e8ee"
     }
-  }, "Teléfono"), /*#__PURE__*/React.createElement("th", {
+  }, "Tel\xE9fono"), /*#__PURE__*/React.createElement("th", {
     className: "text-left px-3 py-2 font-semibold text-gray-500 border-b",
     style: {
       borderColor: "#e6e8ee"
@@ -15982,7 +17102,7 @@ function GestionHumanaPanel({
     className: "text-center py-8 text-gray-400"
   }, "No hay personas que coincidan con el filtro."))))), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-gray-400 mt-3"
-  }, "Los cambios se guardan de inmediato y se reflejan la próxima vez que la persona ingresa a la app.")), editando && /*#__PURE__*/React.createElement("div", {
+  }, "Los cambios se guardan de inmediato y se reflejan la pr\xF3xima vez que la persona ingresa a la app.")), editando && /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
   }, /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-2xl p-6 w-full max-w-sm"
@@ -16066,7 +17186,7 @@ function GestionHumanaPanel({
     value: p
   }, p))), /*#__PURE__*/React.createElement("label", {
     className: "text-xs font-semibold text-gray-600"
-  }, "Camión asignado (Unidad)"), /*#__PURE__*/React.createElement("input", {
+  }, "Cami\xF3n asignado (Unidad)"), /*#__PURE__*/React.createElement("input", {
     value: editando.unidad || "",
     onChange: e => setEditando({
       ...editando,
@@ -16103,7 +17223,7 @@ function GestionHumanaPanel({
     }), p);
   }))), /*#__PURE__*/React.createElement("label", {
     className: "text-xs font-semibold text-gray-600"
-  }, "Teléfono"), /*#__PURE__*/React.createElement("input", {
+  }, "Tel\xE9fono"), /*#__PURE__*/React.createElement("input", {
     value: formatTelefono(editando.telefono),
     onChange: e => setEditando({
       ...editando,
@@ -16117,7 +17237,7 @@ function GestionHumanaPanel({
     }
   }), /*#__PURE__*/React.createElement("label", {
     className: "text-xs font-semibold text-gray-600"
-  }, "Correo electrónico"), /*#__PURE__*/React.createElement("input", {
+  }, "Correo electr\xF3nico"), /*#__PURE__*/React.createElement("input", {
     value: editando.email_personal || "",
     onChange: e => setEditando({
       ...editando,
@@ -16153,6 +17273,335 @@ function GestionHumanaPanel({
 /* ============================================================ */
 /* ============          PANEL AZT               ============== */
 /* ============================================================ */
+
+// Dibuja una tabla simple (encabezado azul + filas con bandas alternadas) en un <canvas> y la
+// devuelve como PNG (Blob) — es la "captura" que se publica junto al Excel filtrado por planta,
+// para que el chofer pueda ver su citación como imagen sin necesidad de abrir el Excel. No se usa
+// ninguna librería de renderizado de Excel: se arma la tabla a mano con las columnas ya resueltas.
+function generarCapturaTablaPNG(titulo, encabezados, filas) {
+  const PADDING = 10,
+    ROW_H = 26,
+    HEADER_H = 32,
+    TITLE_H = 36,
+    ESCALA = 2;
+  const anchoCol = encabezados.map((h, i) => {
+    const maxContenido = filas.reduce((m, f) => Math.max(m, String(f[i] ?? "").length), h.length);
+    return Math.max(70, Math.min(260, maxContenido * 7 + 16));
+  });
+  const ancho = anchoCol.reduce((a, b) => a + b, 0) + PADDING * 2;
+  const alto = TITLE_H + HEADER_H + Math.max(filas.length, 1) * ROW_H + PADDING * 2;
+  const canvas = document.createElement("canvas");
+  canvas.width = ancho * ESCALA;
+  canvas.height = alto * ESCALA;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(ESCALA, ESCALA);
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, ancho, alto);
+  ctx.fillStyle = "#0028AA";
+  ctx.fillRect(0, 0, ancho, TITLE_H);
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 15px system-ui, sans-serif";
+  ctx.fillText(titulo, PADDING, TITLE_H / 2);
+  let x = PADDING;
+  ctx.fillStyle = "#e6e8ee";
+  ctx.fillRect(0, TITLE_H, ancho, HEADER_H);
+  ctx.fillStyle = "#111827";
+  ctx.font = "bold 11px system-ui, sans-serif";
+  encabezados.forEach((h, i) => {
+    ctx.fillText(h, x + 6, TITLE_H + HEADER_H / 2);
+    x += anchoCol[i];
+  });
+  ctx.font = "12px system-ui, sans-serif";
+  filas.forEach((fila, ri) => {
+    const y = TITLE_H + HEADER_H + ri * ROW_H;
+    ctx.fillStyle = ri % 2 === 0 ? "#ffffff" : "#f4f6fa";
+    ctx.fillRect(0, y, ancho, ROW_H);
+    ctx.fillStyle = "#1f2937";
+    let xf = PADDING;
+    encabezados.forEach((h, i) => {
+      ctx.fillText(String(fila[i] ?? ""), xf + 6, y + ROW_H / 2);
+      xf += anchoCol[i];
+    });
+  });
+  ctx.strokeStyle = "#d5d9e4";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(0.5, TITLE_H + 0.5, ancho - 1, HEADER_H + Math.max(filas.length, 1) * ROW_H - 1);
+  return new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+}
+
+// Botón "📊 Subir citación general" — el AZT sube el Excel maestro TAL COMO lo recibe (todas las
+// plantas mezcladas, columnas PLANTA/DRIVER/APELLIDOS Y NOMBRES/CELULAR/CITACIÓN/INGRESO/MIXER/
+// DNI/OBSERVACIÓN/DETALLE entre otras). Esta función lo separa por planta (solo las plantas que
+// ese AZT tiene asignadas — admin.plantas), y por cada una publica en su Canal de Avisos: (1) un
+// .xlsx con las filas de esa planta tal cual venían en el original, y (2) una imagen PNG (tabla
+// dibujada a mano, ver generarCapturaTablaPNG) para que los choferes la vean sin abrir el Excel.
+// Herramienta del Canal de Avisos (junto con "Nueva encuesta") para roles administrativos: sube
+// el Excel maestro de citación (todas las plantas mezcladas) y lo separa automáticamente por
+// planta — ver el resto de la lógica de citación (leerTablaCitacionDesdeExcel, etc.) más arriba.
+function ModalSubirCitacionGeneral({
+  plantasAdmin,
+  yo,
+  onClose
+}) {
+  const fileRef = useRef(null);
+  const [procesando, setProcesando] = useState(false);
+  const [resumen, setResumen] = useState(null);
+  const procesarArchivo = async file => {
+    setProcesando(true);
+    setResumen(null);
+    const resumenLineas = [];
+    try {
+      const buf = await file.arrayBuffer();
+      const wb = new ExcelJS.Workbook();
+      await wb.xlsx.load(buf);
+      const sheet = wb.worksheets[0];
+      if (!sheet) {
+        setResumen(["❌ No se pudo leer el archivo."]);
+        setProcesando(false);
+        return;
+      }
+      let headerRowNum = -1;
+      let colIndex = null;
+      sheet.eachRow((row, rowNumber) => {
+        if (headerRowNum !== -1) return;
+        const valores = [];
+        row.eachCell({
+          includeEmpty: true
+        }, (cell, colNumber) => {
+          valores[colNumber] = normalizarTextoExcel(cell.value);
+        });
+        const colNombre = valores.findIndex(v => v === "apellidos y nombres");
+        if (colNombre !== -1) {
+          headerRowNum = rowNumber;
+          colIndex = {
+            planta: valores.findIndex(v => v === "planta"),
+            nombre: colNombre,
+            celular: valores.findIndex(v => v === "celular"),
+            citacion: valores.findIndex(v => v === "citacion"),
+            ingreso: valores.findIndex(v => v === "ingreso"),
+            mixer: valores.findIndex(v => v === "mixer"),
+            dni: valores.findIndex(v => v === "dni"),
+            observacion: valores.findIndex(v => v === "observacion"),
+            detalle: valores.findIndex(v => v === "detalle")
+          };
+        }
+      });
+      if (!colIndex || colIndex.planta === -1) {
+        setResumen(["❌ No se encontró la fila de encabezados (o la columna PLANTA) en el archivo."]);
+        setProcesando(false);
+        return;
+      }
+
+      // Agrupa los números de fila por planta canónica, descartando filas sin nombre, fuera de
+      // las plantas asignadas a este AZT, o con un valor de PLANTA no reconocido.
+      const filasPorPlanta = {};
+      const noReconocidas = new Set();
+      for (let i = headerRowNum + 1; i <= sheet.rowCount; i++) {
+        const row = sheet.getRow(i);
+        const nombre = celdaTextoExcel(row, colIndex.nombre);
+        if (!nombre) continue;
+        const plantaCruda = celdaTextoExcel(row, colIndex.planta);
+        const plantaCanonica = resolverPlantaExcel(plantaCruda);
+        if (!plantaCanonica) {
+          if (plantaCruda) noReconocidas.add(plantaCruda);
+          continue;
+        }
+        if (!plantasAdmin.includes(plantaCanonica)) continue; // fuera del alcance de este AZT
+        (filasPorPlanta[plantaCanonica] = filasPorPlanta[plantaCanonica] || []).push(i);
+      }
+      const plantasConDatos = Object.keys(filasPorPlanta);
+      if (plantasConDatos.length === 0) {
+        setResumen(["⚠️ No se encontraron filas para ninguna de tus plantas asignadas."]);
+        setProcesando(false);
+        return;
+      }
+      const headerRowOriginal = sheet.getRow(headerRowNum);
+      const headerValsOriginal = [];
+      headerRowOriginal.eachCell({
+        includeEmpty: true
+      }, (cell, colNumber) => {
+        headerValsOriginal[colNumber] = cell.value;
+      });
+      for (const planta of plantasConDatos) {
+        const filasIdx = filasPorPlanta[planta];
+        const fecha = new Date().toISOString().slice(0, 10);
+        const slug = planta.replace(/\s+/g, "_");
+
+        // --- 1. Excel filtrado: mismas columnas del original, solo filas de esta planta ---
+        const wbPlanta = new ExcelJS.Workbook();
+        const sheetPlanta = wbPlanta.addWorksheet("Citacion");
+        sheetPlanta.addRow(headerValsOriginal.slice(1));
+        filasIdx.forEach(rn => {
+          const row = sheet.getRow(rn);
+          const vals = [];
+          row.eachCell({
+            includeEmpty: true
+          }, (cell, colNumber) => {
+            vals[colNumber] = cell.value;
+          });
+          sheetPlanta.addRow(vals.slice(1));
+        });
+        const bufferExcel = await wbPlanta.xlsx.writeBuffer();
+        const nombreExcel = `Citacion_${slug}_${fecha}.xlsx`;
+        const blobExcel = new Blob([bufferExcel], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        });
+
+        // --- 2. Capturas PNG: columnas resumidas, partidas en bloques de máximo MAX_FILAS_CAPTURA
+        // filas cada una — una tabla con 50-60 choferes es ilegible como miniatura en el chat.
+        const MAX_FILAS_CAPTURA = 25;
+        const encabezadosCaptura = ["Planta", "Apellidos y Nombres", "Celular", "Citación", "Ingreso", "Mixer", "Observación", "Detalle"];
+        const filasCaptura = filasIdx.map(rn => {
+          const row = sheet.getRow(rn);
+          return [celdaTextoExcel(row, colIndex.planta), celdaTextoExcel(row, colIndex.nombre), celdaTextoExcel(row, colIndex.celular), celdaTextoExcel(row, colIndex.citacion), celdaTextoExcel(row, colIndex.ingreso), celdaTextoExcel(row, colIndex.mixer), celdaTextoExcel(row, colIndex.observacion), celdaTextoExcel(row, colIndex.detalle)];
+        });
+        // DNI de cada fila, en el mismo orden que filasCaptura — se guarda por bloque en
+        // dnis_incluidos para que, al consultar, se pueda identificar con certeza qué imagen
+        // contiene a cada chofer (ver capturaParaChofer) en vez de adivinar por orden de subida.
+        const dnisPorFila = filasIdx.map(rn => celdaTextoExcel(sheet.getRow(rn), colIndex.dni)); // mismo largo/orden que filasCaptura, sin filtrar todavía
+        const bloquesCaptura = [];
+        const bloquesDni = [];
+        for (let i = 0; i < filasCaptura.length; i += MAX_FILAS_CAPTURA) {
+          bloquesCaptura.push(filasCaptura.slice(i, i + MAX_FILAS_CAPTURA));
+          bloquesDni.push(dnisPorFila.slice(i, i + MAX_FILAS_CAPTURA));
+        }
+
+        // --- 3. Subir a Storage y publicar en el Canal de Avisos de esa planta: el Excel completo
+        // + una imagen por cada bloque de la captura ---
+        const rutaExcel = `${planta}/${Date.now()}_${nombreExcel}`;
+        const {
+          error: errExcel
+        } = await sbClient.storage.from("avisos").upload(rutaExcel, blobExcel, {
+          upsert: true,
+          contentType: blobExcel.type
+        });
+        if (errExcel) {
+          resumenLineas.push(`📍 ${planta}: ❌ falló la subida del Excel (${errExcel.message})`);
+          continue;
+        }
+        const urlExcel = sbClient.storage.from("avisos").getPublicUrl(rutaExcel).data.publicUrl;
+        const avisosAPublicar = [{
+          titulo: "Citación de mañana (Excel)",
+          contenido: `📎 Excel de citación de mañana para ${planta}.`,
+          planta,
+          autor_id: yo.id,
+          autor_nombre: yo.nombre,
+          archivo_url: urlExcel,
+          archivo_nombre: nombreExcel,
+          archivo_tipo: "archivo",
+          archivo_tamano: blobExcel.size
+        }];
+        let fallaImagen = null;
+        for (let b = 0; b < bloquesCaptura.length; b++) {
+          const sufijo = bloquesCaptura.length > 1 ? ` (${b + 1}/${bloquesCaptura.length})` : "";
+          const titulo = `Citación — ${planta}${sufijo}`;
+          const nombreImagen = `Citacion_${slug}_${fecha}${bloquesCaptura.length > 1 ? `_${b + 1}` : ""}.png`;
+          const blobImagen = await generarCapturaTablaPNG(titulo, encabezadosCaptura, bloquesCaptura[b]);
+          const rutaImagen = `${planta}/${Date.now()}_${b}_${nombreImagen}`;
+          const {
+            error: errImg
+          } = await sbClient.storage.from("avisos").upload(rutaImagen, blobImagen, {
+            upsert: true,
+            contentType: "image/png"
+          });
+          if (errImg) {
+            fallaImagen = errImg;
+            break;
+          }
+          const urlImagen = sbClient.storage.from("avisos").getPublicUrl(rutaImagen).data.publicUrl;
+          avisosAPublicar.push({
+            titulo,
+            contenido: `📋 Citación de mañana para ${planta}${sufijo}.`,
+            planta,
+            autor_id: yo.id,
+            autor_nombre: yo.nombre,
+            dnis_incluidos: bloquesDni[b].filter(Boolean),
+            archivo_url: urlImagen,
+            archivo_nombre: nombreImagen,
+            archivo_tipo: "imagen",
+            archivo_tamano: blobImagen.size
+          });
+        }
+        if (fallaImagen) {
+          resumenLineas.push(`📍 ${planta}: ❌ falló la subida de una captura (${fallaImagen.message})`);
+          continue;
+        }
+        const {
+          error: errInsert
+        } = await sbClient.from("avisos").insert(avisosAPublicar);
+        resumenLineas.push(errInsert ? `📍 ${planta}: ❌ se subieron los archivos pero falló el aviso (${errInsert.message})` : `📍 ${planta}: ✅ ${filasIdx.length} choferes publicados en ${bloquesCaptura.length} captura(s).`);
+      }
+      if (noReconocidas.size) resumenLineas.push(`⚠️ Valores de PLANTA no reconocidos (se ignoraron): ${[...noReconocidas].join(", ")}`);
+      setResumen(resumenLineas);
+    } catch (e) {
+      setResumen([`❌ Error: ${e.message}`]);
+    }
+    setProcesando(false);
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 flex items-center justify-center p-4",
+    style: {
+      background: "rgba(0,0,0,.5)",
+      zIndex: 70
+    },
+    onClick: onClose
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-2xl p-5 w-full max-w-sm",
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between mb-3"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "font-bold text-base",
+    style: {
+      color: AZUL
+    }
+  }, "\uD83D\uDCCA Subir citaci\xF3n general"), /*#__PURE__*/React.createElement("button", {
+    onClick: onClose
+  }, /*#__PURE__*/React.createElement(X, {
+    size: 18,
+    color: "#6b7280"
+  }))), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-gray-500 mb-3"
+  }, "Sube el Excel maestro de citaci\xF3n tal como lo recibes (todas las plantas mezcladas). Se separa autom\xE1ticamente por planta y se publica el Excel filtrado + la captura en el Canal de Avisos de cada una de tus plantas asignadas (", plantasAdmin?.join(", ") || "—", ")."), /*#__PURE__*/React.createElement("input", {
+    ref: fileRef,
+    type: "file",
+    accept: ".xlsx,.xls",
+    style: {
+      display: "none"
+    },
+    onChange: e => {
+      const f = e.target.files[0];
+      if (f) procesarArchivo(f);
+      e.target.value = "";
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: () => fileRef.current?.click(),
+    disabled: procesando,
+    className: "w-full py-2.5 rounded-xl font-bold text-sm disabled:opacity-50",
+    style: {
+      background: AMARILLO,
+      color: AZUL
+    }
+  }, procesando ? "⏳ Procesando..." : "Elegir archivo Excel"), resumen && /*#__PURE__*/React.createElement("div", {
+    className: "mt-3 rounded-lg p-2.5",
+    style: {
+      background: "#f9fafb",
+      border: "1px solid #e5e7eb",
+      maxHeight: 260,
+      overflowY: "auto",
+      fontSize: 11,
+      fontFamily: "monospace",
+      whiteSpace: "pre-wrap"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "font-bold mb-1",
+    style: {
+      color: AZUL
+    }
+  }, "Resultado de la publicaci\xF3n:"), resumen.length === 0 ? "Sin novedades." : resumen.join("\n"))));
+}
+
 // SOLO PARA PRUEBA — componente del botón manual de ajuste de mixers. Visible solo para el rol
 // admin_zonal_transporte (no otros roles administrativos como Jefe de Planta o SGI). Corre el
 // ajuste de mixers de forma inmediata, ignorando la hora y reiniciando el control del día, para
@@ -16227,6 +17676,36 @@ function BotonPruebaAjusteMixer() {
     }
   }, corriendoPrueba ? "⏳..." : "🔧 Ajuste mixers"));
 }
+
+// Barra de herramientas transversal, junto a "Canales de avisos": para admins con más de una
+// planta, publicar una encuesta o la citación general no depende de tener un canal específico
+// abierto (ambas pueden ser para varias plantas a la vez) — ver AztPanel.
+function HerramientasCanalAvisos({
+  esAZT,
+  onEncuesta,
+  onCitacion
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-1.5 px-3 py-2 border-b flex-wrap shrink-0",
+    style: {
+      borderColor: "#e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: onEncuesta,
+    className: "flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold",
+    style: {
+      background: "#eef1fb",
+      color: AZUL
+    }
+  }, "\uD83D\uDCCA Encuesta"), esAZT && /*#__PURE__*/React.createElement("button", {
+    onClick: onCitacion,
+    className: "flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold",
+    style: {
+      background: "#eef1fb",
+      color: AZUL
+    }
+  }, "\uD83D\uDCCB Subir citaci\xF3n"));
+}
 function AztPanel({
   incidents,
   setIncidents,
@@ -16250,7 +17729,12 @@ function AztPanel({
   const [sol, setSol] = useState("");
   const [mobileList, setMobileList] = useState(true);
   const [plantaElegidaMobile, setPlantaElegidaMobile] = useState(false); // ¿ya entró al chat de una planta desde la lista?
+  const [subTabGestion, setSubTabGestion] = useState("choferes"); // "choferes" | "obras" — pestañas dentro de "Gestión de choferes y obras"
   const [previewAvisos, setPreviewAvisos] = useState({}); // { [planta]: { ultimo, hora, noLeidos } }
+  // Herramientas transversales (encuesta / citación) para admins con más de una planta — ver el
+  // comentario en el menú de adjuntar de PanelAvisos sobre por qué viven aquí en ese caso.
+  const [crearEncuestaTransversalAbierta, setCrearEncuestaTransversalAbierta] = useState(false);
+  const [subirCitacionTransversalAbierta, setSubirCitacionTransversalAbierta] = useState(false);
   const isDesktop = useIsDesktop();
 
   // Cargar el perfil real del administrador desde Supabase (no hardcodeado)
@@ -16336,7 +17820,7 @@ function AztPanel({
           ...a,
           reaccionesDeAviso: (reaccionesP || []).filter(r => r.aviso_id === a.id),
           miReaccion: (reaccionesP || []).find(r => r.aviso_id === a.id && r.chofer_id === admin.id)?.emoji || null,
-          respuestaPropia: (respuestasP || []).find(r => r.aviso_id === a.id && r.chofer_id === admin.id) || null
+          respuestaRuta: (respuestasP || []).find(r => r.aviso_id === a.id) || null
         }));
       }
     })();
@@ -16489,9 +17973,9 @@ function AztPanel({
     badge: totalPend + pendEmerg
   }, ...(ROLES_CON_GESTION_CHOFERES.has(admin?.rol) ? [{
     id: "gestion",
-    label: "Gestión de Choferes",
+    label: "Gestión de choferes y obras",
     icon: RefreshCw,
-    sub: "Reasignar chofer",
+    sub: "Reasignar chofer, obras y rutas",
     badge: 0
   }] : [])];
   const showSidebar = isDesktop || mobileList;
@@ -16516,7 +18000,7 @@ function AztPanel({
       }
     }, /*#__PURE__*/React.createElement("div", {
       className: "text-sm text-gray-400"
-    }, "Sesión no válida. Vuelve a ingresar desde la pantalla principal."));
+    }, "Sesi\xF3n no v\xE1lida. Vuelve a ingresar desde la pantalla principal."));
   }
   return /*#__PURE__*/React.createElement("div", {
     className: "relative w-full bg-white shadow-xl overflow-hidden flex",
@@ -16564,7 +18048,7 @@ function AztPanel({
     className: "font-bold truncate text-sm"
   }, admin.nombre), /*#__PURE__*/React.createElement("div", {
     className: "text-[11px] opacity-90"
-  }, admin.cargo, " · Panel de UNI App"))))), /*#__PURE__*/React.createElement("div", {
+  }, admin.cargo, " \xB7 Panel de UNI App"))))), /*#__PURE__*/React.createElement("div", {
     className: "flex-1 overflow-y-auto py-2"
   }, SECTIONS.map(s => {
     const active = section === s.id;
@@ -16607,7 +18091,7 @@ function AztPanel({
     }
   }, /*#__PURE__*/React.createElement("span", {
     className: "text-[11px] text-gray-400"
-  }, "Panel de gestión · UNICON")), /*#__PURE__*/React.createElement("button", {
+  }, "Panel de gesti\xF3n \xB7 UNICON")), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
       sbClient.auth.signOut();
       setAdmin(null);
@@ -16620,8 +18104,11 @@ function AztPanel({
     }
   }, /*#__PURE__*/React.createElement(LogOut, {
     size: 16
-  }), " Cerrar sesión")), showMain && /*#__PURE__*/React.createElement("main", {
-    className: "flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden"
+  }), " Cerrar sesi\xF3n")), showMain && /*#__PURE__*/React.createElement("main", {
+    className: "flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden",
+    style: {
+      background: "#f6f8fc"
+    }
   }, !section && /*#__PURE__*/React.createElement("div", {
     className: "flex-1 flex items-center justify-center p-6"
   }, /*#__PURE__*/React.createElement("div", {
@@ -16636,7 +18123,7 @@ function AztPanel({
     color: AZUL
   })), /*#__PURE__*/React.createElement("p", {
     className: "text-sm font-semibold text-gray-600"
-  }, "Elige una opción del menú para comenzar"))), section === "estado" && /*#__PURE__*/React.createElement(EstadoMixers, {
+  }, "Elige una opci\xF3n del men\xFA para comenzar"))), section === "estado" && /*#__PURE__*/React.createElement(EstadoMixers, {
     incidents: incidents,
     plant: plant,
     setPlant: setPlant,
@@ -16725,7 +18212,7 @@ function AztPanel({
     }
   }, /*#__PURE__*/React.createElement(Wrench, {
     size: 13
-  }), " Fallas mecánicas", pendEmerg > 0 && /*#__PURE__*/React.createElement("span", {
+  }), " Fallas mec\xE1nicas", pendEmerg > 0 && /*#__PURE__*/React.createElement("span", {
     className: "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
     style: {
       background: incView === "emergencias" ? "#e11d48" : "#9ca3af",
@@ -16899,7 +18386,7 @@ function AztPanel({
     }
   }, /*#__PURE__*/React.createElement(Wrench, {
     size: 13
-  }), " Fallas mecánicas", pendEmerg > 0 && /*#__PURE__*/React.createElement("span", {
+  }), " Fallas mec\xE1nicas", pendEmerg > 0 && /*#__PURE__*/React.createElement("span", {
     className: "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
     style: {
       background: incView === "emergencias" ? "#e11d48" : "#9ca3af",
@@ -17093,6 +18580,8 @@ function AztPanel({
     },
     planta: admin.plantas[0],
     puedePublicar: true,
+    plantasAdmin: admin?.plantas,
+    esAZT: admin?.rol === "admin_zonal_transporte",
     isDesktop: isDesktop
   })) : isDesktop ? /*#__PURE__*/React.createElement("div", {
     className: "flex flex-1 min-h-0 overflow-hidden"
@@ -17110,7 +18599,11 @@ function AztPanel({
     }
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-[10px] font-bold uppercase tracking-wide text-gray-400"
-  }, "Canales de avisos")), /*#__PURE__*/React.createElement("div", {
+  }, "Canales de avisos")), /*#__PURE__*/React.createElement(HerramientasCanalAvisos, {
+    esAZT: admin?.rol === "admin_zonal_transporte",
+    onEncuesta: () => setCrearEncuestaTransversalAbierta(true),
+    onCitacion: () => setSubirCitacionTransversalAbierta(true)
+  }), /*#__PURE__*/React.createElement("div", {
     className: "flex-1 p-2 space-y-1"
   }, plantList.filter(p => p !== "Todas").map(p => {
     const active = plant === p;
@@ -17173,6 +18666,8 @@ function AztPanel({
     },
     planta: plant === "Todas" ? admin?.plantas?.[0] || "San Isidro" : plant,
     puedePublicar: true,
+    plantasAdmin: admin?.plantas,
+    esAZT: admin?.rol === "admin_zonal_transporte",
     isDesktop: isDesktop
   }))) : !plantaElegidaMobile ?
   /*#__PURE__*/
@@ -17194,7 +18689,11 @@ function AztPanel({
     style: {
       color: AZUL
     }
-  }, "Canales de avisos")), [...plantList.filter(p => p !== "Todas")].sort((a, b) => {
+  }, "Canales de avisos")), /*#__PURE__*/React.createElement(HerramientasCanalAvisos, {
+    esAZT: admin?.rol === "admin_zonal_transporte",
+    onEncuesta: () => setCrearEncuestaTransversalAbierta(true),
+    onCitacion: () => setSubirCitacionTransversalAbierta(true)
+  }), [...plantList.filter(p => p !== "Todas")].sort((a, b) => {
     const tsA = previewAvisos[a]?.ultimo?.created_at ? new Date(previewAvisos[a].ultimo.created_at).getTime() : 0;
     const tsB = previewAvisos[b]?.ultimo?.created_at ? new Date(previewAvisos[b].ultimo.created_at).getTime() : 0;
     return tsB - tsA;
@@ -17264,20 +18763,57 @@ function AztPanel({
     },
     planta: plant,
     puedePublicar: true,
+    plantasAdmin: admin?.plantas,
+    esAZT: admin?.rol === "admin_zonal_transporte",
     isDesktop: isDesktop
-  }))), section === "gestion" && /*#__PURE__*/React.createElement("div", {
-    className: "flex-1 overflow-y-auto p-4",
-    style: {
-      background: "#f6f8fc"
-    }
+  }))), crearEncuestaTransversalAbierta && /*#__PURE__*/React.createElement(ModalCrearEncuesta, {
+    plantasAdmin: admin?.plantas,
+    yo: {
+      id: admin?.id,
+      dni: admin?.dni,
+      nombre: admin?.nombre,
+      cargo: admin?.cargo
+    },
+    onClose: () => setCrearEncuestaTransversalAbierta(false)
+  }), subirCitacionTransversalAbierta && /*#__PURE__*/React.createElement(ModalSubirCitacionGeneral, {
+    plantasAdmin: admin?.plantas,
+    yo: {
+      id: admin?.id,
+      dni: admin?.dni,
+      nombre: admin?.nombre,
+      cargo: admin?.cargo
+    },
+    onClose: () => setSubirCitacionTransversalAbierta(false)
+  }), section === "gestion" && /*#__PURE__*/React.createElement("div", {
+    className: "overflow-y-auto p-4"
   }, !isDesktop && /*#__PURE__*/React.createElement("button", {
     onClick: () => setMobileList(true),
     className: "text-xs text-gray-500 mb-3 flex items-center gap-1"
   }, /*#__PURE__*/React.createElement(ChevronLeft, {
     size: 14
-  }), " Menú"), /*#__PURE__*/React.createElement(CambioSede, {
+  }), " Men\xFA"), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-1.5 mb-4"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setSubTabGestion("choferes"),
+    className: "px-4 py-2 rounded-lg text-sm font-bold",
+    style: {
+      background: subTabGestion === "choferes" ? AZUL : "white",
+      color: subTabGestion === "choferes" ? "white" : "#374151",
+      border: `1px solid ${subTabGestion === "choferes" ? AZUL : "#e6e8ee"}`
+    }
+  }, "Choferes"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setSubTabGestion("obras"),
+    className: "px-4 py-2 rounded-lg text-sm font-bold",
+    style: {
+      background: subTabGestion === "obras" ? AZUL : "white",
+      color: subTabGestion === "obras" ? "white" : "#374151",
+      border: `1px solid ${subTabGestion === "obras" ? AZUL : "#e6e8ee"}`
+    }
+  }, "Obras")), subTabGestion === "choferes" ? /*#__PURE__*/React.createElement(CambioSede, {
     plantasAzt: admin?.plantas || PLANTAS_TODAS,
     isDesktop: isDesktop
+  }) : /*#__PURE__*/React.createElement(GestionObras, {
+    plantasAdmin: admin?.plantas || PLANTAS_TODAS
   }))), selected && /*#__PURE__*/React.createElement(IncidentModal, {
     incident: selected,
     onClose: () => setSelected(null),
@@ -17446,7 +18982,7 @@ function EstadoMixers({
   }), /*#__PURE__*/React.createElement("input", {
     value: q,
     onChange: e => setQ(e.target.value),
-    placeholder: "Buscar por mixer o chofer…",
+    placeholder: "Buscar por mixer o chofer\u2026",
     className: "w-full pl-9 pr-3 py-2 rounded-lg border text-sm outline-none",
     style: {
       borderColor: "#d5d9e4"
@@ -17473,7 +19009,7 @@ function EstadoMixers({
     }
   }, t.label))), /*#__PURE__*/React.createElement("div", {
     className: "text-[11px] text-gray-400"
-  }, "Reportes de fin de vuelta que hacen los choferes en la app · ", filtered.length, " registros · más recientes primero")), /*#__PURE__*/React.createElement("div", {
+  }, "Reportes de fin de vuelta que hacen los choferes en la app \xB7 ", filtered.length, " registros \xB7 m\xE1s recientes primero")), /*#__PURE__*/React.createElement("div", {
     className: "flex-1 overflow-auto p-3 space-y-2",
     style: {
       background: "#f6f8fc"
@@ -17520,11 +19056,11 @@ function ReporteCard({
     }
   }, r.mixer), /*#__PURE__*/React.createElement("span", {
     className: "text-gray-300 text-xs"
-  }, "·"), /*#__PURE__*/React.createElement("span", {
+  }, "\xB7"), /*#__PURE__*/React.createElement("span", {
     className: "text-xs text-gray-700 truncate"
   }, r.chofer)), /*#__PURE__*/React.createElement("div", {
     className: "text-[10px] text-gray-400 flex items-center gap-1.5"
-  }, /*#__PURE__*/React.createElement("span", null, r.planta), /*#__PURE__*/React.createElement("span", null, "·"), /*#__PURE__*/React.createElement("span", null, relativeTime(r.ts), " (", r.hora, ")"))), /*#__PURE__*/React.createElement("span", {
+  }, /*#__PURE__*/React.createElement("span", null, r.planta), /*#__PURE__*/React.createElement("span", null, "\xB7"), /*#__PURE__*/React.createElement("span", null, relativeTime(r.ts), " (", r.hora, ")"))), /*#__PURE__*/React.createElement("span", {
     className: "text-[10px] font-bold uppercase rounded-full px-2 py-0.5",
     style: {
       background: isLav ? "#e0f2fe" : "#eef2ff",
@@ -17562,7 +19098,7 @@ function ReporteCard({
       color: conProblema ? "#991b1b" : "#4b5563",
       border: `1px solid ${conProblema ? "#fecaca" : "#e6e8ee"}`
     }
-  }, "💬 ", r.coment)));
+  }, "\uD83D\uDCAC ", r.coment)));
 }
 
 /* ====== Feed de Fallas Mecánicas (dentro de incidencias) ====== */
@@ -17589,7 +19125,7 @@ function EmergenciasFeed({
     }
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-[11px] text-gray-500 leading-relaxed mb-2"
-  }, "Registros de fallas mecánicas reportadas por los choferes a través de UNIKIN con el ROP. Recepción: AZT, Despachador, Mantenimiento · SGI."), /*#__PURE__*/React.createElement("div", {
+  }, "Registros de fallas mec\xE1nicas reportadas por los choferes a trav\xE9s de UNIKIN con el ROP. Recepci\xF3n: AZT, Despachador, Mantenimiento \xB7 SGI."), /*#__PURE__*/React.createElement("div", {
     className: "relative",
     style: {
       maxWidth: 260
@@ -17617,9 +19153,9 @@ function EmergenciasFeed({
     className: "mx-auto mb-3 opacity-30"
   }), /*#__PURE__*/React.createElement("p", {
     className: "text-sm font-medium"
-  }, "No hay fallas mecánicas", plant !== "Todas" ? ` en ${plant}` : ""), /*#__PURE__*/React.createElement("p", {
+  }, "No hay fallas mec\xE1nicas", plant !== "Todas" ? ` en ${plant}` : ""), /*#__PURE__*/React.createElement("p", {
     className: "text-xs mt-1"
-  }, "Las fallas reportadas por los choferes aparecerán aquí en tiempo real.")), /*#__PURE__*/React.createElement("div", {
+  }, "Las fallas reportadas por los choferes aparecer\xE1n aqu\xED en tiempo real.")), /*#__PURE__*/React.createElement("div", {
     className: "space-y-3"
   }, filtered.map(e => {
     const tiposStr = (e.fallaTipos || []).join(", ") || "Falla mecánica";
@@ -17659,7 +19195,7 @@ function EmergenciasFeed({
       }
     }, tiposStr)), /*#__PURE__*/React.createElement("div", {
       className: "text-xs text-gray-500 mt-0.5"
-    }, e.planta, " · ", e.carga)), /*#__PURE__*/React.createElement("div", {
+    }, e.planta, " \xB7 ", e.carga)), /*#__PURE__*/React.createElement("div", {
       className: "text-right shrink-0"
     }, /*#__PURE__*/React.createElement("div", {
       className: "text-[11px] text-gray-400 flex items-center gap-1"
@@ -17722,7 +19258,7 @@ function EmergenciasFeed({
       className: "text-[11px] text-gray-400 flex items-center gap-2"
     }, /*#__PURE__*/React.createElement(Phone, {
       size: 11
-    }), " ", e.telefono, e.origen && /*#__PURE__*/React.createElement("span", null, "· vía ", e.origen))))));
+    }), " ", e.telefono, e.origen && /*#__PURE__*/React.createElement("span", null, "\xB7 v\xEDa ", e.origen))))));
   }))));
 }
 function IncidentModal({
@@ -17833,7 +19369,7 @@ function IncidentModal({
     size: 11
   }))), /*#__PURE__*/React.createElement("div", {
     className: "text-[10px] opacity-60"
-  }, live.unidad, " · ", live.planta, " · ", live.obra)), /*#__PURE__*/React.createElement("div", {
+  }, live.unidad, " \xB7 ", live.planta, " \xB7 ", live.obra)), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-1 shrink-0"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowAdd(!showAdd),
@@ -17874,7 +19410,7 @@ function IncidentModal({
       size: 15
     }), " Choferes que reportan el mismo problema"), /*#__PURE__*/React.createElement("div", {
       className: "text-[11px] text-gray-500 mt-0.5"
-    }, INCIDENT_TYPES.find(t => t.id === live.tipo)?.label, " · ", live.obra, " · ", live.hora)), /*#__PURE__*/React.createElement("div", {
+    }, INCIDENT_TYPES.find(t => t.id === live.tipo)?.label, " \xB7 ", live.obra, " \xB7 ", live.hora)), /*#__PURE__*/React.createElement("div", {
       className: "flex-1 overflow-y-auto p-4 space-y-3",
       style: {
         background: "#f6f8fc"
@@ -17898,7 +19434,7 @@ function IncidentModal({
       className: "text-sm font-bold text-gray-800"
     }, live.chofer), /*#__PURE__*/React.createElement("div", {
       className: "text-[11px] text-gray-400"
-    }, "Registró la incidencia · ", live.hora))), /*#__PURE__*/React.createElement("div", {
+    }, "Registr\xF3 la incidencia \xB7 ", live.hora))), /*#__PURE__*/React.createElement("div", {
       className: "text-[10px] font-bold uppercase tracking-wide mt-2 px-1 rounded",
       style: {
         color: AZUL
@@ -17984,7 +19520,7 @@ function IncidentModal({
     }
   }, msgs.length === 0 && /*#__PURE__*/React.createElement("div", {
     className: "text-center text-xs text-gray-400 py-6"
-  }, "Aún no hay mensajes en esta incidencia."), (() => {
+  }, "A\xFAn no hay mensajes en esta incidencia."), (() => {
     const afectadosNames = (live.afectados || []).map(n => n.split(" ").slice(0, 2).join(" "));
     const isAfectadoMsg = m => m.rol === "Chofer" && afectadosNames.some(a => m.nombre === a || (m.texto || "").includes("confirma el mismo problema"));
     const visibleMsgs = msgs.filter(m => !isAfectadoMsg(m));
@@ -18030,7 +19566,7 @@ function IncidentModal({
     value: msg,
     onChange: e => setMsg(e.target.value),
     onKeyDown: e => e.key === "Enter" && sendMsg(),
-    placeholder: "Escribe un mensaje…",
+    placeholder: "Escribe un mensaje\u2026",
     className: "flex-1 px-3 py-2 rounded-full border text-sm outline-none",
     style: {
       borderColor: "#d5d9e4"
@@ -18069,13 +19605,13 @@ function IncidentModal({
     style: {
       color: AZUL
     }
-  }, "¿Qué respuesta le envías al chofer?"), /*#__PURE__*/React.createElement("p", {
+  }, "\xBFQu\xE9 respuesta le env\xEDas al chofer?"), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-gray-500"
-  }, "Esta respuesta es lo que verá el chofer en su pantalla cuando marques como resuelta."), /*#__PURE__*/React.createElement("textarea", {
+  }, "Esta respuesta es lo que ver\xE1 el chofer en su pantalla cuando marques como resuelta."), /*#__PURE__*/React.createElement("textarea", {
     value: respuesta,
     onChange: e => setRespuesta(e.target.value),
     rows: 3,
-    placeholder: "Ej. Ya se coordinó con vigilancia, puedes ingresar con normalidad…",
+    placeholder: "Ej. Ya se coordin\xF3 con vigilancia, puedes ingresar con normalidad\u2026",
     className: "w-full px-3 py-2.5 rounded-xl border text-sm outline-none resize-none",
     style: {
       borderColor: "#d5d9e4"
@@ -18143,7 +19679,7 @@ function IncidentList({
     className: "space-y-2"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-xs text-gray-500 mb-1"
-  }, "Ordenadas por actividad más reciente."), items.map(i => {
+  }, "Ordenadas por actividad m\xE1s reciente."), items.map(i => {
     const t = INCIDENT_TYPES.find(x => x.id === i.tipo);
     const nAfectados = (i.afectados || []).length;
     const choferLabel = nAfectados > 0 ? `${i.chofer} y ${nAfectados === 1 ? "1 chofer más" : `otros ${nAfectados} choferes`}` : i.chofer;
@@ -18176,7 +19712,7 @@ function IncidentList({
       size: 11
     }))), /*#__PURE__*/React.createElement("div", {
       className: "text-xs text-gray-400"
-    }, i.unidad, " · ", i.planta, " · ", i.obra)), /*#__PURE__*/React.createElement("div", {
+    }, i.unidad, " \xB7 ", i.planta, " \xB7 ", i.obra)), /*#__PURE__*/React.createElement("div", {
       className: "text-right shrink-0"
     }, /*#__PURE__*/React.createElement("div", {
       className: "text-[11px] text-gray-400"
@@ -18325,7 +19861,7 @@ function CambioSede({
     className: "font-medium text-gray-800 text-sm truncate"
   }, r.nombre), /*#__PURE__*/React.createElement("div", {
     className: "text-[10px] text-gray-400 truncate"
-  }, "DNI ", r.dni, " · ", r.unidad || "s/u", " · ", r.actual)), /*#__PURE__*/React.createElement("select", {
+  }, "DNI ", r.dni, " \xB7 ", r.unidad || "s/u", " \xB7 ", r.actual)), /*#__PURE__*/React.createElement("select", {
     value: r.nueva,
     onChange: e => change(r.id, e.target.value),
     className: "text-xs rounded-lg border px-1.5 py-1.5 outline-none shrink-0",
@@ -18349,7 +19885,445 @@ function CambioSede({
     }
   }, guardando ? "Guardando..." : "Guardar reasignaciones"), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-gray-400 mt-3"
-  }, "Los cambios se aplican de inmediato: el chofer verá un aviso para reingresar sesión, y Gestión Humana verá el cambio reflejado."));
+  }, "Los cambios se aplican de inmediato: el chofer ver\xE1 un aviso para reingresar sesi\xF3n, y Gesti\xF3n Humana ver\xE1 el cambio reflejado."));
+}
+
+// Catálogo de obras por planta que UNIBOT ofrece a elegir en "Rutas y acceso a obra" (ver
+// flujoRutaObra en UniBot). Se gestiona manualmente o por carga masiva de Excel, mismo patrón que
+// la carga de personal en GestionHumanaPanel (columnas Planta/Obra, todo-o-nada).
+const OBRAS_POR_PAGINA = 8;
+function GestionObras({
+  plantasAdmin
+}) {
+  const [obras, setObras] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filtroPlanta, setFiltroPlanta] = useState(plantasAdmin?.[0] || "");
+  const [pagina, setPagina] = useState(0); // 0-based, se resetea al cambiar de planta
+  const [nuevaObra, setNuevaObra] = useState("");
+  const [guardando, setGuardando] = useState(false);
+  const [subiendoExcel, setSubiendoExcel] = useState(false);
+  const [mensaje, setMensaje] = useState(null);
+  const fileRef = useRef(null);
+  const cargarObras = async () => {
+    setLoading(true);
+    const {
+      data,
+      error
+    } = await sbClient.from("obras_planta").select("*").in("planta", plantasAdmin).order("planta").order("obra");
+    if (!error) setObras(data || []);
+    setLoading(false);
+  };
+  useEffect(() => {
+    cargarObras();
+  }, [JSON.stringify(plantasAdmin)]);
+  useEffect(() => {
+    const canal = sbClient.channel("obras-planta-gestion").on("postgres_changes", {
+      event: "*",
+      schema: "public",
+      table: "obras_planta"
+    }, cargarObras).subscribe();
+    return () => {
+      sbClient.removeChannel(canal);
+    };
+  }, []);
+  useEffect(() => {
+    if (!mensaje || mensaje.tipo === "error") return;
+    const t = setTimeout(() => setMensaje(null), 5000);
+    return () => clearTimeout(t);
+  }, [mensaje]);
+  const agregarObra = async () => {
+    const obraLimpia = nuevaObra.trim();
+    if (!obraLimpia || !filtroPlanta) return;
+    setGuardando(true);
+    const {
+      data,
+      error
+    } = await sbClient.from("obras_planta").insert({
+      planta: filtroPlanta,
+      obra: obraLimpia
+    }).select().single();
+    setGuardando(false);
+    if (error) {
+      setMensaje({
+        tipo: "error",
+        texto: error.message
+      });
+      return;
+    }
+    // No depender solo de Realtime (hay que activarlo aparte en Supabase, y aunque esté activado
+    // siempre hay un salto): se agrega al estado local de inmediato para que se vea en el momento.
+    setObras(prev => [...prev, data]);
+    setNuevaObra("");
+    setPagina(0); // que la recién agregada quede visible (ordenadas alfabéticamente, pero simplifica volver al inicio)
+    setMensaje({
+      tipo: "ok",
+      texto: "Obra agregada."
+    });
+  };
+  const borrarObra = async id => {
+    setObras(prev => prev.filter(o => o.id !== id)); // optimista, se ve al toque
+    const {
+      error
+    } = await sbClient.from("obras_planta").delete().eq("id", id);
+    if (error) {
+      setMensaje({
+        tipo: "error",
+        texto: error.message
+      });
+      cargarObras();
+    } // revierte si falló
+  };
+  const manejarCargaExcel = async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setSubiendoExcel(true);
+    setMensaje(null);
+    try {
+      const buf = await file.arrayBuffer();
+      const wb = new ExcelJS.Workbook();
+      await wb.xlsx.load(buf);
+      const sheet = wb.worksheets[0];
+      let headerRowNum = -1,
+        colPlanta = -1,
+        colObra = -1;
+      sheet.eachRow((row, rowNumber) => {
+        if (headerRowNum !== -1) return;
+        const valores = [];
+        row.eachCell({
+          includeEmpty: true
+        }, (cell, colNumber) => {
+          valores[colNumber] = normalizarTextoExcel(cell.value);
+        });
+        const cp = valores.findIndex(v => v === "planta");
+        const co = valores.findIndex(v => v === "obra");
+        if (cp !== -1 && co !== -1) {
+          headerRowNum = rowNumber;
+          colPlanta = cp;
+          colObra = co;
+        }
+      });
+      if (headerRowNum === -1) {
+        setMensaje({
+          tipo: "error",
+          texto: "No se encontró la fila de encabezados (columnas Planta/Obra)."
+        });
+        setSubiendoExcel(false);
+        return;
+      }
+      const filas = [];
+      const errores = [];
+      for (let i = headerRowNum + 1; i <= sheet.rowCount; i++) {
+        const row = sheet.getRow(i);
+        const plantaCruda = celdaTextoExcel(row, colPlanta);
+        const obra = celdaTextoExcel(row, colObra);
+        if (!plantaCruda && !obra) continue; // fila vacía
+        const plantaCanonica = resolverPlantaExcel(plantaCruda);
+        if (!plantaCanonica) {
+          errores.push(`Fila ${i}: planta "${plantaCruda}" no reconocida.`);
+          continue;
+        }
+        if (!obra) {
+          errores.push(`Fila ${i}: falta el nombre de la obra.`);
+          continue;
+        }
+        filas.push({
+          planta: plantaCanonica,
+          obra
+        });
+      }
+      // Todo o nada: si cualquier fila tiene error, no se sube nada (mismo criterio que Gestión Humana).
+      if (errores.length) {
+        setMensaje({
+          tipo: "error",
+          texto: `No se subió nada. Errores:\n${errores.join("\n")}`
+        });
+        setSubiendoExcel(false);
+        return;
+      }
+      if (filas.length === 0) {
+        setMensaje({
+          tipo: "error",
+          texto: "El archivo no tiene filas válidas."
+        });
+        setSubiendoExcel(false);
+        return;
+      }
+      const {
+        error
+      } = await sbClient.from("obras_planta").upsert(filas, {
+        onConflict: "planta,obra",
+        ignoreDuplicates: true
+      });
+      if (error) {
+        setMensaje({
+          tipo: "error",
+          texto: error.message
+        });
+      } else {
+        setMensaje({
+          tipo: "ok",
+          texto: `${filas.length} obras cargadas.`
+        });
+        await cargarObras();
+      }
+    } catch (err) {
+      setMensaje({
+        tipo: "error",
+        texto: err.message
+      });
+    }
+    setSubiendoExcel(false);
+    if (fileRef.current) fileRef.current.value = "";
+  };
+
+  // Plantilla descargable: mismo criterio que GestionHumanaPanel (una hoja por planta, ya con las
+  // filas que existan hoy en el sistema, para revisar/editar y volver a subir).
+  const descargarPlantilla = async () => {
+    const wb = new ExcelJS.Workbook();
+    const AZUL_ARGB = "FF0028AA";
+    const headerFont = {
+      bold: true,
+      color: {
+        argb: "FFFFFFFF"
+      },
+      name: "Arial",
+      size: 11
+    };
+    const headerFill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: {
+        argb: AZUL_ARGB
+      }
+    };
+    const thinBorder = {
+      top: {
+        style: "thin",
+        color: {
+          argb: "FFD0D0D0"
+        }
+      },
+      bottom: {
+        style: "thin",
+        color: {
+          argb: "FFD0D0D0"
+        }
+      },
+      left: {
+        style: "thin",
+        color: {
+          argb: "FFD0D0D0"
+        }
+      },
+      right: {
+        style: "thin",
+        color: {
+          argb: "FFD0D0D0"
+        }
+      }
+    };
+    plantasAdmin.forEach(planta => {
+      const ws = wb.addWorksheet(planta.slice(0, 31), {
+        properties: {
+          tabColor: {
+            argb: AZUL_ARGB
+          }
+        }
+      });
+      ws.mergeCells("A1:B1");
+      ws.getCell("A1").value = `Obras — Planta ${planta}`;
+      ws.getCell("A1").font = {
+        bold: true,
+        size: 13,
+        color: {
+          argb: AZUL_ARGB
+        },
+        name: "Arial"
+      };
+      ["Planta", "Obra"].forEach((h, i) => {
+        const cell = ws.getCell(2, i + 1);
+        cell.value = h;
+        cell.font = headerFont;
+        cell.fill = headerFill;
+        cell.border = thinBorder;
+        cell.alignment = {
+          horizontal: "center",
+          vertical: "middle"
+        };
+      });
+      ws.columns = [{
+        width: 20
+      }, {
+        width: 45
+      }];
+      const obrasPlanta = obras.filter(o => o.planta === planta);
+      obrasPlanta.forEach((o, idx) => {
+        const row = 3 + idx;
+        ws.getCell(row, 1).value = planta;
+        ws.getCell(row, 2).value = o.obra;
+        ws.getCell(row, 1).border = thinBorder;
+        ws.getCell(row, 2).border = thinBorder;
+        ws.getCell(row, 1).font = {
+          name: "Arial",
+          size: 11
+        };
+        ws.getCell(row, 2).font = {
+          name: "Arial",
+          size: 11
+        };
+      });
+      const lastRow = Math.max(20, 3 + obrasPlanta.length + 10);
+      for (let row = 3; row <= lastRow; row++) {
+        for (let col = 1; col <= 2; col++) {
+          const cell = ws.getCell(row, col);
+          if (!cell.value) cell.border = thinBorder;
+        }
+      }
+      ws.views = [{
+        state: "frozen",
+        ySplit: 2
+      }];
+    });
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Obras_UNICON_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+  const obrasFiltradas = obras.filter(o => o.planta === filtroPlanta);
+  const totalPaginas = Math.max(1, Math.ceil(obrasFiltradas.length / OBRAS_POR_PAGINA));
+  const paginaSegura = Math.min(pagina, totalPaginas - 1);
+  const obrasPagina = obrasFiltradas.slice(paginaSegura * OBRAS_POR_PAGINA, paginaSegura * OBRAS_POR_PAGINA + OBRAS_POR_PAGINA);
+  return /*#__PURE__*/React.createElement("div", {
+    className: "max-w-3xl mx-auto"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "font-bold text-sm mb-1",
+    style: {
+      color: AZUL
+    }
+  }, "\uD83C\uDFD7\uFE0F Obras y accesos por planta"), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-gray-400 mb-3"
+  }, "Las obras que agregues aqu\xED son las que UNIBOT ofrece elegir cuando un chofer consulta \"Rutas y acceso a obra\"."), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-1.5 mb-3"
+  }, plantasAdmin.map(p => /*#__PURE__*/React.createElement("button", {
+    key: p,
+    onClick: () => {
+      setFiltroPlanta(p);
+      setPagina(0);
+    },
+    className: "px-2.5 py-1.5 rounded-full text-xs font-semibold",
+    style: {
+      background: filtroPlanta === p ? AZUL : "#f3f4f6",
+      color: filtroPlanta === p ? "white" : "#374151"
+    }
+  }, p))), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2 mb-3"
+  }, /*#__PURE__*/React.createElement("input", {
+    value: nuevaObra,
+    onChange: e => setNuevaObra(e.target.value),
+    onKeyDown: e => e.key === "Enter" && agregarObra(),
+    placeholder: `Agregar obra en ${filtroPlanta}...`,
+    className: "flex-1 px-3 py-2 text-sm rounded-lg border",
+    style: {
+      borderColor: "#d5d9e4"
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: agregarObra,
+    disabled: guardando || !nuevaObra.trim(),
+    className: "px-3 py-2 rounded-lg text-sm font-bold disabled:opacity-40",
+    style: {
+      background: AMARILLO,
+      color: AZUL
+    }
+  }, "Agregar")), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-3 mb-3"
+  }, /*#__PURE__*/React.createElement("input", {
+    ref: fileRef,
+    type: "file",
+    accept: ".xlsx,.xls",
+    style: {
+      display: "none"
+    },
+    onChange: manejarCargaExcel
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: () => fileRef.current?.click(),
+    disabled: subiendoExcel,
+    className: "text-xs font-semibold disabled:opacity-50",
+    style: {
+      color: AZUL
+    }
+  }, subiendoExcel ? "⏳ Procesando..." : "📤 Cargar Excel masivo"), /*#__PURE__*/React.createElement("button", {
+    onClick: descargarPlantilla,
+    className: "text-xs font-semibold",
+    style: {
+      color: AZUL
+    }
+  }, "\uD83D\uDCE5 Descargar plantilla")), mensaje && /*#__PURE__*/React.createElement("div", {
+    className: "mb-3 text-sm px-3 py-2 rounded-lg border",
+    style: {
+      background: mensaje.tipo === "error" ? "#fef2f2" : "#f0fdf4",
+      borderColor: mensaje.tipo === "error" ? "#fecaca" : "#bbf7d0",
+      color: mensaje.tipo === "error" ? "#b91c1c" : "#15803d",
+      whiteSpace: "pre-wrap"
+    }
+  }, mensaje.texto), /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-xl shadow-sm overflow-hidden"
+  }, loading ? /*#__PURE__*/React.createElement("div", {
+    className: "text-center py-12 text-gray-400 text-sm"
+  }, "Cargando...") : obrasFiltradas.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    className: "text-center py-12 text-gray-400 text-sm"
+  }, "Sin obras registradas para ", filtroPlanta, ".") : /*#__PURE__*/React.createElement("table", {
+    className: "w-full text-sm border-collapse"
+  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", {
+    className: "text-left text-xs text-gray-400 border-b",
+    style: {
+      borderColor: "#e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("th", {
+    className: "pb-1.5 pt-3 pl-4 font-semibold"
+  }, "Obra"), /*#__PURE__*/React.createElement("th", {
+    className: "pb-1.5 pt-3 pr-4 font-semibold w-10"
+  }))), /*#__PURE__*/React.createElement("tbody", null, obrasPagina.map(o => /*#__PURE__*/React.createElement("tr", {
+    key: o.id,
+    className: "border-b",
+    style: {
+      borderColor: "#f0f2f6"
+    }
+  }, /*#__PURE__*/React.createElement("td", {
+    className: "py-2 pl-4 text-gray-700"
+  }, o.obra), /*#__PURE__*/React.createElement("td", {
+    className: "py-2 pr-4 text-right"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => borrarObra(o.id),
+    className: "text-gray-400 hover:text-red-500"
+  }, /*#__PURE__*/React.createElement(X, {
+    size: 15
+  })))))))), totalPaginas > 1 && /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-center gap-3 mt-3"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setPagina(p => Math.max(0, p - 1)),
+    disabled: paginaSegura === 0,
+    className: "disabled:opacity-30"
+  }, /*#__PURE__*/React.createElement(ChevronLeft, {
+    size: 18,
+    color: AZUL
+  })), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs font-semibold text-gray-500"
+  }, paginaSegura + 1, "/", totalPaginas), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setPagina(p => Math.min(totalPaginas - 1, p + 1)),
+    disabled: paginaSegura >= totalPaginas - 1,
+    className: "disabled:opacity-30"
+  }, /*#__PURE__*/React.createElement(ChevronRight, {
+    size: 18,
+    color: AZUL
+  }))));
 }
 
 /* ===================== UI HELPERS ===================== */
@@ -18563,8 +20537,8 @@ function DropdownConOtro({
     key: o,
     value: o
   }, o)), /*#__PURE__*/React.createElement("option", {
-    value: "Otra…"
-  }, "✏️ Otra… (escribir)")), /*#__PURE__*/React.createElement(ChevronDown, {
+    value: "Otra\u2026"
+  }, "\u270F\uFE0F Otra\u2026 (escribir)")), /*#__PURE__*/React.createElement(ChevronDown, {
     size: 18,
     className: "absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none",
     color: seleccionSelect ? AZUL : "#8a91a0"
@@ -18687,7 +20661,7 @@ function FotoAdjuntar({
     }
   }, attached ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Check, {
     size: 17
-  }), " ", attached, " · toca para cambiar") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Camera, {
+  }), " ", attached, " \xB7 toca para cambiar") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Camera, {
     size: 17
   }), " Adjuntar foto (opcional)")));
 }
@@ -18832,7 +20806,7 @@ function AuxilioForm({
     className: sp
   }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
     className: lbl
-  }, "Nº Mixer"), /*#__PURE__*/React.createElement("input", {
+  }, "N\xBA Mixer"), /*#__PURE__*/React.createElement("input", {
     value: mixer,
     onChange: e => setMixer(e.target.value.replace(/[^\d]/g, "")),
     inputMode: "numeric",
@@ -18847,10 +20821,10 @@ function AuxilioForm({
     label: compact ? "Planta donde operas" : "Planta donde estás trabajando",
     value: planta,
     onChange: setPlanta,
-    placeholder: "Escribe la planta…"
+    placeholder: "Escribe la planta\u2026"
   }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
     className: lbl
-  }, "¿Cargado o vacío?"), /*#__PURE__*/React.createElement("div", {
+  }, "\xBFCargado o vac\xEDo?"), /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-2 gap-1.5 mt-0.5"
   }, ["Cargado", "Vacío"].map(c => /*#__PURE__*/React.createElement("button", {
     key: c,
@@ -18863,11 +20837,11 @@ function AuxilioForm({
     }
   }, c)))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
     className: lbl
-  }, "Descripción"), /*#__PURE__*/React.createElement("textarea", {
+  }, "Descripci\xF3n"), /*#__PURE__*/React.createElement("textarea", {
     value: desc,
     onChange: e => setDesc(e.target.value),
     rows: compact ? 2 : 3,
-    placeholder: "Ej. Se quedó sin luces, fuga de aire…",
+    placeholder: "Ej. Se qued\xF3 sin luces, fuga de aire\u2026",
     className: `${inp} resize-none`,
     style: {
       borderColor: desc ? AZUL : "#d5d9e4"
