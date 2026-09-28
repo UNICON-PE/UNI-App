@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-09-25T23:30:59.289Z */
+/* UniconApp — Bundle generado el 2026-09-28T18:28:13.878Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 14430 — CERO simplificaciones */
+/* Líneas originales del JSX: 16768 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -1058,6 +1058,53 @@ const ChevronUp = ({
 }, props), React.createElement("path", {
   "d": "m18 15-6-6-6 6"
 }));
+const BookOpen = ({
+  size = 24,
+  color = "currentColor",
+  className = "",
+  strokeWidth = 2,
+  ...props
+}) => React.createElement("svg", Object.assign({
+  width: size,
+  height: size,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: color,
+  strokeWidth: strokeWidth,
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  className: className
+}, props), React.createElement("path", {
+  "d": "M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"
+}), React.createElement("path", {
+  "d": "M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"
+}));
+const Lock = ({
+  size = 24,
+  color = "currentColor",
+  className = "",
+  strokeWidth = 2,
+  ...props
+}) => React.createElement("svg", Object.assign({
+  width: size,
+  height: size,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: color,
+  strokeWidth: strokeWidth,
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  className: className
+}, props), React.createElement("rect", {
+  "width": "18",
+  "height": "11",
+  "x": "3",
+  "y": "11",
+  "rx": "2",
+  "ry": "2"
+}), React.createElement("path", {
+  "d": "M7 11V7a5 5 0 0 1 10 0v4"
+}));
 const {
   useState,
   useEffect,
@@ -1075,7 +1122,10 @@ const WA_SENT = "#DCF8C6";
 /* ===================== EMOJIS PROPIOS UNICON ===================== */
 const CascoEmoji = ({
   s = 22
-}) => /*#__PURE__*/React.createElement("svg", {
+}) =>
+/*#__PURE__*/
+/*#__PURE__*/
+React.createElement("svg", {
   width: s,
   height: s,
   viewBox: "0 0 32 32"
@@ -1103,7 +1153,10 @@ const CascoEmoji = ({
 }));
 const TrompoEmoji = ({
   s = 22
-}) => /*#__PURE__*/React.createElement("svg", {
+}) =>
+/*#__PURE__*/
+/*#__PURE__*/
+React.createElement("svg", {
   width: s,
   height: s,
   viewBox: "0 0 32 32"
@@ -1128,7 +1181,10 @@ const TrompoEmoji = ({
 }));
 const MixerEmoji = ({
   s = 22
-}) => /*#__PURE__*/React.createElement("svg", {
+}) =>
+/*#__PURE__*/
+/*#__PURE__*/
+React.createElement("svg", {
   width: s,
   height: s,
   viewBox: "0 0 32 32"
@@ -1164,7 +1220,10 @@ const MixerEmoji = ({
 }));
 const ChoferEmoji = ({
   s = 22
-}) => /*#__PURE__*/React.createElement("svg", {
+}) =>
+/*#__PURE__*/
+/*#__PURE__*/
+React.createElement("svg", {
   width: s,
   height: s,
   viewBox: "0 0 32 32"
@@ -1214,37 +1273,37 @@ const EMOJI_MAP = Object.fromEntries(REACTIONS.map(r => [r.id, r.node]));
 const DRIVERS = {
   "47698231": {
     nombre: "Miguel Flores",
-    unidad: "M-101",
+    unidad: "101",
     planta: "San Isidro",
     chom: "Diego Jara"
   },
   "49875345": {
     nombre: "Angel Martinez",
-    unidad: "M-103",
+    unidad: "103",
     planta: "San Isidro",
     chom: "Diego Jara"
   },
   "45670221": {
     nombre: "Kurt Uzategui",
-    unidad: "M-100",
+    unidad: "100",
     planta: "San Isidro",
     chom: "Diego Jara"
   },
   "49864899": {
     nombre: "Chetu Cherubini",
-    unidad: "M-110",
+    unidad: "110",
     planta: "San Isidro",
     chom: "Diego Jara"
   },
   "44149231": {
     nombre: "Miguel Dávila",
-    unidad: "M-112",
+    unidad: "112",
     planta: "San Isidro",
     chom: "Diego Jara"
   },
   "44414324": {
     nombre: "Karl Aguirre",
-    unidad: "M-115",
+    unidad: "115",
     planta: "San Isidro",
     chom: "Diego Jara"
   }
@@ -7864,6 +7923,31 @@ const PLANT_CONFIG = {
     }
   }
 };
+// Config de reserva para plantas de PLANTAS_TODAS que aún no tienen datos específicos cargados en
+// PLANT_CONFIG (ej. Collique, Villa Concremax, Materiales, Meiggs, Oquendo, Chilca, Lurín, San
+// Antonio de Huarochirí, Maravillas, Huachipa, Villa el Salvador, Transversal). Sin esto, un chofer
+// de esas plantas hacía crashear FinDeVuelta/UniBot/ReporteIncidencias con pantalla blanca al
+// acceder a cfg.parqueo (cfg era undefined). Mismo patrón de placeholders que ya usa "San Isidro".
+const PLANT_CONFIG_FALLBACK = {
+  parqueo: ["Patio 1", "Patio 2", "Zona de espera"],
+  lavadero: ["Lavadero principal"],
+  tecnicos: ["[Técnico 1]", "[Técnico 2]"],
+  obras: ["[Obra 1]", "[Obra 2]", "Otra…"],
+  contactos: {
+    "Despacho día": "[Teléfono]",
+    "Despacho tarde": "[Teléfono]",
+    "Despacho noche": "[Teléfono]",
+    "AZT día": "[Teléfono]",
+    "AZT noche": "[Teléfono]",
+    "Mecánico de turno": "[Teléfono]",
+    "Llantero de turno": "[Teléfono]",
+    "Bienestar Social": "[Teléfono]",
+    "SGI": "[Teléfono]",
+    "CHOM Líder": "[Teléfono]",
+    "Canal AAA (emergencias)": "0800-AAA-99",
+    "Planillas": "[Teléfono]"
+  }
+};
 
 /* ===================== INCIDENCIAS: tipos y ruteo ===================== */
 const INCIDENT_TYPES = [{
@@ -7889,12 +7973,6 @@ const INCIDENT_TYPES = [{
   label: "Falla mecánica",
   icon: Wrench,
   info: true
-}, {
-  id: "sistema",
-  label: "Problema con sistema / equipos",
-  icon: AlertTriangle,
-  buzones: ["AZT de turno", "Despachador de turno"],
-  preguntaLlamada: true
 }, {
   id: "auxilio",
   label: "Auxilio mecánico",
@@ -8168,7 +8246,7 @@ const BOT_DYNAMIC_TEXTS = {
   citacion_no_encontrada: "La citación para mañana se publica entre las 5:00 y 6:00 pm en el Canal de Avisos de tu planta. Si aún no la ves, por favor espera su publicación. A veces puede demorarse un poco. 😊",
   // Consulta ¿Dónde está mi mixer / llaves?
   mixer_encontrado: (unidad, reporte) => {
-    let txt = `Según el último reporte realizado por el chofer ${reporte.chofer || "anterior"}, tu mixer está en:\n📍 Parqueo: ${reporte.parqueo}\n🔑 Llaves: ${reporte.llaves}`;
+    let txt = `Según el último reporte realizado por el chofer ${reporte.chofer || "anterior"}, tu mixer está en:\n🏭 Planta: ${reporte.planta}\n📍 Parqueo: ${reporte.parqueo}\n🔑 Llaves: ${reporte.llaves}`;
     if (reporte.problema) {
       txt += `\n\n⚠️ Problema reportado por último chofer: ${reporte.problema}${reporte.comentario ? " — " + reporte.comentario : ""}.`;
     }
@@ -8183,7 +8261,7 @@ const BOT_DYNAMIC_TEXTS = {
   ruta_no_encontrada: "Lamentablemente, no encontramos en nuestra base de datos información sobre cómo acceder a esta obra.\n\n¿Deseas que publiquemos la consulta en el canal de avisos para que otro compañero pueda ayudarte?",
   ruta_vigente: "De acuerdo, mantendremos estas indicaciones, ya que actualmente se encuentran vigentes.",
   ruta_no_vigente: "De acuerdo, eliminaremos la información, ya que actualmente no se encuentra vigente.",
-  ruta_publicada_confirmacion: "Listo ✅ Publiqué tu consulta en el Canal de Avisos. Cuando algún compañero responda, la información quedará registrada y podrás consultarla aquí. 😊",
+  ruta_publicada_confirmacion: "Listo ✅ Publiqué tu consulta en el Canal de Avisos. Cuando algún compañero responda, la información quedará registrada y podrás consultarla aquí o en el Canal de Avisos de tu planta. 😊",
   // Consulta UNIKIN no funciona
   unikin_pregunta_senal: "Mira la esquina superior derecha de tu pantalla, donde están las barras de señal (como en la imagen). ¿Tienes \"buena señal\" o \"señal débil\"?",
   unikin_buena_senal_paso1: "Intenta lo siguiente:\n\n1. Cierra sesión en UNIKIN.",
@@ -8208,32 +8286,10 @@ const BOT_DYNAMIC_TEXTS = {
 // automáticamente desde el formulario "Responder" en el Canal de Avisos (ver enviarRespuestaRuta
 // en PanelAvisos) y se consulta en vivo desde UniBot (ver flujoRutaObra).
 
-/* ==== SIMULACIÓN DE REPORTES DE FIN DE VUELTA (para consulta ¿dónde está mi mixer?) ==== */
-const REPORTES_FIN_VUELTA_DEMO = {
-  // Clave: número de mixer. Valor: última info registrada.
-  "M-142": {
-    chofer: "Miguel Flores",
-    parqueo: "Patio A",
-    llaves: "Garita de vigilancia",
-    problema: null,
-    fecha: Date.now() - 12 * 60 * 60 * 1000
-  },
-  "M-087": {
-    chofer: "Angel Martinez",
-    parqueo: "Zona 2",
-    llaves: "Oficina AZT San Isidro",
-    problema: "Falla luz de freno derecho",
-    comentario: "Reportado al llantero pero aún no revisado.",
-    fecha: Date.now() - 20 * 60 * 60 * 1000
-  },
-  "M-201": {
-    chofer: "Kurt Uzategui",
-    parqueo: "Zona lavadero",
-    llaves: "Garita",
-    problema: null,
-    fecha: Date.now() - 5 * 60 * 60 * 1000
-  }
-};
+// Los reportes de fin de vuelta (para la consulta "¿dónde está mi mixer?") viven en Supabase real,
+// tabla `reportes_fin_vuelta` — se alimentan desde FinDeVuelta (ver función registrar) y se
+// consultan en vivo desde UniBot (ver flujoMixer), igual que rutas_obras. Cualquier chofer puede
+// leer el último reporte de CUALQUIER mixer, sin importar su propia planta ni quién lo registró.
 
 /* ===================== DESCRIPCIÓN DE CADA CANAL (según Excel) ===================== */
 const CHANNEL_INFO = {
@@ -8279,9 +8335,20 @@ const CHANNEL_INFO = {
     note: "Los accidentes o condiciones inseguras van obligatoriamente al Canal AAA, no por aquí.",
     sections: [{
       h: "Qué puedes reportar",
-      items: ["El cliente no me da acceso a la obra", "El cliente no me deja retirarme de la obra", "Tengo una falla mecánica o necesito un llantero", "Sistema / tablet / UNIKIN / RTS no funciona", "Servicios de planta no disponibles"]
+      items: ["El cliente no me da acceso a la obra", "El cliente no me deja retirarme de la obra", "Tengo una falla mecánica o necesito un llantero", "Servicios de planta no disponibles"]
     }],
     cta: "Reportar una incidencia"
+  },
+  bitacora: {
+    icon: BitacoraIcon,
+    title: "Bitácora personal",
+    kicker: "Privada, solo para ti",
+    desc: "Un espacio para registrar lo que quieras de tu día a día: probetas, slump, o cualquier nota que quieras guardar. Nadie más tiene acceso a esta información, ni tu AZT — la compartes tú si así lo decides.",
+    sections: [{
+      h: "Esto no es el espacio para",
+      items: ["Objetos perdidos o encontrados (usa UNI BOT)", "Incidencias con el cliente en obra o servicios no disponibles en planta (usa Reportes de incidencia)", "Dónde dejaste el mixer (usa Reporte de fin de vuelta)"]
+    }],
+    cta: "Abrir mi bitácora"
   }
 };
 let idc = 100;
@@ -8299,6 +8366,12 @@ const SUPABASE_ANON_KEY = "sb_publishable_RpMMxjvjhWQlVUhCfKTwxQ_Gft3Zv5E";
 // un mecanismo estándar de seguridad de la industria) — con la Edge Function, el navegador nunca
 // ve la clave, así que no hay nada que detectar ni revocar.
 const GEMINI_PROXY_URL = `${SUPABASE_URL}/functions/v1/gemini-proxy`;
+
+// Enlace a la hoja de Google Sheets de "Auxilio mecánico" (visible solo en el buzón de
+// Mantenimiento). El registro automático de filas lo hace un Apps Script Web App conectado
+// desde el RPC registrar_auxilio_mecanico (ver migración de Supabase); este enlace solo abre
+// la hoja para verla/editarla manualmente.
+const AUXILIO_MECANICO_SHEET_URL = "https://docs.google.com/spreadsheets/d/1vScU6cJmErMZq0RN8U4E_QCRTR4AF14zJfvJy6dsoGg/edit";
 const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     storage: window.sessionStorage,
@@ -8412,8 +8485,7 @@ async function ejecutarAjusteManualParaPrueba() {
       if (!filaCoincidente.mixer) {
         resumen.push(`   • ${chofer.nombre}: sin mixer en la tabla, se mantiene ${chofer.unidad || "(sin mixer)"}.`);
       } else {
-        let mixerNuevo = String(filaCoincidente.mixer).trim();
-        if (mixerNuevo && !/^M-/i.test(mixerNuevo)) mixerNuevo = `M-${mixerNuevo}`;
+        let mixerNuevo = String(filaCoincidente.mixer).trim().replace(/[^\d]/g, "").slice(0, 5);
         const mixerActual = String(chofer.unidad || "").trim();
         if (mixerNuevo === mixerActual) {
           resumen.push(`   • ${chofer.nombre}: sin cambio de mixer (${mixerActual}).`);
@@ -8514,10 +8586,9 @@ async function ejecutarAjusteAutomaticoMixers() {
       if (!filaCoincidente) continue; // no aparece en la tabla de hoy
 
       if (filaCoincidente.mixer) {
-        // El Excel a veces trae solo el número (ej. "322") sin el prefijo "M-" que usa el resto
-        // de la base de datos (ej. "M-322") — se normaliza aquí para mantener el formato consistente.
-        let mixerNuevo = String(filaCoincidente.mixer).trim();
-        if (mixerNuevo && !/^M-/i.test(mixerNuevo)) mixerNuevo = `M-${mixerNuevo}`;
+        // El Excel a veces trae el mixer con caracteres extra (espacios, guiones) — se
+        // normaliza aquí a solo dígitos (máx. 5) para mantener el formato consistente.
+        let mixerNuevo = String(filaCoincidente.mixer).trim().replace(/[^\d]/g, "").slice(0, 5);
         const mixerActual = String(chofer.unidad || "").trim();
         if (mixerNuevo !== mixerActual) {
           // Se usa una función RPC dedicada en vez de un UPDATE directo: el ajuste puede
@@ -8584,8 +8655,6 @@ async function ejecutarAjusteAutomaticoMixers() {
 function UniconApp() {
   const [role, setRole] = useState("chofer"); // demo switch
   const [aztDni, setAztDni] = useState(null); // DNI para auto-login AZT
-  const [notifs, setNotifs] = useState([]); // notificaciones del chofer
-  const [openNotif, setOpenNotif] = useState(false);
   const [emergencias, setEmergencias] = useState([{
     id: uid(),
     mixer: "101",
@@ -8635,7 +8704,7 @@ function UniconApp() {
   const [incidents, setIncidents] = useState([{
     id: uid(),
     tipo: "acceso",
-    unidad: "M-103",
+    unidad: "103",
     planta: "San Isidro",
     obra: "Obra Los Portales",
     hora: "08:42",
@@ -8654,7 +8723,7 @@ function UniconApp() {
   }, {
     id: uid(),
     tipo: "sistema",
-    unidad: "M-101",
+    unidad: "101",
     planta: "San Isidro",
     obra: "Obra San Borja",
     hora: "07:15",
@@ -8678,7 +8747,7 @@ function UniconApp() {
   }, {
     id: uid(),
     tipo: "acceso",
-    unidad: "M-110",
+    unidad: "110",
     planta: "San Isidro",
     obra: "Obra Miraflores",
     hora: "09:10",
@@ -8798,44 +8867,6 @@ function UniconApp() {
     ts: Date.now()
   }]);
 
-  // Notificar cuando una incidencia del chofer pasa a resuelta
-  const prevIncidents = useRef(incidents);
-  useEffect(() => {
-    incidents.forEach(i => {
-      const prev = prevIncidents.current.find(p => p.id === i.id);
-      if (prev && prev.estado !== "resuelta" && i.estado === "resuelta") {
-        setNotifs(n => [{
-          id: uid(),
-          tipo: "incidencia",
-          texto: `Tu incidencia "${INCIDENT_TYPES.find(t => t.id === i.tipo)?.label}" fue resuelta`,
-          detalle: i.solucion,
-          hora: hhmm(),
-          leida: false
-        }, ...n]);
-      }
-    });
-    prevIncidents.current = incidents;
-  }, [incidents]);
-
-  // Notificar cuando el bot publica OBJETO ENCONTRADO en el canal
-  const prevAvisos = useRef(avisos);
-  useEffect(() => {
-    avisos.forEach(a => {
-      const prev = prevAvisos.current.find(p => p.id === a.id);
-      if (!prev && a.autor === "UNIBOT" && a.texto?.includes("OBJETO ENCONTRADO")) {
-        setNotifs(n => [{
-          id: uid(),
-          tipo: "encontrado",
-          texto: "Alguien encontró un objeto perdido reportado",
-          detalle: a.texto,
-          hora: hhmm(),
-          leida: false
-        }, ...n]);
-      }
-    });
-    prevAvisos.current = avisos;
-  }, [avisos]);
-
   // Ajuste automático de mixers a partir de la citación diaria (ver ejecutarAjusteAutomaticoMixers
   // más arriba en el archivo para el diseño completo). Se dispara cuando hay una sesión de
   // Supabase Auth confirmada — usar onAuthStateChange en vez de useEffect(() => {...}, []) es
@@ -8868,7 +8899,7 @@ function UniconApp() {
     }, 5 * 60 * 1000); // cada 5 minutos
     return () => clearInterval(intervalo);
   }, []);
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "w-full flex flex-col",
     style: {
       height: "100vh",
@@ -8876,31 +8907,34 @@ function UniconApp() {
       fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
       overflow: "hidden"
     }
-  }, openNotif && /*#__PURE__*/React.createElement(NotifPanel, {
-    notifs: notifs,
-    setNotifs: setNotifs,
-    onClose: () => setOpenNotif(false)
-  }), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", {
     className: "w-full flex-1 flex justify-center",
     style: {
       padding: "0",
       minHeight: 0
     }
-  }, role === "chofer" ? /*#__PURE__*/React.createElement(ChoferApp, {
+  }, role === "chofer" ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(ChoferApp, {
     incidents: incidents,
     setIncidents: setIncidents,
     avisos: avisos,
     setAvisos: setAvisos,
     emergencias: emergencias,
     setEmergencias: setEmergencias,
-    notifs: notifs,
-    setOpenNotif: setOpenNotif,
     role: role,
     setRole: setRole,
     setAztDni: setAztDni
-  }) : role === "gestion_humana" ? /*#__PURE__*/React.createElement(GestionHumanaPanel, {
+  }) : role === "gestion_humana" ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(GestionHumanaPanel, {
     setRole: setRole
-  }) : /*#__PURE__*/React.createElement(AztPanel, {
+  }) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(AztPanel, {
     incidents: incidents,
     setIncidents: setIncidents,
     avisos: avisos,
@@ -8915,19 +8949,26 @@ function UniconApp() {
 function NotifPanel({
   notifs,
   setNotifs,
-  onClose
+  onClose,
+  onLeida
 }) {
-  const marcarLeida = id => setNotifs(n => n.map(x => x.id === id ? {
-    ...x,
-    leida: true
-  } : x));
-  const marcarTodas = () => setNotifs(n => n.map(x => ({
-    ...x,
-    leida: true
-  })));
+  const marcarLeida = id => {
+    setNotifs(n => n.map(x => x.id === id ? {
+      ...x,
+      leida: true
+    } : x));
+    onLeida?.(id);
+  };
+  const marcarTodas = () => {
+    notifs.filter(n => !n.leida).forEach(n => onLeida?.(n.id));
+    setNotifs(n => n.map(x => ({
+      ...x,
+      leida: true
+    })));
+  };
   const iconOf = t => t === "incidencia" ? CheckCircle2 : t === "encontrado" ? Package : t === "sede" ? RefreshCw : Bell;
   const colorOf = t => t === "incidencia" ? "#16a34a" : t === "encontrado" ? "#ca8a04" : t === "sede" ? "#0891b2" : AZUL;
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 z-50 flex items-start justify-end p-3 pt-14",
     style: {
       background: "rgba(0,0,0,.4)"
@@ -8955,7 +8996,10 @@ function NotifPanel({
     onClick: onClose
   }, /*#__PURE__*/React.createElement(X, {
     size: 18
-  }))), notifs.filter(n => !n.leida).length > 0 && /*#__PURE__*/React.createElement("div", {
+  }))), notifs.filter(n => !n.leida).length > 0 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "px-4 py-2 border-b flex items-center justify-between",
     style: {
       borderColor: "#e6e8ee",
@@ -8971,7 +9015,10 @@ function NotifPanel({
     }
   }, "Marcar todas como le\xEDdas")), /*#__PURE__*/React.createElement("div", {
     className: "flex-1 overflow-y-auto"
-  }, notifs.length === 0 && /*#__PURE__*/React.createElement("div", {
+  }, notifs.length === 0 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "text-center text-gray-400 py-12 px-4"
   }, /*#__PURE__*/React.createElement(Bell, {
     size: 32,
@@ -8983,7 +9030,7 @@ function NotifPanel({
   }, "Aqu\xED ver\xE1s avisos cuando resuelvan tu incidencia, cambien tu planta o encuentren algo que perdiste.")), notifs.map(n => {
     const I = iconOf(n.tipo);
     const c = colorOf(n.tipo);
-    return /*#__PURE__*/React.createElement("button", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
       key: n.id,
       onClick: () => marcarLeida(n.id),
       className: "w-full flex items-start gap-3 px-4 py-3 text-left border-b hover:bg-gray-50 transition-colors",
@@ -9003,11 +9050,17 @@ function NotifPanel({
       className: "flex-1 min-w-0"
     }, /*#__PURE__*/React.createElement("div", {
       className: "text-sm font-semibold text-gray-800"
-    }, n.texto), n.detalle && /*#__PURE__*/React.createElement("div", {
+    }, n.texto), n.detalle &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       className: "text-xs text-gray-500 mt-0.5 line-clamp-2"
     }, n.detalle), /*#__PURE__*/React.createElement("div", {
       className: "text-[10px] text-gray-400 mt-1"
-    }, n.hora)), !n.leida && /*#__PURE__*/React.createElement("div", {
+    }, n.hora)), !n.leida &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       className: "w-2 h-2 rounded-full shrink-0 mt-2",
       style: {
         background: "#e11d48"
@@ -9021,7 +9074,7 @@ function DemoTab({
   icon: Icon,
   label
 }) {
-  return /*#__PURE__*/React.createElement("button", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
     onClick: onClick,
     className: "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all",
     style: {
@@ -9053,14 +9106,13 @@ function ChoferApp({
   setAvisos,
   emergencias,
   setEmergencias,
-  notifs,
-  setOpenNotif,
   role,
   setRole,
   setAztDni
 }) {
   const [dni, setDni] = useState("");
   const [driver, setDriver] = useState(null);
+  const misUnidadesPropias = useRef(new Set()); // mixers que el propio chofer acaba de editar desde su perfil, para no mostrarle "fuiste reasignado" por su propio cambio
   const [channel, setChannel] = useState(null); // avisos|finvuelta|bot|incidencias — null = sin canal elegido aún, para evitar montar el chat automáticamente al iniciar sesión
   const [entered, setEntered] = useState(true); // directo al canal, sin intro
   const [mobileList, setMobileList] = useState(true);
@@ -9070,8 +9122,9 @@ function ChoferApp({
   const [loginLoading, setLoginLoading] = useState(false);
   const [reasignado, setReasignado] = useState(null); // { plantaNueva } cuando detecta cambio en su perfil
   const [avisosNoLeidosReal, setAvisosNoLeidosReal] = useState(0); // conteo real desde Supabase para el badge
-  // Reportes fin de vuelta compartidos entre FinDeVuelta (escribe) y UniBot (lee)
-  const [reportesFV, setReportesFV] = useState(REPORTES_FIN_VUELTA_DEMO);
+  const [notifs, setNotifs] = useState([]); // notificaciones personales del chofer
+  const [openNotif, setOpenNotif] = useState(false);
+  const [botDeepLink, setBotDeepLink] = useState(null); // ej. "op_unikin" — abre UNIBOT directo en esa opción (ver Bitácora personal)
   const isDesktop = useIsDesktop();
   const ROLES_ADMIN_PANEL = ["jefe_planta", "despachador", "sgi", "mantenimiento", "admin_zonal_transporte", "trabajadora_social", "admin_transporte_bombas", "supervisor_bombas_jefe_ops", "gerente_transporte_distribucion", "jefe_transporte", "supervisor_transportes"];
   const ROLES_CHOFER = ["chofer", "chom_lider", "chofer_operador_bomba", "operador_bomba", "ayudante_bomba_multitask", "auxiliar_tuberia"];
@@ -9127,7 +9180,7 @@ function ChoferApp({
       const d = {
         id: perfil.id,
         nombre: perfil.nombre,
-        unidad: perfil.unidad || "M-000",
+        unidad: perfil.unidad || "",
         planta: perfil.planta || "San Isidro",
         chom: "CHOM Líder",
         rol: perfil.rol,
@@ -9165,12 +9218,107 @@ function ChoferApp({
         setReasignado({
           desactivado: true
         });
+      } else if (nuevo.unidad !== driver.unidad) {
+        if (misUnidadesPropias.current.has(nuevo.unidad)) {
+          // El propio chofer editó su mixer desde su perfil hace un instante — no es una
+          // reasignación del AZT, así que no le mostramos el aviso de "fuiste reasignado".
+          misUnidadesPropias.current.delete(nuevo.unidad);
+        } else {
+          // El AZT reasignó el mixer desde "Gestión de choferes y obras" — avisamos igual que en
+          // una reasignación de planta para que el chofer vea reflejado el cambio de inmediato.
+          setReasignado({
+            unidadNueva: nuevo.unidad
+          });
+        }
       }
     }).subscribe();
     return () => {
       sbClient.removeChannel(canal);
     };
   }, [driver?.id]);
+
+  // Notificar cuando una incidencia del chofer pasa a resuelta
+  const prevIncidents = useRef(incidents);
+  useEffect(() => {
+    incidents.forEach(i => {
+      const prev = prevIncidents.current.find(p => p.id === i.id);
+      if (prev && prev.estado !== "resuelta" && i.estado === "resuelta") {
+        setNotifs(n => [{
+          id: uid(),
+          tipo: "incidencia",
+          texto: `Tu incidencia "${INCIDENT_TYPES.find(t => t.id === i.tipo)?.label}" fue resuelta`,
+          detalle: i.solucion,
+          hora: hhmm(),
+          leida: false
+        }, ...n]);
+      }
+    });
+    prevIncidents.current = incidents;
+  }, [incidents]);
+
+  // Notificar cuando el bot publica OBJETO ENCONTRADO en el canal
+  const prevAvisos = useRef(avisos);
+  useEffect(() => {
+    avisos.forEach(a => {
+      const prev = prevAvisos.current.find(p => p.id === a.id);
+      if (!prev && a.autor === "UNIBOT" && a.texto?.includes("OBJETO ENCONTRADO")) {
+        setNotifs(n => [{
+          id: uid(),
+          tipo: "encontrado",
+          texto: "Alguien encontró un objeto perdido reportado",
+          detalle: a.texto,
+          hora: hhmm(),
+          leida: false
+        }, ...n]);
+      }
+    });
+    prevAvisos.current = avisos;
+  }, [avisos]);
+
+  // Notificaciones personales reales (ej. "alguien reportó que encontró lo que perdiste"),
+  // guardadas en Supabase para que sobrevivan a un cierre de sesión o cambio de dispositivo.
+  // Se cargan al entrar y se reciben en vivo mientras la sesión está abierta.
+  const mapNotifDB = n => ({
+    id: n.id,
+    tipo: n.tipo,
+    texto: n.texto,
+    detalle: n.detalle,
+    hora: new Date(n.created_at).toLocaleTimeString("es-PE", {
+      hour: "2-digit",
+      minute: "2-digit"
+    }),
+    leida: n.leida
+  });
+  useEffect(() => {
+    if (!driver?.id) return;
+    let vigente = true;
+    (async () => {
+      const {
+        data
+      } = await sbClient.from("notificaciones_personales").select("*").eq("chofer_id", driver.id).order("created_at", {
+        ascending: false
+      });
+      if (!vigente || !data) return;
+      setNotifs(prev => [...data.map(mapNotifDB), ...prev]);
+    })();
+    const canal = sbClient.channel(`notif-personal-${driver.id}`).on("postgres_changes", {
+      event: "INSERT",
+      schema: "public",
+      table: "notificaciones_personales",
+      filter: `chofer_id=eq.${driver.id}`
+    }, payload => {
+      setNotifs(prev => [mapNotifDB(payload.new), ...prev]);
+    }).subscribe();
+    return () => {
+      vigente = false;
+      sbClient.removeChannel(canal);
+    };
+  }, [driver?.id]);
+  const marcarNotifLeidaDB = id => {
+    sbClient.from("notificaciones_personales").update({
+      leida: true
+    }).eq("id", id);
+  };
   const openChannel = id => {
     setChannel(id);
     setMobileList(false);
@@ -9218,7 +9366,7 @@ function ChoferApp({
       sbClient.removeChannel(canal);
     };
   }, [driver?.planta, channel]);
-  if (!driver) return /*#__PURE__*/React.createElement(LoginScreen, {
+  if (!driver) return /*#__PURE__*/ /*#__PURE__*/React.createElement(LoginScreen, {
     dni: dni,
     setDni: setDni,
     onLogin: login,
@@ -9237,7 +9385,7 @@ function ChoferApp({
       setDriver(d => ({
         ...d,
         nombre: data.nombre,
-        unidad: data.unidad || "M-000",
+        unidad: data.unidad || "",
         planta: data.planta || d.planta,
         rol: data.rol,
         foto_url: data.foto_url || null
@@ -9246,7 +9394,7 @@ function ChoferApp({
     setReasignado(null);
   };
   if (reasignado) {
-    return /*#__PURE__*/React.createElement("div", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
       className: "fixed inset-0 flex items-center justify-center p-6 z-[999]",
       style: {
         background: AZUL
@@ -9261,14 +9409,37 @@ function ChoferApp({
     }, /*#__PURE__*/React.createElement(RefreshCw, {
       size: 32,
       color: AZUL
-    })), reasignado.desactivado ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("h2", {
+    })), reasignado.desactivado ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("h2", {
       className: "text-xl font-black mb-2",
       style: {
         color: AZUL
       }
     }, "Tu cuenta fue desactivada"), /*#__PURE__*/React.createElement("p", {
       className: "text-sm text-gray-600 mb-6"
-    }, "Contacta a tu AZT o a Gesti\xF3n Humana si crees que esto es un error.")) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("h2", {
+    }, "Contacta a tu AZT o a Gesti\xF3n Humana si crees que esto es un error.")) : reasignado.unidadNueva ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("h2", {
+      className: "text-xl font-black mb-2",
+      style: {
+        color: AZUL
+      }
+    }, "\xA1Tu mixer fue actualizado!"), /*#__PURE__*/React.createElement("p", {
+      className: "text-sm text-gray-600 mb-1"
+    }, "Tu AZT reasign\xF3 tu unidad. Ahora tu mixer es:"), /*#__PURE__*/React.createElement("p", {
+      className: "text-2xl font-black mb-6",
+      style: {
+        color: AZUL
+      }
+    }, reasignado.unidadNueva), /*#__PURE__*/React.createElement("p", {
+      className: "text-xs text-gray-400 mb-6"
+    }, "Este cambio ya se aplic\xF3 en toda la app: reportes, UNI BOT y tu perfil.")) :
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("h2", {
       className: "text-xl font-black mb-2",
       style: {
         color: AZUL
@@ -9316,18 +9487,34 @@ function ChoferApp({
     label: "Reportes de incidencia",
     icon: AlertTriangle,
     sub: "Reporta un problema"
+  }, {
+    id: "bitacora",
+    label: "Bitácora personal",
+    icon: BitacoraIcon,
+    sub: "Tus notas privadas del día a día"
   }];
   const misIncidencias = incidents.filter(i => i.chofer === driver.nombre);
   const showSidebar = isDesktop || mobileList;
   const showMain = isDesktop || !mobileList;
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "w-full bg-white shadow-xl overflow-hidden flex",
     style: {
       maxWidth: isDesktop ? "none" : 980,
       flex: 1,
       minHeight: 0
     }
-  }, showSidebar && /*#__PURE__*/React.createElement("aside", {
+  }, openNotif &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(NotifPanel, {
+    notifs: notifs,
+    setNotifs: setNotifs,
+    onClose: () => setOpenNotif(false),
+    onLeida: marcarNotifLeidaDB
+  }), showSidebar &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("aside", {
     className: "flex flex-col border-r shrink-0",
     style: {
       width: isDesktop ? 320 : "100%",
@@ -9348,7 +9535,10 @@ function ChoferApp({
     }
   }, /*#__PURE__*/React.createElement(Bell, {
     size: 16
-  }), (notifs || []).filter(n => !n.leida).length > 0 && /*#__PURE__*/React.createElement("span", {
+  }), (notifs || []).filter(n => !n.leida).length > 0 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("span", {
     className: "absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] rounded-full text-[9px] font-bold flex items-center justify-center px-0.5",
     style: {
       background: "#e11d48",
@@ -9359,44 +9549,53 @@ function ChoferApp({
     dniViewer: driver.dni,
     className: "w-full text-left",
     nombre: driver.nombre,
-    onUpdateSelf: cambios => setDriver(d => ({
-      ...d,
-      ...cambios
-    }))
+    onUpdateSelf: cambios => {
+      if (cambios.unidad !== undefined) misUnidadesPropias.current.add(cambios.unidad);
+      setDriver(d => ({
+        ...d,
+        ...cambios
+      }));
+    }
   }, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center gap-3"
+    className: "flex items-center gap-3 py-1"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "w-10 h-10 rounded-full flex items-center justify-center shrink-0 overflow-hidden",
+    className: "w-14 h-14 rounded-full flex items-center justify-center shrink-0 overflow-hidden",
     style: {
       background: AMARILLO
     }
-  }, driver.foto_url ? /*#__PURE__*/React.createElement("img", {
+  }, driver.foto_url ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("img", {
     src: driver.foto_url,
     alt: driver.nombre,
     className: "w-full h-full object-cover"
-  }) : /*#__PURE__*/React.createElement(ChoferEmoji, {
-    s: 22
+  }) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(ChoferEmoji, {
+    s: 30
   })), /*#__PURE__*/React.createElement("div", {
     className: "min-w-0"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "font-bold truncate text-sm"
+    className: "font-bold truncate text-base"
   }, driver.nombre), /*#__PURE__*/React.createElement("div", {
-    className: "text-[11px] opacity-90 flex items-center gap-2"
+    className: "text-sm opacity-90 flex items-center gap-3 mt-0.5"
   }, /*#__PURE__*/React.createElement("span", {
     className: "inline-flex items-center gap-1"
   }, /*#__PURE__*/React.createElement(Truck, {
-    size: 11
+    size: 14
   }), driver.unidad), /*#__PURE__*/React.createElement("span", {
     className: "inline-flex items-center gap-1"
   }, /*#__PURE__*/React.createElement(MapPin, {
-    size: 11
+    size: 14
   }), driver.planta)))))), /*#__PURE__*/React.createElement("div", {
     className: "flex-1 overflow-y-auto py-2"
   }, CHANNELS.map(c => {
     const active = channel === c.id;
     const incCambios = misIncidencias.filter(i => !incVistas.has(i.id + i.estado)).length;
     const badge = c.id === "incidencias" ? incCambios : c.id === "avisos" ? avisosNoLeidosReal : 0;
-    return /*#__PURE__*/React.createElement("button", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
       key: c.id,
       onClick: () => openChannel(c.id),
       className: "w-full flex items-center gap-3 px-4 py-3 text-left transition-colors",
@@ -9421,7 +9620,10 @@ function ChoferApp({
       }
     }, c.label), /*#__PURE__*/React.createElement("div", {
       className: "text-xs text-gray-500 truncate"
-    }, c.sub)), badge > 0 && /*#__PURE__*/React.createElement("span", {
+    }, c.sub)), badge > 0 &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("span", {
       className: "text-[11px] font-bold text-white rounded-full px-2 py-0.5",
       style: {
         background: c.id === "incidencias" ? "#e11d48" : AZUL
@@ -9439,13 +9641,22 @@ function ChoferApp({
     }
   }, /*#__PURE__*/React.createElement(LogOut, {
     size: 16
-  }), " Cerrar sesi\xF3n")), showMain && /*#__PURE__*/React.createElement("main", {
+  }), " Cerrar sesi\xF3n")), showMain &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("main", {
     className: "flex flex-col flex-1 min-w-0 overflow-hidden"
-  }, channel ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(ChannelHeader, {
+  }, channel ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(ChannelHeader, {
     showBack: !isDesktop,
     onBack: () => setMobileList(true),
     title: CHANNEL_INFO[channel]?.title
-  }), channel === "avisos" && /*#__PURE__*/React.createElement(PanelAvisos, {
+  }), channel === "avisos" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(PanelAvisos, {
     yo: {
       id: driver.id,
       dni: driver.dni,
@@ -9453,25 +9664,44 @@ function ChoferApp({
     },
     planta: driver.planta,
     puedePublicar: false
-  }), channel === "finvuelta" && /*#__PURE__*/React.createElement(FinDeVuelta, {
-    driver: driver,
-    onRegistrarCierre: (key, data) => setReportesFV(prev => ({
-      ...prev,
-      [key]: data
-    }))
-  }), channel === "bot" && /*#__PURE__*/React.createElement(UniBot, {
+  }), channel === "finvuelta" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(FinDeVuelta, {
+    driver: driver
+  }), channel === "bot" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(UniBot, {
     driver: driver,
     avisos: avisos,
     setAvisos: setAvisos,
     setEmergencias: setEmergencias,
-    reportesFV: reportesFV
-  }), channel === "incidencias" && /*#__PURE__*/React.createElement(ReporteIncidencias, {
+    deepLink: botDeepLink,
+    onDeepLinkConsumido: () => setBotDeepLink(null)
+  }), channel === "incidencias" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(ReporteIncidencias, {
     driver: driver,
     incidents: incidents,
     setIncidents: setIncidents,
     setEmergencias: setEmergencias,
     setChannel: setChannel
-  })) : /*#__PURE__*/React.createElement("div", {
+  }), channel === "bitacora" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(BitacoraPersonal, {
+    driver: driver,
+    setChannel: setChannel,
+    onIrAUnikin: () => {
+      setBotDeepLink("op_unikin");
+      setChannel("bot");
+    }
+  })) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "flex-1 flex items-center justify-center p-6"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-center max-w-xs"
@@ -9492,12 +9722,15 @@ function ChannelHeader({
   title,
   showBack
 }) {
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-2 px-3 py-2 text-white shrink-0",
     style: {
       background: AZUL
     }
-  }, showBack && /*#__PURE__*/React.createElement("button", {
+  }, showBack &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     onClick: onBack
   }, /*#__PURE__*/React.createElement(ChevronLeft, {
     size: 22
@@ -9513,7 +9746,7 @@ function ChannelIntro({
 }) {
   if (!info) return null;
   const Icon = info.icon;
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "flex-1 flex flex-col min-h-0",
     style: {
       background: "#f6f8fc"
@@ -9535,7 +9768,10 @@ function ChannelIntro({
     color: AZUL
   })), /*#__PURE__*/React.createElement("h2", {
     className: "text-xl font-black"
-  }, info.title), info.kicker && /*#__PURE__*/React.createElement("div", {
+  }, info.title), info.kicker &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "text-xs font-semibold mt-1",
     style: {
       color: AMARILLO
@@ -9547,7 +9783,10 @@ function ChannelIntro({
     }
   }, info.desc)), /*#__PURE__*/React.createElement("div", {
     className: "p-5 space-y-4"
-  }, info.sections.map((s, i) => /*#__PURE__*/React.createElement("div", {
+  }, info.sections.map((s, i) =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     key: i,
     className: "bg-white rounded-2xl p-4 shadow-sm",
     style: {
@@ -9565,7 +9804,10 @@ function ChannelIntro({
     }
   }, s.h)), /*#__PURE__*/React.createElement("ul", {
     className: "space-y-2"
-  }, s.items.map((it, k) => /*#__PURE__*/React.createElement("li", {
+  }, s.items.map((it, k) =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("li", {
     key: k,
     className: "flex gap-2.5 text-sm text-gray-700 leading-snug"
   }, /*#__PURE__*/React.createElement("span", {
@@ -9574,7 +9816,10 @@ function ChannelIntro({
       background: AMARILLO,
       outline: `2px solid ${AZUL}`
     }
-  }), /*#__PURE__*/React.createElement("span", null, it)))))), info.note && /*#__PURE__*/React.createElement("div", {
+  }), /*#__PURE__*/React.createElement("span", null, it)))))), info.note &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "rounded-xl p-3 flex gap-2 text-sm",
     style: {
       background: "#FFF8DB",
@@ -9613,7 +9858,10 @@ function LoginScreen({
     const t = setTimeout(() => setSplashVisible(false), 2000);
     return () => clearTimeout(t);
   }, []);
-  const formulario = /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("label", {
+  const formulario =
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("label", {
     className: "text-xs font-semibold text-gray-600"
   }, "Ingresa con tu DNI"), /*#__PURE__*/React.createElement("input", {
     value: dni,
@@ -9625,7 +9873,10 @@ function LoginScreen({
       borderColor: "#d5d9e4"
     },
     onKeyDown: e => e.key === "Enter" && dni && !loginLoading && onLogin()
-  }), loginError && /*#__PURE__*/React.createElement("div", {
+  }), loginError &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-3 mt-1"
   }, loginError), /*#__PURE__*/React.createElement("button", {
     onClick: onLogin,
@@ -9638,7 +9889,7 @@ function LoginScreen({
   }, loginLoading ? "Verificando..." : "Ingresar"));
   if (splashVisible) {
     // Splash inicial: pantalla azul completa, camión quieto con las ruedas girando
-    return /*#__PURE__*/React.createElement("div", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
       className: "w-full h-full flex items-center justify-center overflow-hidden",
       style: {
         background: AZUL
@@ -9691,7 +9942,7 @@ function LoginScreen({
   }
   if (isDesktop) {
     // Escritorio: fondo blanco de página, tarjeta claramente diferenciada por borde y sombra
-    return /*#__PURE__*/React.createElement("div", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
       className: "w-full h-full flex items-center justify-center px-6",
       style: {
         background: "white"
@@ -9729,7 +9980,7 @@ function LoginScreen({
   // compresión interna propios — si el teclado reduce el espacio visible, es el
   // propio navegador el que desplaza toda la pantalla hacia arriba como conjunto,
   // manteniendo intacto el logo, el título y la descripción.
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "w-full flex flex-col",
     style: {
       background: AZUL,
@@ -9795,6 +10046,12 @@ function PanelAvisos({
   const [respRuta, setRespRuta] = useState("");
   const [respUbic, setRespUbic] = useState("");
   const [respTener, setRespTener] = useState("");
+  // Respuesta a "objeto perdido": mismo formulario estructurado que "encontré algo" en UNIBOT
+  // (objeto, dónde se deja, cómo contactarte). La unidad NO se pide de nuevo aquí — es la misma
+  // del reporte original al que se está respondiendo, y la función RPC la toma de ahí.
+  const [respObjObjeto, setRespObjObjeto] = useState("");
+  const [respObjDonde, setRespObjDonde] = useState("");
+  const [respObjContacto, setRespObjContacto] = useState("");
   const [text, setText] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [attachMenuOpen, setAttachMenuOpen] = useState(false);
@@ -9830,13 +10087,15 @@ function PanelAvisos({
   const autorLabel = yo?.nombre || ""; // nombre limpio (se guarda así en Supabase)
   const autorLabelConCargo = yo ? yo.cargo ? `${yo.nombre} (${yo.cargo})` : yo.nombre : ""; // solo para el banner informativo
 
-  const enriquecerAviso = (aviso, reacciones, respuestas) => ({
+  const enriquecerAviso = (aviso, reacciones, respuestas, respuestasObjeto = []) => ({
     ...aviso,
     reaccionesDeAviso: reacciones.filter(r => r.aviso_id === aviso.id),
     miReaccion: reacciones.find(r => r.aviso_id === aviso.id && r.chofer_id === miId)?.emoji || null,
     // Ya no es "mi" respuesta — es LA respuesta (solo puede haber una por consulta, ver
-    // enviarRespuestaRuta), y se muestra a todos dentro del mismo mensaje, no solo a quien la escribió.
-    respuestaRuta: respuestas.find(r => r.aviso_id === aviso.id) || null
+    // enviarRespuestaRuta/enviarRespuestaObjeto), y se muestra a todos dentro del mismo mensaje,
+    // no solo a quien la escribió.
+    respuestaRuta: respuestas.find(r => r.aviso_id === aviso.id) || null,
+    respuestaObjeto: respuestasObjeto.find(r => r.aviso_id === aviso.id) || null
   });
   useEffect(() => {
     primerNoLeidoIdRef.current = primerNoLeidoId;
@@ -9864,8 +10123,8 @@ function PanelAvisos({
     // con mucho historial. Además, cada llamada queda protegida individualmente (try/catch dentro
     // de consultarPorLotes) para que un fallo puntual nunca bloquee la carga principal de
     // mensajes ni deje datosFrescosRef atascado en false para siempre.
-    const [reacciones, respuestas] = await Promise.all([avisoIds.length ? consultarPorLotes("aviso_reacciones", avisoIds) : Promise.resolve([]), avisoIds.length ? consultarPorLotes("aviso_respuestas_ruta", avisoIds) : Promise.resolve([])]);
-    const enriquecidos = avisos.map(a => enriquecerAviso(a, reacciones || [], respuestas || []));
+    const [reacciones, respuestas, respuestasObjeto] = await Promise.all([avisoIds.length ? consultarPorLotes("aviso_reacciones", avisoIds) : Promise.resolve([]), avisoIds.length ? consultarPorLotes("aviso_respuestas_ruta", avisoIds) : Promise.resolve([]), avisoIds.length ? consultarPorLotes("aviso_respuestas_objeto", avisoIds) : Promise.resolve([])]);
+    const enriquecidos = avisos.map(a => enriquecerAviso(a, reacciones || [], respuestas || [], respuestasObjeto || []));
     cacheAvisosPorPlanta[plantaEfectiva] = enriquecidos;
     datosFrescosRef.current = true;
     setAvisosData(enriquecidos);
@@ -9937,11 +10196,44 @@ function PanelAvisos({
         respuestaRuta: nueva
       }));
     };
+    const onNuevaRespuestaObjeto = payload => {
+      const nueva = payload.new;
+      actualizarAvisos(prev => prev.map(a => a.id !== nueva.aviso_id ? a : {
+        ...a,
+        respuestaObjeto: nueva
+      }));
+    };
+
+    // Cuando una consulta (ruta u objeto perdido) es respondida, su created_at se "bumpea" a
+    // ahora (ver bump_aviso / enviarRespuestaRuta / enviarRespuestaObjeto) para que baje al final
+    // del chat y todos noten la respuesta. Acá se refleja ese reordenamiento en vivo: se saca el
+    // aviso de su posición actual y se reinserta según su created_at ya actualizado.
+    const onAvisoActualizado = payload => {
+      const actualizado = payload.new;
+      if (actualizado.planta !== plantaEfectiva) return;
+      actualizarAvisos(prev => {
+        const existente = prev.find(a => a.id === actualizado.id);
+        if (!existente) return prev;
+        const enriquecido = {
+          ...existente,
+          ...actualizado
+        };
+        const resto = prev.filter(a => a.id !== actualizado.id);
+        const nuevaTs = new Date(enriquecido.created_at).getTime();
+        let idx = resto.length;
+        while (idx > 0 && new Date(resto[idx - 1].created_at).getTime() > nuevaTs) idx--;
+        return [...resto.slice(0, idx), enriquecido, ...resto.slice(idx)];
+      });
+    };
     const canal = sbClient.channel(`avisos-panel-${plantaEfectiva}`).on("postgres_changes", {
       event: "INSERT",
       schema: "public",
       table: "avisos"
     }, onNuevoAviso).on("postgres_changes", {
+      event: "UPDATE",
+      schema: "public",
+      table: "avisos"
+    }, onAvisoActualizado).on("postgres_changes", {
       event: "*",
       schema: "public",
       table: "aviso_reacciones"
@@ -9949,7 +10241,11 @@ function PanelAvisos({
       event: "INSERT",
       schema: "public",
       table: "aviso_respuestas_ruta"
-    }, onNuevaRespuesta).subscribe();
+    }, onNuevaRespuesta).on("postgres_changes", {
+      event: "INSERT",
+      schema: "public",
+      table: "aviso_respuestas_objeto"
+    }, onNuevaRespuestaObjeto).subscribe();
     return () => {
       sbClient.removeChannel(canal);
     };
@@ -10108,7 +10404,7 @@ function PanelAvisos({
 
   // Quita tildes/diacríticos y pasa a minúsculas, para que la búsqueda encuentre "citacion"
   // aunque el mensaje diga "Citación" (comportamiento esperado tipo WhatsApp).
-  const normalizarBusqueda = s => (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const normalizarBusqueda = s => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
   // Coincidencias del término de búsqueda actual entre los mensajes con texto de este canal,
   // ordenadas de la más reciente a la más antigua (índice 0 = la más reciente), que es el orden
@@ -10167,10 +10463,16 @@ function PanelAvisos({
     if (pos === -1) return renderConLinks(texto);
     let key = 0;
     while (pos !== -1) {
-      if (pos > cursor) partes.push(/*#__PURE__*/React.createElement(React.Fragment, {
+      if (pos > cursor) partes.push(
+      /*#__PURE__*/
+      /*#__PURE__*/
+      React.createElement(React.Fragment, {
         key: key++
       }, renderConLinks(texto.slice(cursor, pos))));
-      partes.push(/*#__PURE__*/React.createElement("mark", {
+      partes.push(
+      /*#__PURE__*/
+      /*#__PURE__*/
+      React.createElement("mark", {
         key: key++,
         style: {
           background: esActivo ? "#86efac" : "#fef08a",
@@ -10181,7 +10483,10 @@ function PanelAvisos({
       cursor = pos + termino.length;
       pos = normalizado.indexOf(terminoNorm, cursor);
     }
-    if (cursor < texto.length) partes.push(/*#__PURE__*/React.createElement(React.Fragment, {
+    if (cursor < texto.length) partes.push(
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement(React.Fragment, {
       key: key++
     }, renderConLinks(texto.slice(cursor))));
     return partes;
@@ -10574,10 +10879,49 @@ function PanelAvisos({
         onConflict: "obra_normalizada"
       });
     }
+    // Sube el aviso al final del chat para que todos noten que ya fue respondido (RPC security
+    // definer: un chofer respondiendo la consulta de OTRO no pasaría una escritura directa a
+    // avisos.created_at bajo las políticas RLS, mismo caso que el bump al reasignar unidad/planta).
+    await sbClient.rpc("bump_aviso", {
+      p_aviso_id: aviso.id
+    });
     setResponderFor(null);
     setRespRuta("");
     setRespUbic("");
     setRespTener("");
+  };
+
+  // Abre el formulario de respuesta a "objeto perdido". La unidad ya no se pide aquí: es la
+  // misma del reporte original al que se está respondiendo.
+  const abrirResponderObjeto = async aviso => {
+    setRespObjObjeto("");
+    setRespObjDonde("");
+    setRespObjContacto("");
+    setResponderFor(aviso.id);
+  };
+
+  // Responder un aviso de "objeto perdido" con el mismo formulario estructurado que "encontré
+  // algo" en UNIBOT (mismo patrón de una sola respuesta por aviso, y sube al final del chat).
+  const enviarRespuestaObjeto = async aviso => {
+    if (!respObjObjeto.trim() || !respObjDonde.trim() || !respObjContacto.trim() || !miId) return;
+    const {
+      error
+    } = await sbClient.rpc("responder_objeto_perdido", {
+      p_aviso_id: aviso.id,
+      p_chofer_id: miId,
+      p_objeto: respObjObjeto.trim(),
+      p_donde: respObjDonde.trim(),
+      p_contacto: respObjContacto.trim()
+    });
+    if (error) {
+      alert(error.code === "23505" ? "Alguien más ya respondió esta consulta justo antes que tú." : `No se pudo guardar la respuesta: ${error.message}`);
+      return;
+    }
+    setResponderFor(null);
+    setRespObjUnidad("");
+    setRespObjObjeto("");
+    setRespObjDonde("");
+    setRespObjContacto("");
   };
 
   // Borra un aviso propio (texto o con adjunto). Los mensajes locales-solo-sesión (fallback sin
@@ -10607,7 +10951,7 @@ function PanelAvisos({
     }
     actualizarAvisos(prev => prev.filter(a => a.id !== aviso.id));
   };
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "flex-1 flex flex-col min-h-0 relative",
     style: {
       background: WA_BG
@@ -10618,7 +10962,10 @@ function PanelAvisos({
     onClick: () => {
       if (menuAbierto) setMenuAbierto(null);
     }
-  }, dragOver && /*#__PURE__*/React.createElement("div", {
+  }, dragOver &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "absolute inset-0 flex items-center justify-center",
     style: {
       background: "rgba(22,163,74,.12)",
@@ -10632,7 +10979,10 @@ function PanelAvisos({
       background: "white",
       color: "#166534"
     }
-  }, "\uD83D\uDCCE Suelta aqu\xED para adjuntar")), busquedaAbierta ? /*#__PURE__*/React.createElement("div", {
+  }, "\uD83D\uDCCE Suelta aqu\xED para adjuntar")), busquedaAbierta ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "flex items-center gap-2 px-3 py-2 shrink-0",
     style: {
       background: "white",
@@ -10659,7 +11009,10 @@ function PanelAvisos({
     style: {
       color: "#1f2937"
     }
-  }), busquedaTexto.trim() && /*#__PURE__*/React.createElement("span", {
+  }), busquedaTexto.trim() &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("span", {
     className: "text-[11px] text-gray-400 shrink-0 tabular-nums"
   }, coincidenciasBusqueda.length > 0 ? `${busquedaIndice + 1}/${coincidenciasBusqueda.length}` : "0/0"), /*#__PURE__*/React.createElement("button", {
     onClick: busquedaAnterior,
@@ -10695,7 +11048,10 @@ function PanelAvisos({
   }, /*#__PURE__*/React.createElement(X, {
     size: 16,
     color: "#374151"
-  }))) : /*#__PURE__*/React.createElement("button", {
+  }))) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     onClick: () => setBusquedaAbierta(true),
     className: "absolute flex items-center justify-center rounded-full shadow-md",
     style: {
@@ -10722,9 +11078,15 @@ function PanelAvisos({
     className: "text-center"
   }, /*#__PURE__*/React.createElement("span", {
     className: "text-[11px] text-gray-600 bg-white/70 rounded-full px-3 py-1"
-  }, "Canal informativo \xB7 solo lectura")), loading ? /*#__PURE__*/React.createElement("div", {
+  }, "Canal informativo \xB7 solo lectura")), loading ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "text-center text-xs text-gray-400 py-6"
-  }, "Cargando avisos...") : avisosData.length === 0 ? /*#__PURE__*/React.createElement("div", {
+  }, "Cargando avisos...") : avisosData.length === 0 ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "text-center text-xs text-gray-400 py-6"
   }, "A\xFAn no hay avisos publicados en esta planta.") : avisosData.map(a => {
     const reactsAgrupadas = {};
@@ -10733,11 +11095,15 @@ function PanelAvisos({
     });
     const totalR = Object.values(reactsAgrupadas).reduce((s, n) => s + n, 0);
     const esConsultaRuta = !!a.obra_consultada;
+    const esConsultaObjeto = !!a.objeto_consultado;
     const esPropio = a.autor_id === miId;
     const citada = a.responde_a_id ? avisosData.find(x => x.id === a.responde_a_id) : null;
-    return /*#__PURE__*/React.createElement(React.Fragment, {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement(React.Fragment, {
       key: a.id
-    }, a.id === primerNoLeidoId && /*#__PURE__*/React.createElement("div", {
+    }, a.id === primerNoLeidoId &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       "data-separador-no-leidos": "true",
       className: "flex items-center gap-2 my-2"
     }, /*#__PURE__*/React.createElement("div", {
@@ -10770,13 +11136,19 @@ function PanelAvisos({
         display: "inline-block",
         maxWidth: "min(460px, 85vw)"
       }
-    }, yo && /*#__PURE__*/React.createElement("div", {
+    }, yo &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       className: "absolute",
       style: {
         top: 2,
         right: 4
       }
-    }, puedePublicar ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("button", {
+    }, puedePublicar ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("button", {
       onClick: e => {
         e.stopPropagation();
         if (menuAbierto === a.id) {
@@ -10801,7 +11173,10 @@ function PanelAvisos({
     }, /*#__PURE__*/React.createElement(ChevronDown, {
       size: 13,
       color: "#374151"
-    })), menuAbierto === a.id && menuPos && /*#__PURE__*/React.createElement("div", {
+    })), menuAbierto === a.id && menuPos &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       className: "fixed rounded-xl bg-white py-1 flex flex-col",
       style: {
         top: menuPos.top,
@@ -10819,13 +11194,20 @@ function PanelAvisos({
     }, "\uD83D\uDE0A Reaccionar"), /*#__PURE__*/React.createElement("button", {
       onClick: () => iniciarRespuesta(a),
       className: "text-left px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
-    }, "\u21A9\uFE0F Responder"), esPropio && /*#__PURE__*/React.createElement("button", {
+    }, "\u21A9\uFE0F Responder"), esPropio &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("button", {
       onClick: () => iniciarEdicion(a),
       className: "text-left px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
-    }, "\u270F\uFE0F Editar"), esPropio && /*#__PURE__*/React.createElement("button", {
+    }, "\u270F\uFE0F Editar"), esPropio &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("button", {
       onClick: () => pedirBorrar(a),
       className: "text-left px-3 py-2 text-sm font-medium text-red-600 hover:bg-gray-100"
     }, "\uD83D\uDDD1\uFE0F Eliminar"))) :
+    /*#__PURE__*/
     /*#__PURE__*/
     // Roles no administrativos (choferes, operadores de bomba, auxiliares de
     // tubería, etc. — cualquier sesión con puedePublicar=false) no publican ni
@@ -10845,17 +11227,26 @@ function PanelAvisos({
     }, /*#__PURE__*/React.createElement(Plus, {
       size: 13,
       color: "#374151"
-    }))), a.autor_id === miId ? /*#__PURE__*/React.createElement("div", {
+    }))), a.autor_id === miId ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       className: "text-[11px] font-bold pr-5",
       style: {
         color: AZUL
       }
-    }, limpiarNombreAutor(a.autor_nombre)) : /*#__PURE__*/React.createElement(NombreClickeable, {
+    }, limpiarNombreAutor(a.autor_nombre)) :
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement(NombreClickeable, {
       id: a.autor_id,
       nombre: limpiarNombreAutor(a.autor_nombre),
       dniViewer: dniViewer,
       className: "text-[11px] font-bold hover:underline block pr-5"
-    }, limpiarNombreAutor(a.autor_nombre)), citada && /*#__PURE__*/React.createElement("div", {
+    }, limpiarNombreAutor(a.autor_nombre)), citada &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       className: "rounded-lg px-2 py-1 mt-1 mb-1 text-xs",
       style: {
         background: "rgba(0,0,0,.05)",
@@ -10868,7 +11259,10 @@ function PanelAvisos({
       }
     }, limpiarNombreAutor(citada.autor_nombre)), /*#__PURE__*/React.createElement("div", {
       className: "text-gray-600 truncate"
-    }, citada.contenido || (citada.archivo_tipo === "imagen" ? "📷 Foto" : citada.archivo_nombre ? `📎 ${citada.archivo_nombre}` : ""))), a.archivo_url && a.archivo_tipo === "imagen" && /*#__PURE__*/React.createElement("div", {
+    }, citada.contenido || (citada.archivo_tipo === "imagen" ? "📷 Foto" : citada.archivo_nombre ? `📎 ${citada.archivo_nombre}` : ""))), a.archivo_url && a.archivo_tipo === "imagen" &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       className: "rounded-lg overflow-hidden mt-1 mb-1",
       style: {
         cursor: "zoom-in",
@@ -10883,7 +11277,10 @@ function PanelAvisos({
         maxHeight: 320,
         display: "block"
       }
-    })), a.archivo_url && a.archivo_tipo === "archivo" && /*#__PURE__*/React.createElement("a", {
+    })), a.archivo_url && a.archivo_tipo === "archivo" &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("a", {
       href: a.archivo_url,
       download: a.archivo_nombre,
       rel: "noopener noreferrer",
@@ -10908,17 +11305,24 @@ function PanelAvisos({
       style: {
         color: AZUL
       }
-    }, "Descargar \u2B07"))), a.archivo_tipo === "encuesta" && a.encuesta_id && /*#__PURE__*/React.createElement(EncuestaCard, {
+    }, "Descargar \u2B07"))), a.archivo_tipo === "encuesta" && a.encuesta_id &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement(EncuestaCard, {
       encuestaId: a.encuesta_id,
       yo: yo,
       esAdmin: puedePublicar
-    }), a.contenido && a.archivo_tipo !== "encuesta" && /*#__PURE__*/React.createElement("div", {
+    }), a.contenido && a.archivo_tipo !== "encuesta" &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       className: "text-sm text-gray-800 whitespace-pre-wrap mt-0.5",
       style: {
         overflowWrap: "break-word",
         wordBreak: "break-word"
       }
     }, renderConBusqueda(a.contenido, a.id)), esConsultaRuta && a.respuestaRuta &&
+    /*#__PURE__*/
     /*#__PURE__*/
     // La respuesta vive DENTRO del mismo mensaje (no como mensaje aparte) — una vez
     // que alguien respondió, nadie más puede (restricción única en la base de datos).
@@ -10951,9 +11355,15 @@ function PanelAvisos({
       }
     }, a.respuestaRuta.ubicacion)), /*#__PURE__*/React.createElement("div", null, "\uD83D\uDEA7 ", /*#__PURE__*/React.createElement("span", {
       className: "font-semibold"
-    }, "A tener en cuenta:"), " ", a.respuestaRuta.a_tener_en_cuenta)), esConsultaRuta && !a.respuestaRuta && yo && /*#__PURE__*/React.createElement("div", {
+    }, "A tener en cuenta:"), " ", a.respuestaRuta.a_tener_en_cuenta)), esConsultaRuta && !a.respuestaRuta && yo &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       className: "mt-2"
-    }, responderFor === a.id ? /*#__PURE__*/React.createElement("div", {
+    }, responderFor === a.id ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       className: "space-y-1.5 rounded-lg p-2",
       style: {
         background: "#f9fafb",
@@ -10996,8 +11406,108 @@ function PanelAvisos({
     }, "Enviar"), /*#__PURE__*/React.createElement("button", {
       onClick: () => setResponderFor(null),
       className: "text-xs text-gray-500 px-2"
-    }, "Cancelar"))) : /*#__PURE__*/React.createElement("button", {
+    }, "Cancelar"))) :
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("button", {
       onClick: () => setResponderFor(a.id),
+      className: "text-xs font-semibold px-2.5 py-1 rounded-full",
+      style: {
+        background: AMARILLO,
+        color: AZUL
+      }
+    }, "\uD83D\uDCAC Responder")), esConsultaObjeto && a.respuestaObjeto &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    // Misma lógica que la respuesta de ruta: vive dentro del mismo mensaje, solo
+    // puede haber una (restricción única en la base de datos). Campos estructurados
+    // (mismo formulario que "encontré algo" en UNIBOT) — si es una respuesta vieja de
+    // antes de este cambio (solo texto libre), cae de vuelta a mostrar ese texto.
+    React.createElement("div", {
+      className: "mt-2 rounded-lg p-2.5 text-xs",
+      style: {
+        background: "#f0fdf4",
+        border: "1px solid #bbf7d0",
+        overflowWrap: "anywhere"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "font-semibold text-gray-700 mb-1"
+    }, a.respuestaObjeto.unidad && a.respuestaObjeto.chofer_nombre ? `${a.respuestaObjeto.chofer_nombre} reporta haberlo encontrado:` : "Respuesta:"), a.respuestaObjeto.unidad ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+      className: "mb-0.5"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "font-semibold"
+    }, "Unidad:"), " ", a.respuestaObjeto.unidad), /*#__PURE__*/React.createElement("div", {
+      className: "mb-0.5"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "font-semibold"
+    }, "Objeto:"), " ", a.respuestaObjeto.objeto), /*#__PURE__*/React.createElement("div", {
+      className: "mb-0.5"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "font-semibold"
+    }, "D\xF3nde se deja:"), " ", a.respuestaObjeto.donde), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
+      className: "font-semibold"
+    }, "C\xF3mo contactarte:"), " ", a.respuestaObjeto.contacto)) :
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", null, a.respuestaObjeto.respuesta)), esConsultaObjeto && !a.respuestaObjeto && yo &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
+      className: "mt-2"
+    }, responderFor === a.id ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
+      className: "space-y-1.5 rounded-lg p-2",
+      style: {
+        background: "#f9fafb",
+        border: "1px solid #e5e7eb"
+      }
+    }, /*#__PURE__*/React.createElement("input", {
+      value: respObjObjeto,
+      onChange: e => setRespObjObjeto(e.target.value),
+      placeholder: "\xBFQu\xE9 encontraste?",
+      className: "w-full px-2 py-1.5 text-xs rounded border",
+      style: {
+        borderColor: "#d5d9e4"
+      }
+    }), /*#__PURE__*/React.createElement("input", {
+      value: respObjDonde,
+      onChange: e => setRespObjDonde(e.target.value),
+      placeholder: "D\xF3nde se deja",
+      className: "w-full px-2 py-1.5 text-xs rounded border",
+      style: {
+        borderColor: "#d5d9e4"
+      }
+    }), /*#__PURE__*/React.createElement("input", {
+      value: respObjContacto,
+      onChange: e => setRespObjContacto(e.target.value),
+      placeholder: "C\xF3mo contactarte",
+      className: "w-full px-2 py-1.5 text-xs rounded border",
+      style: {
+        borderColor: "#d5d9e4"
+      }
+    }), /*#__PURE__*/React.createElement("div", {
+      className: "flex gap-2 pt-1"
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: () => enviarRespuestaObjeto(a),
+      disabled: !respObjObjeto.trim() || !respObjDonde.trim() || !respObjContacto.trim(),
+      className: "flex-1 py-1.5 rounded font-semibold text-xs disabled:opacity-40",
+      style: {
+        background: AMARILLO,
+        color: AZUL
+      }
+    }, "Enviar"), /*#__PURE__*/React.createElement("button", {
+      onClick: () => setResponderFor(null),
+      className: "text-xs text-gray-500 px-2"
+    }, "Cancelar"))) :
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("button", {
+      onClick: () => abrirResponderObjeto(a),
       className: "text-xs font-semibold px-2.5 py-1 rounded-full",
       style: {
         background: AMARILLO,
@@ -11005,18 +11515,27 @@ function PanelAvisos({
       }
     }, "\uD83D\uDCAC Responder")), /*#__PURE__*/React.createElement("div", {
       className: "text-[10px] text-gray-400 text-right mt-1"
-    }, a.editado && /*#__PURE__*/React.createElement("span", {
+    }, a.editado &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("span", {
       className: "italic mr-1"
     }, "editado"), new Date(a.created_at).toLocaleTimeString("es-PE", {
       hour: "2-digit",
       minute: "2-digit"
-    }))), totalR > 0 && /*#__PURE__*/React.createElement("div", {
+    }))), totalR > 0 &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       className: `flex items-center gap-1 mt-1 ${esPropio ? "pr-1 justify-end" : "pl-1"}`
     }, /*#__PURE__*/React.createElement("div", {
       className: "flex items-center gap-1 bg-white rounded-full px-2 py-0.5 shadow-sm"
     }, Object.entries(reactsAgrupadas).map(([eid, n]) => {
       const E = EMOJI_MAP[eid];
-      return E ? /*#__PURE__*/React.createElement("span", {
+      return E ?
+      /*#__PURE__*/
+      /*#__PURE__*/
+      React.createElement("span", {
         key: eid,
         className: "flex items-center gap-0.5"
       }, /*#__PURE__*/React.createElement(E, {
@@ -11024,9 +11543,15 @@ function PanelAvisos({
       }), /*#__PURE__*/React.createElement("span", {
         className: "text-[11px] text-gray-500"
       }, n)) : null;
-    }))), pickerFor === a.id && /*#__PURE__*/React.createElement("div", {
+    }))), pickerFor === a.id &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       className: `flex items-center gap-1 mt-1 bg-white rounded-full px-2 py-1 shadow-md w-fit ${esPropio ? "ml-auto" : ""}`
-    }, REACTIONS.map(r => /*#__PURE__*/React.createElement("button", {
+    }, REACTIONS.map(r =>
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("button", {
       key: r.id,
       onClick: () => react(a.id, r.id, a.miReaccion),
       className: "p-1 rounded-full hover:bg-gray-100",
@@ -11039,11 +11564,17 @@ function PanelAvisos({
     style: {
       height: 1
     }
-  })), puedePublicar ? /*#__PURE__*/React.createElement("div", {
+  })), puedePublicar ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     style: {
       flexShrink: 0
     }
-  }, respondiendoA && /*#__PURE__*/React.createElement("div", {
+  }, respondiendoA &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "px-3 pt-2"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-2 rounded-xl px-3 py-2",
@@ -11065,7 +11596,10 @@ function PanelAvisos({
     className: "text-gray-500"
   }, /*#__PURE__*/React.createElement(X, {
     size: 16
-  })))), editandoId && /*#__PURE__*/React.createElement("div", {
+  })))), editandoId &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "px-3 pt-2"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-2 rounded-xl px-3 py-2",
@@ -11087,7 +11621,10 @@ function PanelAvisos({
     className: "text-gray-500"
   }, /*#__PURE__*/React.createElement(X, {
     size: 16
-  })))), adjuntos.length > 0 && /*#__PURE__*/React.createElement("div", {
+  })))), adjuntos.length > 0 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "px-3 pt-2"
   }, /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-2",
@@ -11104,19 +11641,28 @@ function PanelAvisos({
     className: "text-[11px] font-semibold text-green-800 underline"
   }, "Quitar todos")), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-2 overflow-x-auto pb-0.5"
-  }, adjuntos.map(a => /*#__PURE__*/React.createElement("div", {
+  }, adjuntos.map(a =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     key: a.id,
     className: "relative shrink-0",
     style: {
       width: 64
     }
-  }, a.tipo === "imagen" ? /*#__PURE__*/React.createElement("img", {
+  }, a.tipo === "imagen" ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("img", {
     src: a.previewUrl,
     className: "w-full rounded-lg object-cover",
     style: {
       height: 64
     }
-  }) : /*#__PURE__*/React.createElement("div", {
+  }) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "w-full flex flex-col items-center justify-center gap-1 rounded-lg px-1",
     style: {
       height: 64,
@@ -11153,7 +11699,10 @@ function PanelAvisos({
     size: 22
   }))))), /*#__PURE__*/React.createElement("div", {
     className: "flex items-end gap-2 p-3 pt-2 relative"
-  }, attachMenuOpen && /*#__PURE__*/React.createElement("div", {
+  }, attachMenuOpen &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "absolute rounded-2xl bg-white p-1.5 flex flex-col gap-0.5",
     style: {
       bottom: "56px",
@@ -11180,24 +11729,36 @@ function PanelAvisos({
       filePdfRef.current?.click();
     },
     className: "flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-semibold text-gray-800 hover:bg-gray-100"
-  }, "\uD83D\uDCC4 PDF"), puedePublicar && (!plantasAdmin || plantasAdmin.length <= 1) && /*#__PURE__*/React.createElement("button", {
+  }, "\uD83D\uDCC4 PDF"), puedePublicar && (!plantasAdmin || plantasAdmin.length <= 1) &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     onClick: () => {
       setAttachMenuOpen(false);
       setCrearEncuestaAbierta(true);
     },
     className: "flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-semibold text-gray-800 hover:bg-gray-100"
-  }, "\uD83D\uDCCA Encuesta"), esAZT && (!plantasAdmin || plantasAdmin.length <= 1) && /*#__PURE__*/React.createElement("button", {
+  }, "\uD83D\uDCCA Encuesta"), esAZT && (!plantasAdmin || plantasAdmin.length <= 1) &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     onClick: () => {
       setAttachMenuOpen(false);
       setSubirCitacionAbierta(true);
     },
     className: "flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-semibold text-gray-800 hover:bg-gray-100"
-  }, "\uD83D\uDCCB Subir citaci\xF3n general")), crearEncuestaAbierta && /*#__PURE__*/React.createElement(ModalCrearEncuesta, {
+  }, "\uD83D\uDCCB Subir citaci\xF3n general")), crearEncuestaAbierta &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(ModalCrearEncuesta, {
     planta: planta,
     plantasAdmin: plantasAdmin,
     yo: yo,
     onClose: () => setCrearEncuestaAbierta(false)
-  }), subirCitacionAbierta && /*#__PURE__*/React.createElement(ModalSubirCitacionGeneral, {
+  }), subirCitacionAbierta &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(ModalSubirCitacionGeneral, {
     plantasAdmin: plantasAdmin,
     yo: yo,
     onClose: () => setSubirCitacionAbierta(false)
@@ -11300,17 +11861,26 @@ function PanelAvisos({
   }, /*#__PURE__*/React.createElement(Send, {
     size: 18,
     color: AZUL
-  })))) : /*#__PURE__*/React.createElement("div", {
+  })))) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "p-3 text-center text-xs text-gray-500 border-t bg-white",
     style: {
       borderColor: "#e6e8ee"
     }
   }, "Este es un canal de avisos de tu planta. Solo puedes reaccionar a los mensajes \uD83D\uDC47 con los emojis de UNICON", /*#__PURE__*/React.createElement("div", {
     className: "flex justify-center gap-3 mt-2"
-  }, REACTIONS.map(r => /*#__PURE__*/React.createElement(r.node, {
+  }, REACTIONS.map(r =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(r.node, {
     key: r.id,
     s: 22
-  })))), lightboxUrl && /*#__PURE__*/React.createElement("div", {
+  })))), lightboxUrl &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     onClick: () => setLightboxUrl(null),
     className: "fixed inset-0 flex items-center justify-center",
     style: {
@@ -11422,7 +11992,7 @@ function ModalCrearEncuesta({
     }
     onClose();
   };
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 flex items-center justify-center p-4",
     style: {
       background: "rgba(0,0,0,.5)",
@@ -11458,7 +12028,10 @@ function ModalCrearEncuesta({
     className: "text-xs font-semibold text-gray-600"
   }, "Opciones"), /*#__PURE__*/React.createElement("div", {
     className: "space-y-1.5 mt-1 mb-2"
-  }, opciones.map((o, i) => /*#__PURE__*/React.createElement("div", {
+  }, opciones.map((o, i) =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     key: i,
     className: "flex items-center gap-1.5"
   }, /*#__PURE__*/React.createElement("input", {
@@ -11469,12 +12042,18 @@ function ModalCrearEncuesta({
     style: {
       borderColor: "#d5d9e4"
     }
-  }), opciones.length > 2 && /*#__PURE__*/React.createElement("button", {
+  }), opciones.length > 2 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     onClick: () => quitarOpcion(i),
     className: "text-gray-400 hover:text-red-500"
   }, /*#__PURE__*/React.createElement(X, {
     size: 16
-  }))))), opciones.length < 10 && /*#__PURE__*/React.createElement("button", {
+  }))))), opciones.length < 10 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     onClick: agregarOpcion,
     className: "text-xs font-semibold mb-3",
     style: {
@@ -11486,16 +12065,25 @@ function ModalCrearEncuesta({
     className: "text-xs font-semibold text-gray-600 block mb-1"
   }, "Publicar en (selecci\xF3n m\xFAltiple)"), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-1.5"
-  }, opcionesPlanta.length > 1 && /*#__PURE__*/React.createElement("button", {
+  }, opcionesPlanta.length > 1 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     onClick: toggleTodas,
     className: "px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1",
     style: {
       background: todasMarcadas ? AZUL : "#e6e8ee",
       color: todasMarcadas ? "white" : "#374151"
     }
-  }, todasMarcadas && /*#__PURE__*/React.createElement(Check, {
+  }, todasMarcadas &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(Check, {
     size: 11
-  }), " Todas (", opcionesPlanta.length, ")"), opcionesPlanta.map(p => /*#__PURE__*/React.createElement("button", {
+  }), " Todas (", opcionesPlanta.length, ")"), opcionesPlanta.map(p =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     key: p,
     onClick: () => togglePlanta(p),
     className: "px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1",
@@ -11503,9 +12091,15 @@ function ModalCrearEncuesta({
       background: destinos.has(p) ? AZUL : "#f3f4f6",
       color: destinos.has(p) ? "white" : "#374151"
     }
-  }, destinos.has(p) && /*#__PURE__*/React.createElement(Check, {
+  }, destinos.has(p) &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(Check, {
     size: 11
-  }), " ", p)))), error && /*#__PURE__*/React.createElement("div", {
+  }), " ", p)))), error &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "text-xs font-semibold text-red-600 mb-2"
   }, error), /*#__PURE__*/React.createElement("button", {
     onClick: publicar,
@@ -11571,7 +12165,7 @@ function EncuestaCard({
       sbClient.removeChannel(canal);
     };
   }, [encuestaId]);
-  if (!encuesta) return /*#__PURE__*/React.createElement("div", {
+  if (!encuesta) return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "text-xs text-gray-400 mt-1 mb-1"
   }, "Cargando encuesta...");
   const totalVotos = votos.length;
@@ -11599,7 +12193,7 @@ function EncuestaCard({
     }
     setVotando(false);
   };
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl mt-1 mb-1 overflow-hidden shadow-sm",
     style: {
       background: AZUL,
@@ -11621,7 +12215,7 @@ function EncuestaCard({
     const n = votos.filter(v => v.opcion_index === i).length;
     const pct = totalVotos ? Math.round(n / totalVotos * 100) : 0;
     const esMiVoto = miVoto?.opcion_index === i;
-    return /*#__PURE__*/React.createElement("button", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
       key: i,
       onClick: () => votar(i),
       disabled: votando,
@@ -11638,7 +12232,10 @@ function EncuestaCard({
         border: `2px solid ${esMiVoto ? AMARILLO : "rgba(255,255,255,.5)"}`,
         background: esMiVoto ? AMARILLO : "transparent"
       }
-    }, esMiVoto && /*#__PURE__*/React.createElement(Check, {
+    }, esMiVoto &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement(Check, {
       size: 10,
       color: AZUL
     })), /*#__PURE__*/React.createElement("span", {
@@ -11674,14 +12271,20 @@ function EncuestaCard({
     style: {
       color: "rgba(255,255,255,.55)"
     }
-  }, horaTexto)), esAdmin && /*#__PURE__*/React.createElement("button", {
+  }, horaTexto)), esAdmin &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     onClick: () => setVerVotosAbierto(true),
     className: "w-full text-center py-2 text-[12px] font-bold border-t",
     style: {
       borderColor: "rgba(255,255,255,.15)",
       color: AMARILLO
     }
-  }, "Ver votos"), verVotosAbierto && /*#__PURE__*/React.createElement(ModalVerVotos, {
+  }, "Ver votos"), verVotosAbierto &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(ModalVerVotos, {
     encuesta: encuesta,
     onClose: () => setVerVotosAbierto(false)
   }));
@@ -11787,7 +12390,7 @@ function ModalVerVotos({
       setDescargando(false);
     }
   };
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 flex items-center justify-center p-4",
     style: {
       background: "rgba(0,0,0,.5)",
@@ -11812,7 +12415,10 @@ function ModalVerVotos({
     color: "#6b7280"
   }))), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-1.5 px-4 pb-2 overflow-x-auto"
-  }, plantasDisponibles.map(p => /*#__PURE__*/React.createElement("button", {
+  }, plantasDisponibles.map(p =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     key: p,
     onClick: () => setTab(p),
     className: "px-2.5 py-1 rounded-full text-xs font-semibold shrink-0",
@@ -11820,7 +12426,10 @@ function ModalVerVotos({
       background: tab === p ? AZUL : "#f3f4f6",
       color: tab === p ? "white" : "#374151"
     }
-  }, p)), plantasDisponibles.length > 1 && /*#__PURE__*/React.createElement("button", {
+  }, p)), plantasDisponibles.length > 1 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     onClick: () => setTab("todos"),
     className: "px-2.5 py-1 rounded-full text-xs font-bold shrink-0",
     style: {
@@ -11829,11 +12438,20 @@ function ModalVerVotos({
     }
   }, "Todos")), /*#__PURE__*/React.createElement("div", {
     className: "flex-1 overflow-y-auto px-4"
-  }, cargando ? /*#__PURE__*/React.createElement("div", {
+  }, cargando ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "text-xs text-gray-400 py-4"
-  }, "Cargando...") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, "Cargando...") :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-1.5 py-2"
-  }, tallyFiltrado.map((t, i) => /*#__PURE__*/React.createElement("div", {
+  }, tallyFiltrado.map((t, i) =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     key: i,
     className: "text-[11px] px-2 py-1 rounded-lg",
     style: {
@@ -11846,11 +12464,20 @@ function ModalVerVotos({
     style: {
       color: AZUL
     }
-  }, t.n)))), votosFiltrados.length === 0 ? /*#__PURE__*/React.createElement("div", {
+  }, t.n)))), votosFiltrados.length === 0 ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "text-xs text-gray-400 py-3"
-  }, "Nadie ha votado todav\xEDa.") : /*#__PURE__*/React.createElement("div", {
+  }, "Nadie ha votado todav\xEDa.") :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "space-y-2 pb-3"
-  }, votosFiltrados.map(v => /*#__PURE__*/React.createElement("div", {
+  }, votosFiltrados.map(v =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     key: `${v.encuesta_id}-${v.votante_id}`,
     className: "flex items-center gap-2.5"
   }, /*#__PURE__*/React.createElement("div", {
@@ -11858,10 +12485,16 @@ function ModalVerVotos({
     style: {
       background: "#e6e8ee"
     }
-  }, v.foto_url ? /*#__PURE__*/React.createElement("img", {
+  }, v.foto_url ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("img", {
     src: v.foto_url,
     className: "w-full h-full object-cover"
-  }) : /*#__PURE__*/React.createElement(User, {
+  }) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(User, {
     size: 16,
     color: "#9ca3af"
   })), /*#__PURE__*/React.createElement("div", {
@@ -11888,10 +12521,9 @@ function ModalVerVotos({
 
 /* ============  REPORTE DE FIN DE VUELTA  ============ */
 function FinDeVuelta({
-  driver,
-  onRegistrarCierre
+  driver
 }) {
-  const cfg = PLANT_CONFIG[driver.planta];
+  const cfg = PLANT_CONFIG[driver.planta] || PLANT_CONFIG_FALLBACK;
   const [jornada, setJornada] = useState(null);
   const [view, setView] = useState("home"); // home | wizard | sent
   const [quad, setQuad] = useState(null);
@@ -11899,6 +12531,11 @@ function FinDeVuelta({
   const [dir, setDir] = useState("forward"); // dirección de la transición
   const [sentAt, setSentAt] = useState("");
   // campos comunes
+  // ¿el chofer está en su propia planta al momento de este registro puntual? El chofer puede
+  // estar dejando el mixer en OTRA planta (o en el Taller) sin que eso cambie su perfil ni sus
+  // canales — solo afecta a este reporte puntual (ver registrar y flujoMixer/UniBot).
+  const [enSuPlanta, setEnSuPlanta] = useState(null); // null (sin responder) | "si" | "no"
+  const [plantaRegistro, setPlantaRegistro] = useState(""); // planta efectiva de ESTE reporte, o "Taller"
   const [parqueo, setParqueo] = useState("");
   const [llaves, setLlaves] = useState("");
   const [problema, setProblema] = useState(null);
@@ -11934,6 +12571,8 @@ function FinDeVuelta({
 
   // reset total
   const reset = () => {
+    setEnSuPlanta(null);
+    setPlantaRegistro("");
     setParqueo("");
     setLlaves("");
     setProblema(null);
@@ -11978,21 +12617,34 @@ function FinDeVuelta({
       ts: Date.now()
     };
     if (q === "ubicacion") {
-      registro.parqueo = parqueo;
+      // Planta efectiva de ESTE reporte puntual: la propia del chofer si dijo "sí", o la que eligió
+      // (o "Taller") si dijo "no". Nunca se actualiza driver.planta ni el perfil del chofer con esto.
+      const plantaEfectiva = enSuPlanta === "no" ? plantaRegistro || driver.planta : driver.planta;
+      const parqueoEfectivo = plantaEfectiva === "Taller" ? "Taller" : parqueo;
+      registro.planta = plantaEfectiva;
+      registro.parqueo = parqueoEfectivo;
       registro.llaves = llaves;
       registro.problema = problema;
       registro.problemaTxt = problemaTxt;
       registro.coment = coment;
-      // Compartir datos con UniBot para responder "¿Dónde está mi mixer?"
-      const numMixer = driver.unidad.replace(/[^\d]/g, "");
-      if (numMixer && parqueo && llaves) {
-        onRegistrarCierre?.(`M-${numMixer}`, {
-          chofer: driver.nombre,
-          parqueo,
-          llaves,
-          problema: problema === "si" ? problemaTxt : null,
-          comentario: problema === "si" ? coment : null,
-          fecha: Date.now()
+      // Reporte real en Supabase (tabla reportes_fin_vuelta) para que CUALQUIER chofer, en
+      // cualquier sesión y cualquier planta, pueda preguntarle a UNIBOT "¿dónde está mi mixer?" y
+      // encontrar el último reporte — sin importar quién lo registró ni en qué planta.
+      const numMixer = (driver.unidad || "").replace(/[^\d]/g, "");
+      if (numMixer && parqueoEfectivo && llaves) {
+        sbClient.rpc("registrar_reporte_fin_vuelta", {
+          p_mixer: numMixer,
+          p_chofer_id: driver.id,
+          p_chofer_nombre: driver.nombre,
+          p_planta: plantaEfectiva,
+          p_parqueo: parqueoEfectivo,
+          p_llaves: llaves,
+          p_problema: problema === "si" ? problemaTxt : null,
+          p_comentario: problema === "si" ? coment : null
+        }).then(({
+          error
+        }) => {
+          if (error) console.error("Error registrando reporte de fin de vuelta:", error);
         });
       }
     }
@@ -12009,18 +12661,30 @@ function FinDeVuelta({
     setDir("forward");
     setStep(n);
   };
-  // desmarca lo del paso al que se regresa
-  const clearField = (q, i) => {
-    if (q === "ubicacion") {
-      if (i === 0) setParqueo("");
-      if (i === 1) setLlaves("");
-      if (i === 2) {
-        setProblema(null);
-        setProblemaTxt("");
-        setComent("");
-      }
+  // desmarca el campo del paso al que se regresa, identificado por su "campo" (no por índice
+  // numérico, ya que la cantidad de pasos de "ubicacion" varía según enSuPlanta/Taller)
+  const clearField = campo => {
+    if (campo === "plantaConfirm") {
+      setEnSuPlanta(null);
+      setPlantaRegistro("");
     }
-    if (q === "lavadero" && i === 0) setLavadero("");
+    if (campo === "plantaPicker") {
+      setPlantaRegistro("");
+    }
+    if (campo === "zona") {
+      setParqueo("");
+    }
+    if (campo === "llaves") {
+      setLlaves("");
+    }
+    if (campo === "problema") {
+      setProblema(null);
+      setProblemaTxt("");
+      setComent("");
+    }
+    if (campo === "lavadero") {
+      setLavadero("");
+    }
   };
   const regresar = () => {
     if (step === 0) {
@@ -12028,7 +12692,7 @@ function FinDeVuelta({
       return;
     }
     const prev = step - 1;
-    clearField(quad, prev);
+    clearField(steps[prev]?.campo);
     setDir("back");
     setStep(prev);
   };
@@ -12036,67 +12700,160 @@ function FinDeVuelta({
   // === PRUEBAS: mapea el índice del paso al tipo de prueba ===
   // ==================== PASOS POR CUADRANTE ====================
   const buildSteps = () => {
-    if (quad === "ubicacion") return [{
-      titulo: "¿Dónde dejaste tu mixer?",
-      manual: false,
-      node: /*#__PURE__*/React.createElement(ChipGrid, {
-        options: cfg.parqueo,
-        value: parqueo,
-        onChange: v => {
-          setParqueo(v);
-          avanzar(1);
-        }
-      })
-    }, {
-      titulo: "¿Dónde dejaste las llaves?",
-      manual: false,
-      node: /*#__PURE__*/React.createElement(ChipGrid, {
-        options: ["En garita", "Con el AZT", "En la unidad", "Con vigilancia"],
-        value: llaves,
-        onChange: v => {
-          setLlaves(v);
-          avanzar(2);
-        }
-      })
-    }, {
-      titulo: "¿El camión tiene algún problema?",
-      manual: true,
-      valido: problema === "si",
-      node: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-        className: "flex flex-col gap-2.5"
-      }, /*#__PURE__*/React.createElement(BigOption, {
-        active: problema === "no",
-        onClick: () => {
-          setProblema("no");
-          registrar();
-        },
-        color: "#16a34a"
-      }, "No, todo bien"), /*#__PURE__*/React.createElement(BigOption, {
-        active: problema === "si",
-        onClick: () => setProblema("si"),
-        color: "#e11d48"
-      }, "S\xED, reportar")), problema === "si" && /*#__PURE__*/React.createElement("div", {
-        className: "mt-3"
-      }, /*#__PURE__*/React.createElement(MiniInput, {
-        label: "",
-        value: problemaTxt,
-        onChange: setProblemaTxt,
-        placeholder: "Ej. ruido en la tolva, falla el\xE9ctrica\u2026"
-      }), /*#__PURE__*/React.createElement("textarea", {
-        value: coment,
-        onChange: e => setComent(e.target.value),
-        rows: 2,
-        placeholder: "Comentario adicional para tu AZT (opcional)",
-        className: "w-full mt-2 px-3 py-2 rounded-lg border text-sm outline-none resize-none",
-        style: {
-          borderColor: "#d5d9e4"
-        }
-      })))
-    }];
+    if (quad === "ubicacion") {
+      // Forma del wizard: confirmación de planta -> (si dijo "no") selector de planta/Taller ->
+      // (si no es Taller) zona de parqueo de esa planta -> llaves -> problema. Los índices se
+      // calculan explícitos porque la cantidad de pasos cambia según las respuestas.
+      const tienePicker = enSuPlanta === "no";
+      const plantaEfectiva = tienePicker ? plantaRegistro || null : driver.planta;
+      const esTaller = plantaEfectiva === "Taller";
+      const tieneZona = !!plantaEfectiva && !esTaller;
+      const idxZona = tieneZona ? tienePicker ? 2 : 1 : null;
+      const idxLlaves = (idxZona ?? (tienePicker ? 1 : 0)) + 1;
+      const idxProblema = idxLlaves + 1;
+      const cfgEfectivo = tieneZona ? PLANT_CONFIG[plantaEfectiva] || PLANT_CONFIG_FALLBACK : null;
+      const pasos = [{
+        campo: "plantaConfirm",
+        titulo: `¿Te encuentras en la planta ${driver.planta}?`,
+        manual: false,
+        node:
+        /*#__PURE__*/
+        /*#__PURE__*/
+        React.createElement("div", {
+          className: "flex flex-col gap-2.5"
+        }, /*#__PURE__*/React.createElement(BigOption, {
+          active: enSuPlanta === "si",
+          onClick: () => {
+            setEnSuPlanta("si");
+            setPlantaRegistro(driver.planta);
+            avanzar(1);
+          },
+          color: "#16a34a"
+        }, "S\xED"), /*#__PURE__*/React.createElement(BigOption, {
+          active: enSuPlanta === "no",
+          onClick: () => {
+            setEnSuPlanta("no");
+            setPlantaRegistro("");
+            avanzar(1);
+          },
+          color: "#e11d48"
+        }, "No"))
+      }];
+      if (tienePicker) {
+        pasos.push({
+          campo: "plantaPicker",
+          titulo: "¿En qué planta te encuentras?",
+          manual: false,
+          node:
+          /*#__PURE__*/
+          /*#__PURE__*/
+          React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(ChipGrid, {
+            options: PLANTAS_TODAS.filter(p => p !== driver.planta && p !== "Transversal"),
+            value: plantaRegistro === "Taller" ? "" : plantaRegistro,
+            onChange: v => {
+              setPlantaRegistro(v);
+              avanzar(2);
+            }
+          }), /*#__PURE__*/React.createElement("button", {
+            onClick: () => {
+              setPlantaRegistro("Taller");
+              avanzar(2);
+            },
+            className: "w-full mt-3 py-3 rounded-xl font-bold text-sm text-center",
+            style: {
+              background: plantaRegistro === "Taller" ? AZUL : "#eef1f6",
+              color: plantaRegistro === "Taller" ? "white" : AZUL,
+              border: "1px solid #d5d9e4"
+            }
+          }, "Taller"))
+        });
+      }
+      if (tieneZona) {
+        pasos.push({
+          campo: "zona",
+          titulo: "¿Dónde dejaste tu mixer?",
+          manual: false,
+          node:
+          /*#__PURE__*/
+          /*#__PURE__*/
+          React.createElement(ChipGrid, {
+            options: cfgEfectivo.parqueo,
+            value: parqueo,
+            onChange: v => {
+              setParqueo(v);
+              avanzar(idxLlaves);
+            }
+          })
+        });
+      }
+      pasos.push({
+        campo: "llaves",
+        titulo: "¿Dónde dejaste las llaves?",
+        manual: false,
+        node:
+        /*#__PURE__*/
+        /*#__PURE__*/
+        React.createElement(ChipGrid, {
+          options: ["En garita", "Con el AZT", "En la unidad", "Con vigilancia"],
+          value: llaves,
+          onChange: v => {
+            setLlaves(v);
+            avanzar(idxProblema);
+          }
+        })
+      });
+      pasos.push({
+        campo: "problema",
+        titulo: "¿El camión tiene algún problema?",
+        manual: true,
+        valido: problema === "si",
+        node:
+        /*#__PURE__*/
+        /*#__PURE__*/
+        React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+          className: "flex flex-col gap-2.5"
+        }, /*#__PURE__*/React.createElement(BigOption, {
+          active: problema === "no",
+          onClick: () => {
+            setProblema("no");
+            registrar();
+          },
+          color: "#16a34a"
+        }, "No, todo bien"), /*#__PURE__*/React.createElement(BigOption, {
+          active: problema === "si",
+          onClick: () => setProblema("si"),
+          color: "#e11d48"
+        }, "S\xED, reportar")), problema === "si" &&
+        /*#__PURE__*/
+        /*#__PURE__*/
+        React.createElement("div", {
+          className: "mt-3"
+        }, /*#__PURE__*/React.createElement(MiniInput, {
+          label: "",
+          value: problemaTxt,
+          onChange: setProblemaTxt,
+          placeholder: "Ej. ruido en la tolva, falla el\xE9ctrica\u2026"
+        }), /*#__PURE__*/React.createElement("textarea", {
+          value: coment,
+          onChange: e => setComent(e.target.value),
+          rows: 2,
+          placeholder: "Comentario adicional para tu AZT (opcional)",
+          className: "w-full mt-2 px-3 py-2 rounded-lg border text-sm outline-none resize-none",
+          style: {
+            borderColor: "#d5d9e4"
+          }
+        })))
+      });
+      return pasos;
+    }
     if (quad === "lavadero") return [{
+      campo: "lavadero",
       titulo: "¿En qué lavadero te encuentras?",
       manual: false,
-      node: /*#__PURE__*/React.createElement(ChipGrid, {
+      node:
+      /*#__PURE__*/
+      /*#__PURE__*/
+      React.createElement(ChipGrid, {
         options: [...cfg.lavadero, "En cola del lavadero"],
         value: lavadero,
         onChange: v => {
@@ -12107,6 +12864,7 @@ function FinDeVuelta({
     }];
     return [];
   };
+  const steps = buildSteps();
 
   /* ---------- VENTANA VERDE GRANDE ---------- */
   useEffect(() => {
@@ -12114,7 +12872,7 @@ function FinDeVuelta({
     const t = setTimeout(() => volverHome(), 2400);
     return () => clearTimeout(t);
   }, [view]);
-  if (view === "sent") return /*#__PURE__*/React.createElement("div", {
+  if (view === "sent") return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "flex-1 flex flex-col items-center justify-center text-center p-8 cursor-pointer",
     style: {
       background: "#16a34a"
@@ -12148,11 +12906,10 @@ function FinDeVuelta({
 
   /* ---------- WIZARD POR PASOS ---------- */
   if (view === "wizard") {
-    const steps = buildSteps();
     const cur = steps[step] || steps[0];
     const q = QUADS.find(x => x.id === quad);
     const esUltimo = step === steps.length - 1;
-    return /*#__PURE__*/React.createElement("div", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
       className: "flex-1 flex flex-col min-h-0",
       style: {
         background: "#f6f8fc"
@@ -12180,9 +12937,15 @@ function FinDeVuelta({
       size: 18
     }), /*#__PURE__*/React.createElement("span", {
       className: "font-semibold text-sm truncate"
-    }, q.title))), steps.length > 1 && /*#__PURE__*/React.createElement("div", {
+    }, q.title))), steps.length > 1 &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       className: "flex justify-center gap-1.5 pt-4"
-    }, steps.map((_, i) => /*#__PURE__*/React.createElement("span", {
+    }, steps.map((_, i) =>
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("span", {
       key: i,
       className: "rounded-full transition-all",
       style: {
@@ -12211,7 +12974,10 @@ function FinDeVuelta({
       }
     }, /*#__PURE__*/React.createElement(ChevronLeft, {
       size: 16
-    }), " Regresar"), cur.manual && /*#__PURE__*/React.createElement("button", {
+    }), " Regresar"), cur.manual &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("button", {
       onClick: () => esUltimo ? registrar() : avanzar(step + 1),
       disabled: !cur.valido,
       className: "flex-1 py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-40",
@@ -12225,7 +12991,7 @@ function FinDeVuelta({
   }
 
   /* ---------- HOME ---------- */
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "flex-1 overflow-y-auto p-4",
     style: {
       background: "#f6f8fc"
@@ -12246,7 +13012,10 @@ function FinDeVuelta({
     }
   }, /*#__PURE__*/React.createElement(Clock, {
     size: 14
-  }), " Historial", historial.length > 0 && /*#__PURE__*/React.createElement("span", {
+  }), " Historial", historial.length > 0 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("span", {
     className: "text-[10px] font-bold text-white rounded-full px-1.5",
     style: {
       background: AZUL
@@ -12256,7 +13025,10 @@ function FinDeVuelta({
     style: {
       gap: 12
     }
-  }, QUADS.map(q => /*#__PURE__*/React.createElement("button", {
+  }, QUADS.map(q =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     key: q.id,
     onClick: () => abrirQuad(q.id),
     className: "flex flex-col items-center justify-center text-center rounded-2xl p-4 transition-all hover:shadow-md",
@@ -12276,7 +13048,10 @@ function FinDeVuelta({
     size: 28
   })), /*#__PURE__*/React.createElement("div", {
     className: "font-bold text-sm text-gray-800 leading-snug"
-  }, q.title)))), showHist && /*#__PURE__*/React.createElement(HistorialModal, {
+  }, q.title)))), showHist &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(HistorialModal, {
     historial: historial,
     onBorrar: borrarDelHistorial,
     onClose: () => setShowHist(false)
@@ -12303,12 +13078,12 @@ function HistorialModal({
   };
   const [confirmDel, setConfirmDel] = useState(null);
   const camposDe = r => {
-    if (r.quad === "ubicacion") return [["Parqueo", r.parqueo], ["Llaves", r.llaves], ["Problema", r.problema === "no" ? "Todo bien" : r.problema === "si" ? r.problemaTxt || "Sí, reportar" : "—"]];
+    if (r.quad === "ubicacion") return [["Planta", r.planta], ["Parqueo", r.parqueo], ["Llaves", r.llaves], ["Problema", r.problema === "no" ? "Todo bien" : r.problema === "si" ? r.problemaTxt || "Sí, reportar" : "—"]];
     if (r.quad === "lavadero") return [["Lavadero", r.lavadero]];
     return [];
   };
   const ordenados = [...historial].reverse();
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 z-40 flex items-center justify-center p-3",
     style: {
       background: "rgba(0,0,0,.5)"
@@ -12341,7 +13116,10 @@ function HistorialModal({
     style: {
       background: "#f6f8fc"
     }
-  }, historial.length === 0 && /*#__PURE__*/React.createElement("div", {
+  }, historial.length === 0 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "text-center text-gray-400 py-10"
   }, /*#__PURE__*/React.createElement(Clock, {
     size: 36,
@@ -12352,7 +13130,7 @@ function HistorialModal({
     className: "space-y-2"
   }, ordenados.map(r => {
     const meta = QUAD_META[r.quad];
-    return /*#__PURE__*/React.createElement("div", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
       key: r.id,
       className: "bg-white rounded-xl overflow-hidden",
       style: {
@@ -12380,7 +13158,10 @@ function HistorialModal({
       className: "text-[10px] text-gray-400 flex items-center gap-1"
     }, /*#__PURE__*/React.createElement(Clock, {
       size: 10
-    }), " ", r.hora)), confirmDel === r.id ? /*#__PURE__*/React.createElement("div", {
+    }), " ", r.hora)), confirmDel === r.id ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       className: "flex items-center gap-1"
     }, /*#__PURE__*/React.createElement("button", {
       onClick: () => {
@@ -12399,7 +13180,10 @@ function HistorialModal({
         background: "#eef1f6",
         color: AZUL
       }
-    }, "Cancelar")) : /*#__PURE__*/React.createElement("button", {
+    }, "Cancelar")) :
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("button", {
       onClick: () => setConfirmDel(r.id),
       className: "rounded-lg p-1.5",
       style: {
@@ -12412,7 +13196,10 @@ function HistorialModal({
       size: 13
     }))), /*#__PURE__*/React.createElement("table", {
       className: "w-full text-xs"
-    }, /*#__PURE__*/React.createElement("tbody", null, camposDe(r).map(([k, v], i) => /*#__PURE__*/React.createElement("tr", {
+    }, /*#__PURE__*/React.createElement("tbody", null, camposDe(r).map(([k, v], i) =>
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("tr", {
       key: i,
       className: "border-b",
       style: {
@@ -12525,7 +13312,7 @@ Usa el nombre exactamente como aparece escrito en la columna "Apellidos y Nombre
 // Compara un nombre de chofer (tal como está en su perfil) contra un nombre de la tabla de
 // citación leída por Gemini, tolerando tildes, mayúsculas, y orden apellidos/nombre distinto.
 function nombresCoinciden(nombrePerfil, nombreTabla) {
-  const normalizar = s => (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "") // quita tildes
+  const normalizar = s => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "") // quita tildes
   .toLowerCase().replace(/[^a-z\s]/g, " ") // quita comas y otros símbolos
   .split(/\s+/).filter(Boolean).sort(); // palabras sueltas, ordenadas, para no depender del orden apellido/nombre
   const a = normalizar(nombrePerfil);
@@ -12798,7 +13585,7 @@ function ModalElegirObra({
   const obrasOrdenadas = [...obras].sort((a, b) => a.localeCompare(b, "es"));
   const texto = busqueda.trim();
   const filtradas = texto ? obrasOrdenadas.filter(o => o.toLowerCase().includes(texto.toLowerCase())) : obrasOrdenadas;
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 flex items-center justify-center p-4",
     style: {
       background: "rgba(0,0,0,.5)",
@@ -12834,15 +13621,24 @@ function ModalElegirObra({
     }
   }), /*#__PURE__*/React.createElement("div", {
     className: "flex-1 overflow-y-auto"
-  }, filtradas.length === 0 ? /*#__PURE__*/React.createElement("div", {
+  }, filtradas.length === 0 ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "text-xs text-gray-400 py-3"
-  }, texto ? /*#__PURE__*/React.createElement("button", {
+  }, texto ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     onClick: () => onElegir(texto),
     className: "font-semibold underline",
     style: {
       color: AZUL
     }
-  }, "No est\xE1 en la lista \u2014 usar \"", texto, "\"") : "No hay obras registradas para tu planta todavía.") : filtradas.map(o => /*#__PURE__*/React.createElement("button", {
+  }, "No est\xE1 en la lista \u2014 usar \"", texto, "\"") : "No hay obras registradas para tu planta todavía.") : filtradas.map(o =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     key: o,
     onClick: () => onElegir(o),
     className: "w-full text-left px-3 py-2.5 rounded-lg text-sm hover:bg-gray-50 border-b",
@@ -12856,9 +13652,10 @@ function UniBot({
   avisos,
   setAvisos,
   setEmergencias,
-  reportesFV: reportesFVProp
+  deepLink,
+  onDeepLinkConsumido
 }) {
-  const cfg = PLANT_CONFIG[driver.planta];
+  const cfg = PLANT_CONFIG[driver.planta] || PLANT_CONFIG_FALLBACK;
   const [msgs, setMsgs] = useState([]);
   const [node, setNode] = useState("root");
   // modes: menu | sub | chatProc | chatAccidente | form | ask | alerta | alertaForm |
@@ -12872,11 +13669,10 @@ function UniBot({
   const [alertaTipo, setAlertaTipo] = useState(null);
   const [alertaData, setAlertaData] = useState({});
   const [showBcpMenu, setShowBcpMenu] = useState(false); // el menú gigante nunca se abre solo — siempre hay que tocar "Ver Menú", ni siquiera la primera vez
-  const [matchEncontrado, setMatchEncontrado] = useState(null); // aviso encontrado que coincide
+  const [enviandoAuxilio, setEnviandoAuxilio] = useState(false);
+  const [matchEncontrado, setMatchEncontrado] = useState(null); // { contexto: "perdido", match?, unidad, objeto, donde, contacto, fechaPerdida } — coincidencia encontrada al publicar "perdido" (contra un "perdido" ya resuelto o un "encontrado" directo)
   // NUEVOS ESTADOS (flujos según Excel PLANTILLA_FINAL_06_DE_SET)
   const [ctxDinamico, setCtxDinamico] = useState(null); // { tipo: "mixer"|"ruta"|"citacion", data: {...} }
-  // reportesFV: viene del padre (ChoferApp) para que FinDeVuelta actualice en tiempo real
-  const reportesFV = reportesFVProp || REPORTES_FIN_VUELTA_DEMO;
   const [mixerInput, setMixerInput] = useState(""); // input Nº de mixer
   const [obrasDisponibles, setObrasDisponibles] = useState([]); // catálogo de obras de su planta (ver GestionObras)
   const [obraModalAbierto, setObraModalAbierto] = useState(false);
@@ -12940,6 +13736,15 @@ function UniBot({
     icon: Bell
   }];
   useEffect(() => {
+    // Llegada directa desde la Bitácora personal cuando el chofer mencionó que UNIKIN no
+    // funciona: se salta el saludo genérico y entra directo al mismo flujo que "Operación de
+    // turno" → "UNIKIN no funciona", como si lo hubiera elegido él mismo del menú.
+    if (deepLink === "op_unikin") {
+      push("bot", `¡Hola ${driver.nombre.split(" ")[0]}! 👷 Soy UNIBOT. Como registraste que UNIKIN no está funcionando, intentemos resolverlo aquí:`);
+      choose(BOT_MENU.operacion.options.find(o => o.id === "op_unikin"));
+      onDeepLinkConsumido?.();
+      return;
+    }
     push("bot", `¡Hola ${driver.nombre.split(" ")[0]}! 👷 Soy UNIBOT, tu asistente.\n\nPor favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
   }, []);
   useEffect(() => {
@@ -12986,6 +13791,13 @@ function UniBot({
     setUnikinArbolNode(null);
     setUnikinArbolStack([]);
   };
+  // Botón "Menú principal" (regresar desde un submenú/directorio): a diferencia de goHome, acá el
+  // chofer ya estaba navegando el menú, así que el menú desplegado debe aparecer directo, sin
+  // pedirle que toque "Ver Menú" de nuevo.
+  const volverMenuPrincipal = () => {
+    goHome();
+    setShowBcpMenu(true);
+  };
   const openCategory = cat => {
     push("user", cat.label);
     setShowBcpMenu(false);
@@ -13009,15 +13821,34 @@ function UniBot({
       return;
     }
   };
-  const submitAuxilio = data => {
+  const submitAuxilio = async data => {
+    setEnviandoAuxilio(true);
+    let fotoPath = null;
+    if (data.fotoFile) {
+      const ext = (data.fotoFile.name.split(".").pop() || "jpg").toLowerCase();
+      const path = `${driver.id}/${Date.now()}.${ext}`;
+      const {
+        error: upErr
+      } = await sbClient.storage.from("auxilios-mecanicos").upload(path, data.fotoFile);
+      if (!upErr) fotoPath = path;
+    }
+    const {
+      error
+    } = await sbClient.rpc("registrar_auxilio_mecanico", {
+      p_chofer_id: driver.id,
+      p_mixer: data.mixer,
+      p_planta: data.planta,
+      p_cargada: data.carga === "Cargado",
+      p_lugar_incidente: data.lugar,
+      p_descripcion: data.desc,
+      p_foto_path: fotoPath
+    });
+    setEnviandoAuxilio(false);
+    if (error) {
+      push("bot", `No se pudo registrar el auxilio (${error.message}). Llama directamente a tu AZT o al taller mientras se resuelve.`);
+      return;
+    }
     push("user", `Auxilio mecánico — Mixer ${data.mixer} · ${data.planta} · ${data.carga}`);
-    setEmergencias?.(prev => [{
-      id: uid(),
-      ...data,
-      origen: "UNIBOT",
-      visto: false,
-      ts: Date.now()
-    }, ...prev]);
     push("bot", "✅ Auxilio reportado. Tu AZT y el taller ya fueron notificados.\n\nPor favor selecciona \"Ver menú\" para ver todas las opciones disponibles.");
     goHome();
   };
@@ -13027,7 +13858,12 @@ function UniBot({
     // ==== FLUJOS DE FORMULARIO (Mi unidad - perdido/encontrado) — SIN CAMBIOS ====
     if (opt.form) {
       setFormType(opt.form);
-      setFormData({});
+      // No se autocompleta la unidad en ninguno de los dos casos: el chofer puede haber
+      // perdido o encontrado el objeto en una unidad distinta a la que tiene asignada ahora,
+      // así que debe escribirla él mismo.
+      setFormData({
+        unidad: ""
+      });
       setMode("form");
       return;
     }
@@ -13086,7 +13922,7 @@ function UniBot({
 
     // 5. ¿DÓNDE ESTÁ MI MIXER / LLAVES? — pide número de mixer
     if (opt.id === "un_mixer") {
-      push("bot", "Para ubicar tu mixer, indícame el número (ej. M-142 o 142):");
+      push("bot", "Para ubicar tu mixer, indícame el número (ej. 142):");
       setMixerInput("");
       setMode("mixerInput");
       return;
@@ -13217,26 +14053,57 @@ function UniBot({
     })();
   };
 
-  // ============ FLUJO ¿DÓNDE ESTÁ MI MIXER? (dinámico) ============
+  // ============ FLUJO ¿DÓNDE ESTÁ MI MIXER? (dinámico, base real reportes_fin_vuelta) ============
+  // Cualquier chofer puede preguntar por cualquier mixer, sin importar su propia planta ni la
+  // planta donde se registró el último reporte — por eso se consulta Supabase en vivo (igual que
+  // flujoCitacion/flujoRutaObra) en vez de un estado local que solo viviría en esta sesión.
   const flujoMixer = numStr => {
     push("user", numStr);
-    // Normalizar: aceptar "142", "M-142", "M142"
-    const num = numStr.replace(/[^\d]/g, "");
-    const key = "M-" + num;
-    const reporte = reportesFV[key];
-    if (reporte) {
-      push("bot", BOT_DYNAMIC_TEXTS.mixer_encontrado(key, reporte));
-      setCtxDinamico({
-        tipo: "mixer",
-        key
-      });
-      setMode("askVigencia");
-    } else {
+    // Normalizar: aceptar "142", "M-142", "M142" — el mixer se guarda solo como número
+    const num = numStr.replace(/[^\d]/g, "").slice(0, 5);
+    const key = num;
+    if (!num) {
       push("bot", BOT_DYNAMIC_TEXTS.mixer_no_encontrado);
       push("bot", "¿Resolví tu consulta?");
       setPendingAsk("un_mixer");
       setMode("askConfirmacionSimple");
+      return;
     }
+    setMsgs(m => [...m, {
+      id: uid(),
+      who: "bot",
+      text: "🔎 Un momento, estoy revisando...",
+      hora: hhmm(),
+      temporal: true
+    }]);
+    (async () => {
+      const {
+        data: fila
+      } = await sbClient.from("reportes_fin_vuelta").select("chofer_nombre, planta, parqueo, llaves, problema, comentario").eq("mixer", key).order("created_at", {
+        ascending: false
+      }).limit(1).maybeSingle();
+      setMsgs(m => m.filter(msg => !msg.temporal));
+      if (fila) {
+        push("bot", BOT_DYNAMIC_TEXTS.mixer_encontrado(key, {
+          chofer: fila.chofer_nombre,
+          planta: fila.planta,
+          parqueo: fila.parqueo,
+          llaves: fila.llaves,
+          problema: fila.problema,
+          comentario: fila.comentario
+        }));
+        setCtxDinamico({
+          tipo: "mixer",
+          key
+        });
+        setMode("askVigencia");
+      } else {
+        push("bot", BOT_DYNAMIC_TEXTS.mixer_no_encontrado);
+        push("bot", "¿Resolví tu consulta?");
+        setPendingAsk("un_mixer");
+        setMode("askConfirmacionSimple");
+      }
+    })();
   };
 
   // ============ FLUJO RUTAS Y ACCESO A OBRA (dinámico, base real rutas_obras) ============
@@ -13282,13 +14149,11 @@ function UniBot({
       if (vigente) {
         push("bot", BOT_DYNAMIC_TEXTS.mixer_vigente);
       } else {
-        // eliminar registro y dar respuesta cuando no encuentra dato
-        setReportesFV(prev => {
-          const copy = {
-            ...prev
-          };
-          delete copy[ctx.key];
-          return copy;
+        // eliminar registro (RPC security definer: cualquier chofer puede marcar como no vigente
+        // el reporte de OTRO chofer, y una escritura directa a la tabla no pasaría las políticas
+        // RLS) y dar respuesta cuando no encuentra dato
+        await sbClient.rpc("eliminar_reporte_fin_vuelta", {
+          p_mixer: ctx.key
         });
         push("bot", BOT_DYNAMIC_TEXTS.mixer_no_vigente);
         push("bot", BOT_DYNAMIC_TEXTS.mixer_no_encontrado);
@@ -13328,13 +14193,18 @@ function UniBot({
     });
     if (error) {
       push("bot", `No se pudo publicar la consulta (${error.message}). Avisa a tu AZT.`);
+      push("bot", "¿Resolví tu consulta?");
+      setPendingAsk("op_ruta");
+      setCtxDinamico(null);
+      setMode("askConfirmacionSimple");
     } else {
-      push("bot", BOT_DYNAMIC_TEXTS.ruta_publicada_confirmacion);
+      // Publicar la consulta es solo un aviso informativo, no algo que "resolver" con Sí/No —
+      // el cierre va en el mismo globo y se vuelve directo al menú (mismo patrón que
+      // citacion_no_encontrada).
+      push("bot", `${BOT_DYNAMIC_TEXTS.ruta_publicada_confirmacion}\n\n¡Espero haberte ayudado! 🙌\nPor favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
+      setCtxDinamico(null);
+      goHome();
     }
-    push("bot", "¿Resolví tu consulta?");
-    setPendingAsk("op_ruta");
-    setCtxDinamico(null);
-    setMode("askConfirmacionSimple");
   };
 
   // ============ CONFIRMACIÓN SIMPLE ¿Resolví tu consulta? — patrón general Excel ============
@@ -13815,78 +14685,233 @@ function UniBot({
       scroller.current?.scrollTo?.(0, scroller.current?.scrollHeight);
     }, 100);
   };
+
+  // ============ FORMULARIO "NO ENCUENTRO / ENCONTRÉ" (dinámico, base real objetos_perdidos) ============
+  // Palabras clave de un texto de objeto (sin palabras cortas/comunes), para comparar por
+  // superposición de palabras — mismo criterio que se usaba antes, ahora contra datos reales.
+  const STOP_WORDS_OBJETO = ["de", "en", "la", "el", "los", "las", "un", "una", "del", "al", "mi", "se", "con", "por", "que", "y", "o", "a", "no", "es", "su"];
+  const palabrasClaveObjeto = texto => {
+    const normalizado = normalizarTextoExcel(texto);
+    const palabras = normalizado.split(/\s+/).filter(w => w.length > 2 && !STOP_WORDS_OBJETO.includes(w));
+    // Si el texto es tan corto que no queda ninguna palabra clave (ej. "t", "sí"), la
+    // verificación no debe saltarse en silencio: se usa el texto completo como única palabra,
+    // para que igual se compare contra los reportes existentes.
+    return palabras.length ? palabras : [normalizado].filter(Boolean);
+  };
+  // Grupos de sinónimos para objetos que los choferes suelen reportar: palabras que significan
+  // lo mismo pero no comparten ninguna raíz en común (ej. "celular"/"telefono"), así que la
+  // comparación por raíz de abajo nunca las conectaría por sí sola.
+  const SINONIMOS_OBJETO_GRUPOS = [["celular", "telefono", "movil", "smartphone"], ["foto", "fotografia", "imagen"], ["billetera", "cartera", "monedero"], ["lente", "gafa", "anteojo"], ["gorro", "gorra"], ["mochila", "bolso", "maletin"], ["llave", "llavero"], ["audifono", "auricular"], ["documento", "papel", "carnet"], ["medicamento", "pastilla", "remedio"], ["chompa", "casaca", "chaqueta"], ["cargador", "cable"]];
+  const RAIZ_LEN_OBJETO = 4;
+  const raizPalabraObjeto = w => w.length <= RAIZ_LEN_OBJETO ? w : w.slice(0, RAIZ_LEN_OBJETO);
+  const GRUPO_DE_RAIZ_OBJETO = (() => {
+    const mapa = {};
+    SINONIMOS_OBJETO_GRUPOS.forEach((grupo, i) => grupo.forEach(p => {
+      mapa[raizPalabraObjeto(p)] = i;
+    }));
+    return mapa;
+  })();
+  // Dos palabras "son la misma" para efectos de match si comparten la raíz (primeras 4 letras —
+  // cubre plurales y derivados como foto/fotos/fotografia, que antes NO se detectaban porque
+  // "fotografia" no contiene el texto exacto "fotos") o si están declaradas como sinónimos aunque
+  // no compartan ninguna letra en común (celular/telefono).
+  const palabrasEquivalentesObjeto = (a, b) => {
+    const ra = raizPalabraObjeto(a),
+      rb = raizPalabraObjeto(b);
+    if (ra === rb) return true;
+    const ga = GRUPO_DE_RAIZ_OBJETO[ra],
+      gb = GRUPO_DE_RAIZ_OBJETO[rb];
+    return ga !== undefined && ga === gb;
+  };
+  // Reemplaza el viejo chequeo "¿el texto candidato CONTIENE literalmente esta palabra?" por una
+  // comparación palabra por palabra con raíz + sinónimos. Se usa tanto para el auto-chequeo del
+  // lado "perdido" (¿ya reporté esto?) como para el match automático del lado "encontrado".
+  const coincideObjetos = (textoNuevo, textoCandidato) => {
+    const palabrasCandidato = palabrasClaveObjeto(textoCandidato);
+    return palabrasClaveObjeto(textoNuevo).some(p => palabrasCandidato.some(c => palabrasEquivalentesObjeto(p, c)));
+  };
+  const formatearFechaObjeto = iso => new Date(iso).toLocaleDateString("es-PE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  });
+  // Para fechas "solo día" (YYYY-MM-DD, sin hora) — se fuerza medianoche LOCAL (no UTC) para que
+  // no se corra un día al mostrarla, como pasaría con new Date("YYYY-MM-DD") directo.
+  const formatearFechaSimple = fechaYMD => new Date(`${fechaYMD}T00:00:00`).toLocaleDateString("es-PE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  });
+  const hoyYMD = () => new Date().toISOString().slice(0, 10);
   const submitForm = () => {
     const isPerdido = formType === "perdido";
-    const unidadBuscar = formData.unidad || driver.unidad;
-    const resumen = isPerdido ? `Unidad ${unidadBuscar}: ${formData.que || "objeto"}. Contacto: ${formData.contacto || "—"}` : `Unidad ${unidadBuscar}: ${formData.que || "objeto"}. ${formData.donde || ""}`;
+    const unidadRaw = (formData.unidad || driver.unidad || "").trim();
+    const numMixer = unidadRaw.replace(/[^\d]/g, "").slice(0, 5);
+    const unidad = numMixer || unidadRaw;
+    const objeto = (formData.que || "").trim();
+    const contacto = (formData.contacto || "").trim();
+    const donde = (formData.donde || "").trim();
+    const fechaPerdida = (formData.fecha || hoyYMD()).trim();
     if (isPerdido) {
-      const ahora = Date.now();
-      const unaSemana = 7 * 24 * 60 * 60 * 1000;
-      const numMixer = unidadBuscar.replace(/[^\d]/g, "");
-      // Palabras clave de lo que busca el chofer (sin palabras cortas/comunes)
-      const stopWords = ["de", "en", "la", "el", "los", "las", "un", "una", "del", "al", "mi", "se", "con", "por", "que", "y", "o", "a", "no", "es", "su"];
-      const palabrasBusca = (formData.que || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").split(/\s+/).filter(w => w.length > 2 && !stopWords.includes(w));
-      const encontrados = avisos.filter(a => {
-        if (a.planta !== driver.planta) return false;
-        if (!a.texto || !a.texto.includes("OBJETO ENCONTRADO")) return false;
-        if (a.ts && ahora - a.ts > unaSemana) return false;
-        if (!numMixer || !a.texto.includes(numMixer)) return false;
-        // Verificar que al menos una palabra del objeto coincida
-        const textoNorm = a.texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        return palabrasBusca.some(p => textoNorm.includes(p));
-      });
-      if (encontrados.length > 0) {
-        const match = encontrados[encontrados.length - 1];
-        push("user", `Busco: ${formData.que} en unidad ${unidadBuscar}`);
-        push("bot", `🔍 ¡Encontré algo! Alguien reportó que encontró un objeto similar en esa unidad:\n\n"${match.texto}"\n\n¿Es esto lo que buscabas?`);
-        setMatchEncontrado(resumen);
-        setMode("confirmMatch");
-        return;
-      }
+      // El bot también hace match del lado de "perdido": si ya se publicó algo similar en ese
+      // mismo mixer (un "perdido" que ya tiene respuesta — alguien ya avisó que lo tiene/encontró
+      // — o un "encontrado" directo), se le muestra al chofer antes de publicar de nuevo, en vez
+      // de crear un reporte duplicado a ciegas.
+      push("user", `Perdí: ${objeto} en unidad ${unidad} (el ${formatearFechaSimple(fechaPerdida)})`);
+      (async () => {
+        const {
+          data: candidatos
+        } = await sbClient.from("objetos_perdidos").select("*").eq("planta", driver.planta).eq("mixer", unidad).in("tipo", ["perdido", "encontrado"]).order("created_at", {
+          ascending: false
+        });
+        const coincide = c => coincideObjetos(objeto, c.objeto);
+        const matchPerdidoResuelto = (candidatos || []).find(c => c.tipo === "perdido" && c.resuelto && coincide(c));
+        const matchEncontradoDirecto = !matchPerdidoResuelto && (candidatos || []).find(c => c.tipo === "encontrado" && coincide(c));
+        if (matchPerdidoResuelto) {
+          const {
+            data: resp
+          } = await sbClient.from("aviso_respuestas_objeto").select("unidad, objeto, donde, contacto, respuesta").eq("aviso_id", matchPerdidoResuelto.aviso_id).maybeSingle();
+          // La respuesta estructurada (unidad/objeto/dónde se deja/contacto) reemplazó al texto
+          // libre viejo ("respuesta") — se muestra tal cual fue completada, sea por el formulario
+          // de UNIBOT o por la respuesta directa en el Canal de Avisos. Si la respuesta es de
+          // antes de este cambio (solo texto libre), cae de vuelta a mostrar ese texto.
+          const respuestaTexto = resp?.unidad ? `Unidad: ${resp.unidad} · Objeto: ${resp.objeto} · Dónde se deja: ${resp.donde} · Cómo contactarme: ${resp.contacto}` : resp?.respuesta || "—";
+          setMatchEncontrado({
+            contexto: "perdido",
+            unidad,
+            objeto,
+            donde,
+            contacto,
+            fechaPerdida
+          });
+          // Pregunta pensada para distinguir "es la misma pérdida de antes" (ya resuelta) de
+          // "se me volvió a perder el mismo tipo de objeto, pero en otro momento" — por eso se
+          // muestran las DOS fechas una al lado de la otra, en vez de solo preguntar "¿es el mismo
+          // objeto?" (eso se presta a confusión: el objeto puede ser el mismo tipo, pero la
+          // pérdida de hoy ser un evento distinto a la de antes).
+          const fechaAnterior = matchPerdidoResuelto.fecha_perdida ? formatearFechaSimple(matchPerdidoResuelto.fecha_perdida) : formatearFechaObjeto(matchPerdidoResuelto.created_at);
+          push("bot", `🔍 Ya existe un reporte tuyo de "${matchPerdidoResuelto.objeto}" perdido en esa unidad el ${fechaAnterior}, y quedó resuelto: "${respuestaTexto}".\n\nAhora indicas que se te perdió "${objeto}" el ${formatearFechaSimple(fechaPerdida)}.\n\n¿Te refieres a ESA MISMA pérdida de antes (ya resuelta, no hace falta publicar de nuevo), o es que se te volvió a perder en un momento distinto (aunque sea el mismo tipo de objeto)?`);
+          setMode("confirmMatch");
+        } else if (matchEncontradoDirecto) {
+          setMatchEncontrado({
+            contexto: "perdido",
+            unidad,
+            objeto,
+            donde,
+            contacto,
+            fechaPerdida
+          });
+          push("bot", `🔍 ${matchEncontradoDirecto.chofer_nombre} reportó haber encontrado "${matchEncontradoDirecto.objeto}" en esa unidad el ${formatearFechaObjeto(matchEncontradoDirecto.created_at)}.\nDónde se deja: ${matchEncontradoDirecto.donde || "—"}\nCómo contactarlo: ${matchEncontradoDirecto.contacto}\n\n¿Es este el objeto que se te perdió el ${formatearFechaSimple(fechaPerdida)}?`);
+          setMode("confirmMatch");
+        } else {
+          await publicarPerdido({
+            unidad,
+            objeto,
+            contacto,
+            fechaPerdida
+          });
+        }
+      })();
+      return;
     }
-    publicarObjeto(isPerdido, resumen);
+
+    // "encontrado": se publica directo en el Canal de Avisos, sin preguntar nada (esa
+    // confirmación vive del lado de "perdido", ver arriba). Antes de publicar, se busca si hay
+    // un reporte de "perdido" sin resolver que coincida (misma planta y unidad, y alguna palabra
+    // clave del objeto en común) para marcarlo resuelto y avisarle a quien lo perdió.
+    push("user", `Encontré: ${objeto} en unidad ${unidad}`);
+    (async () => {
+      const {
+        data: candidatos
+      } = await sbClient.from("objetos_perdidos").select("*").eq("planta", driver.planta).eq("mixer", unidad).eq("tipo", "perdido").eq("resuelto", false).order("created_at", {
+        ascending: false
+      });
+      const match = (candidatos || []).find(c => coincideObjetos(objeto, c.objeto));
+      await publicarEncontrado({
+        unidad,
+        objeto,
+        donde,
+        contacto,
+        matchAvisoPerdidoId: match?.aviso_id || null
+      });
+    })();
   };
-  const publicarObjeto = (isPerdido, resumen) => {
-    const unidad = formData.unidad || driver.unidad;
-    const objeto = formData.que || "objeto";
-    const contacto = formData.contacto || "—";
-    const donde = formData.donde || "";
-    const emoji = isPerdido ? "🔎" : "📦";
-    const titulo = isPerdido ? "OBJETO PERDIDO" : "OBJETO ENCONTRADO";
-    let texto = `${emoji} ${titulo}\n- Unidad: ${unidad}\n- Objeto: ${objeto}`;
-    if (!isPerdido && donde) texto += `\n- Dónde se deja: ${donde}`;
-    texto += `\n- Cómo contactarte: ${contacto}\n- Reportó: ${driver.nombre}`;
-    push("user", resumen);
-    push("bot", "Listo ✅ Lo publiqué en el Canal de Avisos para que todos lo vean. 😊\n\nPor favor selecciona \"Ver menú\" para ver todas las opciones disponibles.");
-    setAvisos(prev => [...prev, {
-      id: uid(),
-      planta: driver.planta,
-      autor: "UNIBOT",
-      rol: "Bot",
-      texto,
-      hora: hhmm(),
-      reacts: {},
-      mine: null,
-      ts: Date.now()
-    }]);
+  const publicarPerdido = async ({
+    unidad,
+    objeto,
+    contacto,
+    fechaPerdida
+  }) => {
+    const {
+      error
+    } = await sbClient.rpc("publicar_objeto_perdido", {
+      p_chofer_id: driver.id,
+      p_planta: driver.planta,
+      p_mixer: unidad,
+      p_objeto: objeto,
+      p_contacto: contacto,
+      p_fecha_perdida: fechaPerdida
+    });
+    if (error) {
+      push("bot", `No se pudo publicar tu reporte (${error.message}). Avisa a tu AZT.`);
+    } else {
+      push("bot", `Listo ✅ Publiqué tu reporte de objeto perdido en el Canal de Avisos. Cuando algún compañero responda, la información quedará registrada y podrás consultarla aquí o en el Canal de Avisos de tu planta. 😊
+
+¡Espero haberte ayudado! 🙌
+Por favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
+    }
     goHome();
     setFormData({});
     setFormType(null);
     setMatchEncontrado(null);
   };
-  const responderMatch = esElMismo => {
-    if (esElMismo) {
-      push("user", "Sí, es eso ✅");
-      push("bot", "¡Genial! Tu objeto ya fue encontrado. Revisa el Canal de Avisos para los detalles de contacto. 😊\n\nPor favor selecciona \"Ver menú\" para ver todas las opciones disponibles.");
+  const publicarEncontrado = async ({
+    unidad,
+    objeto,
+    donde,
+    contacto,
+    matchAvisoPerdidoId
+  }) => {
+    const {
+      error
+    } = await sbClient.rpc("publicar_objeto_encontrado", {
+      p_chofer_id: driver.id,
+      p_planta: driver.planta,
+      p_mixer: unidad,
+      p_objeto: objeto,
+      p_donde: donde,
+      p_match_aviso_perdido_id: matchAvisoPerdidoId || null,
+      p_contacto: contacto
+    });
+    if (error) {
+      push("bot", `No se pudo publicar tu reporte (${error.message}). Avisa a tu AZT.`);
+    } else {
+      push("bot", `Listo ✅ Publiqué tu reporte de objeto encontrado en el Canal de Avisos. 😊
+
+¡Espero haberte ayudado! 🙌
+Por favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
+    }
+    goHome();
+    setFormData({});
+    setFormType(null);
+    setMatchEncontrado(null);
+  };
+  // El bot ya no pregunta nada del lado "encontrado" (se publica siempre directo, ver
+  // submitForm) — esta confirmación solo se dispara del lado "perdido": si es la misma pérdida de
+  // antes, ya está resuelta y no se publica un reporte nuevo; si es una pérdida distinta (aunque
+  // sea el mismo tipo de objeto), se publica el reporte de "perdido" normal.
+  const responderMatch = esLaMismaPerdida => {
+    const ctx = matchEncontrado;
+    setMatchEncontrado(null);
+    if (esLaMismaPerdida) {
+      push("user", "Es la misma de antes ✅");
+      push("bot", `¡Genial! Ya está resuelto, no hace falta publicar de nuevo. 😊\n\n¡Espero haberte ayudado! 🙌\nPor favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
       goHome();
       setFormData({});
       setFormType(null);
-      setMatchEncontrado(null);
     } else {
-      push("user", "No, no es eso ❌");
-      push("bot", "Entendido. Voy a publicar tu reporte en el Canal de Avisos. 😊");
-      const res = matchEncontrado || `Unidad ${driver.unidad}: objeto perdido`;
-      publicarObjeto(true, res);
+      push("user", "Se me perdió de nuevo ❌");
+      publicarPerdido(ctx);
     }
   };
   const submitAlerta = () => {
@@ -13916,7 +14941,7 @@ function UniBot({
     const listContent = isList ? line.replace(/^\s*[-•]\s+/, "") : null;
     if (line.startsWith("📖 *") || line.startsWith("📖 **")) {
       const clean = line.replace(/\*/g, "").trim();
-      return /*#__PURE__*/React.createElement("b", null, clean);
+      return /*#__PURE__*/ /*#__PURE__*/React.createElement("b", null, clean);
     }
 
     // Parsear inline: **bold** y URLs
@@ -13928,7 +14953,10 @@ function UniBot({
         // No hay URLs, solo parsear bold
         const boldParts = text.split(/\*\*(.+?)\*\*/g);
         if (boldParts.length === 1) return text;
-        return boldParts.map((p, i) => i % 2 === 1 ? /*#__PURE__*/React.createElement("b", {
+        return boldParts.map((p, i) => i % 2 === 1 ?
+        /*#__PURE__*/
+        /*#__PURE__*/
+        React.createElement("b", {
           key: "b" + i,
           className: "font-semibold"
         }, p) : p);
@@ -13937,7 +14965,7 @@ function UniBot({
       return parts.map((part, i) => {
         if (urlRegex.test(part)) {
           urlRegex.lastIndex = 0;
-          return /*#__PURE__*/React.createElement("a", {
+          return /*#__PURE__*/ /*#__PURE__*/React.createElement("a", {
             key: "u" + i,
             href: part,
             target: "_blank",
@@ -13951,22 +14979,25 @@ function UniBot({
         // Parsear bold dentro de las partes no-URL
         const boldParts = part.split(/\*\*(.+?)\*\*/g);
         if (boldParts.length === 1) return part;
-        return boldParts.map((p, j) => i % 2 === 1 ? p : j % 2 === 1 ? /*#__PURE__*/React.createElement("b", {
+        return boldParts.map((p, j) => i % 2 === 1 ? p : j % 2 === 1 ?
+        /*#__PURE__*/
+        /*#__PURE__*/
+        React.createElement("b", {
           key: "b" + i + j,
           className: "font-semibold"
         }, p) : p);
       });
     };
     if (isList) {
-      return /*#__PURE__*/React.createElement("div", {
+      return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
         className: "flex gap-1.5 pl-1"
       }, /*#__PURE__*/React.createElement("span", {
         className: "text-gray-400 shrink-0"
       }, "\u2022"), /*#__PURE__*/React.createElement("span", null, parseInline(listContent)));
     }
-    return /*#__PURE__*/React.createElement(React.Fragment, null, parseInline(line));
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement(React.Fragment, null, parseInline(line));
   };
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "flex-1 flex flex-col min-h-0",
     style: {
       background: WA_BG
@@ -14028,7 +15059,10 @@ function UniBot({
       background: "#fbbf24",
       color: "#78350f"
     }
-  }, "Simular 1:00am (d\xEDa sig.)"), horaSimulada && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
+  }, "Simular 1:00am (d\xEDa sig.)"), horaSimulada &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
     className: "text-[10px] shrink-0",
     style: {
       color: "#92400e"
@@ -14047,10 +15081,13 @@ function UniBot({
     const isUnikin = m.from === "unikin";
     const isBot = !isUser && !isUnikin;
     const msgText = m.text || m.texto || "";
-    return /*#__PURE__*/React.createElement("div", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
       key: m.id || Math.random(),
       className: `flex ${isUser ? "justify-end" : "justify-start"}`
-    }, isUnikin && /*#__PURE__*/React.createElement("div", {
+    }, isUnikin &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       className: "w-12 h-12 rounded-full overflow-hidden shrink-0 mr-1.5 mt-1",
       style: {
         background: AMARILLO
@@ -14074,7 +15111,10 @@ function UniBot({
           maxWidth: 300
         } : {})
       }
-    }, isUnikin && /*#__PURE__*/React.createElement("div", {
+    }, isUnikin &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       className: "text-[10px] font-bold mb-1",
       style: {
         color: "#b45309"
@@ -14090,7 +15130,7 @@ function UniBot({
         };
         const src = imgMap[caption];
         if (!src) return null;
-        return /*#__PURE__*/React.createElement("div", {
+        return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
           key: li,
           className: "my-2 rounded-lg overflow-hidden border",
           style: {
@@ -14115,7 +15155,7 @@ function UniBot({
         // choferes con nombres parecidos, o cualquier duda sobre la lectura).
         const url = line.trim().replace("[IMGURL:", "").replace("]", "").trim();
         if (!url) return null;
-        return /*#__PURE__*/React.createElement("div", {
+        return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
           key: li,
           className: "my-2 rounded-lg overflow-hidden border",
           style: {
@@ -14146,7 +15186,7 @@ function UniBot({
         };
         const imgData = imgApiMap[tag];
         if (!imgData) return null;
-        return /*#__PURE__*/React.createElement("div", {
+        return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
           key: li,
           className: "my-2 rounded-lg overflow-hidden border",
           style: {
@@ -14204,7 +15244,10 @@ function UniBot({
             });
           }
         };
-        const chip = pdfDataUrl ? /*#__PURE__*/React.createElement("button", {
+        const chip = pdfDataUrl ?
+        /*#__PURE__*/
+        /*#__PURE__*/
+        React.createElement("button", {
           onClick: handlePdfClick,
           className: "inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs cursor-pointer",
           style: {
@@ -14216,7 +15259,10 @@ function UniBot({
           size: 14
         }), " ", pdfName, " ", /*#__PURE__*/React.createElement(ChevronRight, {
           size: 12
-        })) : /*#__PURE__*/React.createElement("span", {
+        })) :
+        /*#__PURE__*/
+        /*#__PURE__*/
+        React.createElement("span", {
           className: "inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs",
           style: {
             background: "#f3f4f6",
@@ -14226,7 +15272,7 @@ function UniBot({
         }, /*#__PURE__*/React.createElement(FileText, {
           size: 14
         }), " ", pdfName);
-        return /*#__PURE__*/React.createElement("div", {
+        return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
           key: li,
           style: {
             display: "flex",
@@ -14235,18 +15281,24 @@ function UniBot({
             gap: "4px",
             margin: "4px 0"
           }
-        }, prefix && /*#__PURE__*/React.createElement("span", null, formatLine(prefix)), chip);
+        }, prefix &&
+        /*#__PURE__*/
+        /*#__PURE__*/
+        React.createElement("span", null, formatLine(prefix)), chip);
       }
       // Línea vacía → separador visual
-      if (line.trim() === "") return /*#__PURE__*/React.createElement("div", {
+      if (line.trim() === "") return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
         key: li,
         className: "h-2"
       });
       // Renderizar con formato inline (negrita, listas)
-      return /*#__PURE__*/React.createElement("div", {
+      return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
         key: li
       }, formatLine(line));
-    }), m.img && /*#__PURE__*/React.createElement("div", {
+    }), m.img &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       className: "mt-2 rounded-lg overflow-hidden border",
       style: {
         borderColor: "#e6e8ee",
@@ -14260,11 +15312,20 @@ function UniBot({
       style: {
         maxWidth: m.imgMaxWidth || 280
       }
-    }), m.imgCaption && /*#__PURE__*/React.createElement("div", {
+    }), m.imgCaption &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       className: "text-[10px] text-gray-500 px-2 py-1 bg-gray-50 text-center"
-    }, m.imgCaption)), isUnikin && m.unikinChips && m === msgs.filter(x => x.from === "unikin" && x.unikinChips).slice(-1)[0] && /*#__PURE__*/React.createElement("div", {
+    }, m.imgCaption)), isUnikin && m.unikinChips && m === msgs.filter(x => x.from === "unikin" && x.unikinChips).slice(-1)[0] &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       className: "mt-2 flex flex-wrap gap-1.5"
-    }, m.unikinChips.map(chip => /*#__PURE__*/React.createElement("button", {
+    }, m.unikinChips.map(chip =>
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("button", {
       key: chip.id,
       onClick: () => handleUnikinArbolChip(chip.id, chip.label),
       className: "px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all hover:brightness-95",
@@ -14276,7 +15337,10 @@ function UniBot({
     }, chip.label))), /*#__PURE__*/React.createElement("div", {
       className: "text-[10px] text-gray-400 text-right mt-0.5"
     }, m.hora)));
-  }), mode === "menu" && showBcpMenu && node === "root" && /*#__PURE__*/React.createElement("div", {
+  }), mode === "menu" && showBcpMenu && node === "root" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "bg-white rounded-xl rounded-tl-none shadow-sm overflow-hidden",
     style: {
       border: "1px solid #e6e8ee",
@@ -14293,7 +15357,10 @@ function UniBot({
     size: 14,
     className: "text-gray-400 cursor-pointer",
     onClick: goHome
-  })), MAIN_MENU.map(m => /*#__PURE__*/React.createElement("button", {
+  })), MAIN_MENU.map(m =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     key: m.id,
     onClick: () => openCategory(m),
     className: "w-full flex items-center gap-3 px-3 py-2.5 text-left border-b hover:bg-gray-50",
@@ -14312,7 +15379,10 @@ function UniBot({
   }, m.desc)), /*#__PURE__*/React.createElement(ChevronRight, {
     size: 15,
     className: "text-gray-300 shrink-0"
-  })))), mode === "menu" && !showBcpMenu && node === "root" && /*#__PURE__*/React.createElement("button", {
+  })))), mode === "menu" && !showBcpMenu && node === "root" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     onClick: () => setShowBcpMenu(true),
     className: "flex items-center gap-2 rounded-full px-5 py-2.5 shadow-sm",
     style: {
@@ -14327,19 +15397,25 @@ function UniBot({
     style: {
       color: AZUL
     }
-  }, "Ver Men\xFA")), mode === "sub" && current && !current.directorio && /*#__PURE__*/React.createElement("div", {
+  }, "Ver Men\xFA")), mode === "sub" && current && !current.directorio &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "pt-1",
     style: {
       maxWidth: "85%"
     }
   }, /*#__PURE__*/React.createElement("button", {
-    onClick: goHome,
+    onClick: volverMenuPrincipal,
     className: "text-xs flex items-center gap-1 text-gray-500 mb-1.5"
   }, /*#__PURE__*/React.createElement(ChevronLeft, {
     size: 14
   }), " Men\xFA principal"), /*#__PURE__*/React.createElement("div", {
     className: "space-y-1.5"
-  }, current.options?.map(o => /*#__PURE__*/React.createElement("button", {
+  }, current.options?.map(o =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     key: o.id,
     onClick: () => choose(o),
     className: "w-full text-left bg-white rounded-xl rounded-tl-none px-3 py-2 shadow-sm flex items-center gap-2 text-sm hover:bg-gray-50",
@@ -14351,14 +15427,20 @@ function UniBot({
   }, o.label.replace(/^\d+\.\s*/, '')), /*#__PURE__*/React.createElement(ChevronRight, {
     size: 14,
     className: "text-gray-300 shrink-0"
-  }))))), mode === "menu" && current?.directorio && /*#__PURE__*/React.createElement("div", {
+  }))))), mode === "menu" && current?.directorio &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "bg-white rounded-xl p-2 shadow-sm space-y-1"
   }, /*#__PURE__*/React.createElement("button", {
-    onClick: goHome,
+    onClick: volverMenuPrincipal,
     className: "text-xs flex items-center gap-1 text-gray-500 mb-1 px-1"
   }, /*#__PURE__*/React.createElement(ChevronLeft, {
     size: 14
-  }), " Men\xFA principal"), Object.entries(cfg.contactos).map(([k, v]) => /*#__PURE__*/React.createElement("div", {
+  }), " Men\xFA principal"), Object.entries(cfg.contactos).map(([k, v]) =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     key: k,
     className: "flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-gray-50"
   }, /*#__PURE__*/React.createElement("span", {
@@ -14370,7 +15452,10 @@ function UniBot({
     }
   }, /*#__PURE__*/React.createElement(Phone, {
     size: 13
-  }), v)))), mode === "ask" && /*#__PURE__*/React.createElement("div", {
+  }), v)))), mode === "ask" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "flex gap-2 pt-1"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => answerAsk(true),
@@ -14388,7 +15473,10 @@ function UniBot({
       color: "#e11d48",
       border: "2px solid #e11d48"
     }
-  }, "No \u274C")), mode === "askConfirmacionSimple" && /*#__PURE__*/React.createElement("div", {
+  }, "No \u274C")), mode === "askConfirmacionSimple" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "flex gap-2 pt-1"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => answerConfirmacionSimple(true),
@@ -14406,7 +15494,10 @@ function UniBot({
       color: "#e11d48",
       border: "2px solid #e11d48"
     }
-  }, "No \u274C")), mode === "askVigencia" && /*#__PURE__*/React.createElement("div", {
+  }, "No \u274C")), mode === "askVigencia" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "flex gap-2 pt-1"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => responderVigencia(true),
@@ -14424,7 +15515,10 @@ function UniBot({
       color: "#e11d48",
       border: "2px solid #e11d48"
     }
-  }, "No, no est\xE1 vigente \u274C")), mode === "askBoleta" && /*#__PURE__*/React.createElement("div", {
+  }, "No, no est\xE1 vigente \u274C")), mode === "askBoleta" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "flex gap-2 pt-1"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => answerBoleta(true),
@@ -14442,7 +15536,10 @@ function UniBot({
       color: "#e11d48",
       border: "2px solid #e11d48"
     }
-  }, "No, no la tengo \u274C")), mode === "askUnikinSenal" && /*#__PURE__*/React.createElement("div", {
+  }, "No, no la tengo \u274C")), mode === "askUnikinSenal" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "flex flex-col gap-2 pt-1"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => answerUnikinSenal(true),
@@ -14460,7 +15557,10 @@ function UniBot({
       color: "#e11d48",
       border: "2px solid #e11d48"
     }
-  }, "Tengo se\xF1al d\xE9bil \uD83D\uDCF6")), mode === "askUnikinResuelto" && /*#__PURE__*/React.createElement("div", {
+  }, "Tengo se\xF1al d\xE9bil \uD83D\uDCF6")), mode === "askUnikinResuelto" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "flex gap-2 pt-1"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => answerUnikinResuelto(true),
@@ -14478,7 +15578,10 @@ function UniBot({
       color: "#e11d48",
       border: "2px solid #e11d48"
     }
-  }, "No, sigue el problema \u274C")), mode === "askEmergenciaTipo" && /*#__PURE__*/React.createElement("div", {
+  }, "No, sigue el problema \u274C")), mode === "askEmergenciaTipo" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "flex flex-col gap-2 pt-1"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => answerEmergenciaTipo("amago"),
@@ -14496,7 +15599,10 @@ function UniBot({
       color: "#d97706",
       border: "2px solid #d97706"
     }
-  }, "\u26A0\uFE0F Sismos, derrame u otra emergencia")), mode === "askEmergenciaOtros" && /*#__PURE__*/React.createElement("div", {
+  }, "\u26A0\uFE0F Sismos, derrame u otra emergencia")), mode === "askEmergenciaOtros" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "flex items-center gap-2 pt-1"
   }, /*#__PURE__*/React.createElement("input", {
     value: input,
@@ -14516,13 +15622,17 @@ function UniBot({
   }, /*#__PURE__*/React.createElement(Send, {
     size: 16,
     color: AZUL
-  }))), mode === "mixerInput" && /*#__PURE__*/React.createElement("div", {
+  }))), mode === "mixerInput" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "flex items-center gap-2 pt-1"
   }, /*#__PURE__*/React.createElement("input", {
     value: mixerInput,
-    onChange: e => setMixerInput(e.target.value),
+    onChange: e => setMixerInput(e.target.value.replace(/[^\d]/g, "").slice(0, 5)),
+    inputMode: "numeric",
     onKeyDown: e => e.key === "Enter" && mixerInput.trim() && flujoMixer(mixerInput.trim()),
-    placeholder: "Ej. M-142 o 142",
+    placeholder: "Ej. 142",
     className: "flex-1 px-3 py-2 rounded-full border text-sm outline-none",
     style: {
       borderColor: "#d5d9e4"
@@ -14537,14 +15647,20 @@ function UniBot({
   }, /*#__PURE__*/React.createElement(Send, {
     size: 16,
     color: AZUL
-  }))), obraModalAbierto && /*#__PURE__*/React.createElement(ModalElegirObra, {
+  }))), obraModalAbierto &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(ModalElegirObra, {
     obras: obrasDisponibles,
     onElegir: obra => {
       setObraModalAbierto(false);
       flujoRutaObra(obra);
     },
     onClose: () => setObraModalAbierto(false)
-  }), lightboxUrl && /*#__PURE__*/React.createElement("div", {
+  }), lightboxUrl &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     onClick: () => setLightboxUrl(null),
     className: "fixed inset-0 flex items-center justify-center",
     style: {
@@ -14559,7 +15675,10 @@ function UniBot({
       maxHeight: "90%",
       borderRadius: 8
     }
-  })), mode === "rutaObraPublicar" && /*#__PURE__*/React.createElement("div", {
+  })), mode === "rutaObraPublicar" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "flex gap-2 pt-1"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => publicarConsultaRuta(ctxDinamico?.obra || ""),
@@ -14581,13 +15700,16 @@ function UniBot({
       color: "#6b7280",
       border: "2px solid #6b7280"
     }
-  }, "No, gracias")), mode === "chatAccidenteEspera" && /*#__PURE__*/React.createElement("div", {
+  }, "No, gracias")), mode === "chatAccidenteEspera" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "flex items-center gap-2 pt-1"
   }, /*#__PURE__*/React.createElement("input", {
     value: input,
     onChange: e => setInput(e.target.value),
     onKeyDown: e => e.key === "Enter" && handleAccidenteEspera(),
-    placeholder: "Escribe \"AYUDA\" o vuelve al men\xFA\u2026",
+    placeholder: "Escribe \"AYUDA\" o vuelve al menú…",
     className: "flex-1 px-3 py-2 rounded-full border text-sm outline-none",
     style: {
       borderColor: "#d5d9e4"
@@ -14604,7 +15726,10 @@ function UniBot({
   })), /*#__PURE__*/React.createElement("button", {
     onClick: goHome,
     className: "text-xs text-gray-400 px-1"
-  }, "Men\xFA")), mode === "alerta" && /*#__PURE__*/React.createElement("div", {
+  }, "Men\xFA")), mode === "alerta" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "space-y-1.5 pt-1"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-xs text-gray-500"
@@ -14631,7 +15756,10 @@ function UniBot({
   }, "\uD83D\uDEA7 Zona de tr\xE1fico"), /*#__PURE__*/React.createElement("button", {
     onClick: goHome,
     className: "text-xs text-gray-400"
-  }, "Cancelar")), mode === "alertaForm" && /*#__PURE__*/React.createElement("div", {
+  }, "Cancelar")), mode === "alertaForm" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "bg-white rounded-xl p-3 shadow-sm space-y-3"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-sm font-bold",
@@ -14645,7 +15773,10 @@ function UniBot({
       ubicacion: v
     })),
     placeholder: alertaTipo === "grifo" ? "Ej. Av. Separadora Industrial cdra 12" : "Ej. Av. Javier Prado altura Monterrico, evitar"
-  }), alertaTipo === "grifo" && /*#__PURE__*/React.createElement(MiniInput, {
+  }), alertaTipo === "grifo" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(MiniInput, {
     label: "Nombre del grifo",
     value: alertaData.grifo || "",
     onChange: v => setAlertaData(Object.assign({}, alertaData, {
@@ -14666,7 +15797,10 @@ function UniBot({
       setAlertaData({});
     },
     className: "text-xs text-gray-400 w-full text-center"
-  }, "Cancelar")), mode === "form" && /*#__PURE__*/React.createElement("div", {
+  }, "Cancelar")), mode === "form" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "bg-white rounded-xl p-3 shadow-sm space-y-2"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-sm font-bold",
@@ -14674,10 +15808,10 @@ function UniBot({
       color: AZUL
     }
   }, formType === "perdido" ? "No encuentro algo que dejé en mi unidad" : "Reportar algo que encontré"), /*#__PURE__*/React.createElement(MiniInput, {
-    label: "N\xBA de unidad",
+    label: formType === "perdido" ? "¿En qué unidad lo perdiste?" : "¿En qué unidad lo encontraste?",
     value: formData.unidad || "",
     onChange: v => setFormData(Object.assign({}, formData, {
-      unidad: v
+      unidad: v.replace(/[^\d]/g, "").slice(0, 5)
     })),
     placeholder: driver.unidad
   }), /*#__PURE__*/React.createElement(MiniInput, {
@@ -14687,7 +15821,20 @@ function UniBot({
       que: v
     })),
     placeholder: "Conos, casco, tarjeta\u2026"
-  }), formType === "encontrado" && /*#__PURE__*/React.createElement(MiniInput, {
+  }), formType === "perdido" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(MiniCalendarPicker, {
+    label: "\xBFQu\xE9 d\xEDa lo perdiste?",
+    value: formData.fecha || "",
+    max: hoyYMD(),
+    onChange: v => setFormData(Object.assign({}, formData, {
+      fecha: v
+    }))
+  }), formType === "encontrado" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(MiniInput, {
     label: "D\xF3nde se deja",
     value: formData.donde || "",
     onChange: v => setFormData(Object.assign({}, formData, {
@@ -14703,18 +15850,25 @@ function UniBot({
     placeholder: "Ej. 987654321 o pregunta en garita"
   }), /*#__PURE__*/React.createElement("button", {
     onClick: submitForm,
-    disabled: !formData.que || !formData.unidad || !formData.contacto || formType === "encontrado" && !formData.donde,
+    disabled: !formData.que || !formData.unidad || !formData.contacto || formType === "encontrado" && !formData.donde || formType === "perdido" && !formData.fecha,
     className: "w-full py-2 rounded-lg font-semibold text-sm disabled:opacity-40",
     style: {
       background: AMARILLO,
       color: AZUL
     }
-  }, "Publicar en Canal de Avisos")), mode === "auxilio" && /*#__PURE__*/React.createElement(AuxilioForm, {
+  }, "Publicar en Canal de Avisos")), mode === "auxilio" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(AuxilioForm, {
     driver: driver,
     onSubmit: submitAuxilio,
     onCancel: goHome,
-    compact: true
-  }), mode === "confirmMatch" && /*#__PURE__*/React.createElement("div", {
+    compact: true,
+    enviando: enviandoAuxilio
+  }), mode === "confirmMatch" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "flex gap-2 pt-1",
     style: {
       maxWidth: "88%"
@@ -14727,7 +15881,7 @@ function UniBot({
       color: "#16a34a",
       border: "2px solid #16a34a"
     }
-  }, "S\xED, es eso \u2705"), /*#__PURE__*/React.createElement("button", {
+  }, "Es la misma de antes \u2705"), /*#__PURE__*/React.createElement("button", {
     onClick: () => responderMatch(false),
     className: "flex-1 py-2.5 rounded-xl font-semibold text-sm",
     style: {
@@ -14735,14 +15889,26 @@ function UniBot({
       color: "#e11d48",
       border: "2px solid #e11d48"
     }
-  }, "No, no es eso \u274C"))), (mode === "chatProc" || mode === "chatAccidente") && /*#__PURE__*/React.createElement("div", {
+  }, "Se me perdi\xF3 de nuevo \u274C"))), (mode === "chatProc" || mode === "chatAccidente") &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "border-t bg-white shrink-0",
     style: {
       borderColor: "#e6e8ee"
     }
-  }, mode === "chatAccidente" && /*#__PURE__*/React.createElement(React.Fragment, null, unikinHistory.length === 0 && /*#__PURE__*/React.createElement("div", {
+  }, mode === "chatAccidente" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(React.Fragment, null, unikinHistory.length === 0 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "px-2 pt-2 flex gap-1.5 flex-wrap"
-  }, ["Equipos para muestreo", "Prueba de slump", "Seguridad en el trompo", "Qué hacer en un accidente", "Procedimiento de carga", "Lavado del mixer"].map(tema => /*#__PURE__*/React.createElement("button", {
+  }, ["Equipos para muestreo", "Prueba de slump", "Seguridad en el trompo", "Qué hacer en un accidente", "Procedimiento de carga", "Lavado del mixer"].map(tema =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     key: tema,
     onClick: () => sendProc(tema),
     className: "px-2.5 py-1 rounded-full text-[11px] font-semibold",
@@ -14808,7 +15974,10 @@ function UniBot({
       color: "#dc2626",
       border: "1px solid #fecaca"
     }
-  }, "\uD83D\uDC64 Necesito ayuda"))), viewingPdf && /*#__PURE__*/React.createElement("div", {
+  }, "\uD83D\uDC64 Necesito ayuda"))), viewingPdf &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "absolute inset-0 z-50 flex flex-col",
     style: {
       background: "rgba(0,0,0,0.9)"
@@ -14867,7 +16036,7 @@ function ChoferIncidentCard({
     resuelta: "#16a34a"
   };
   const activeColor = STATE_COLOR[i.estado];
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-xl p-3 shadow-sm",
     style: {
       border: "1px solid #e6e8ee"
@@ -14880,17 +16049,23 @@ function ChoferIncidentCard({
     className: "text-[11px] text-gray-400"
   }, i.hora)), /*#__PURE__*/React.createElement("div", {
     className: "text-xs text-gray-500"
-  }, i.unidad, " \xB7 ", i.obra), (i.afectados || []).length > 0 && /*#__PURE__*/React.createElement("div", {
+  }, i.unidad, " \xB7 ", i.obra), (i.afectados || []).length > 0 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "text-[11px] text-amber-700 font-medium mt-0.5 mb-2 flex items-center gap-1"
   }, /*#__PURE__*/React.createElement(Users, {
     size: 12
-  }), " ", (i.afectados || []).length + 1, " choferes afectados"), !(i.afectados || []).length && /*#__PURE__*/React.createElement("div", {
+  }), " ", (i.afectados || []).length + 1, " choferes afectados"), !(i.afectados || []).length &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "mb-3"
   }), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center"
   }, ROADMAP.map((s, k) => {
     const isActive = k === idx;
-    return /*#__PURE__*/React.createElement(React.Fragment, {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement(React.Fragment, {
       key: s
     }, /*#__PURE__*/React.createElement("div", {
       className: "flex flex-col items-center",
@@ -14904,25 +16079,40 @@ function ChoferIncidentCard({
         color: isActive ? "white" : "#b0b5c0",
         animation: isActive ? "pulseStep 2s ease-in-out 1" : "none"
       }
-    }, isActive && i.estado === "resuelta" ? /*#__PURE__*/React.createElement(Check, {
+    }, isActive && i.estado === "resuelta" ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement(Check, {
       size: 16
-    }) : isActive ? /*#__PURE__*/React.createElement(Circle, {
+    }) : isActive ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement(Circle, {
       size: 10,
       fill: "white"
-    }) : /*#__PURE__*/React.createElement(Circle, {
+    }) :
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement(Circle, {
       size: 10
     })), /*#__PURE__*/React.createElement("span", {
       className: "text-[10px] mt-1 text-center font-semibold",
       style: {
         color: isActive ? activeColor : "#b0b5c0"
       }
-    }, roadLabel[s])), k < 2 && /*#__PURE__*/React.createElement("div", {
+    }, roadLabel[s])), k < 2 &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       className: "flex-1 h-0.5 mb-4",
       style: {
         background: k < idx ? activeColor : "#e6e8ee"
       }
     }));
-  })), i.estado === "resuelta" && i.solucion && /*#__PURE__*/React.createElement("div", {
+  })), i.estado === "resuelta" && i.solucion &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "mt-3 rounded-xl p-3 flex gap-2",
     style: {
       background: "#eaf7ee",
@@ -14936,7 +16126,10 @@ function ChoferIncidentCard({
     className: "text-xs font-bold text-green-700 mb-0.5"
   }, "Respuesta de tu AZT"), /*#__PURE__*/React.createElement("div", {
     className: "text-sm text-green-800"
-  }, i.solucion))), i.estado === "atencion" && /*#__PURE__*/React.createElement("div", {
+  }, i.solucion))), i.estado === "atencion" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "mt-2 text-xs text-gray-400 flex items-center gap-1"
   }, /*#__PURE__*/React.createElement(Clock, {
     size: 12
@@ -14949,7 +16142,7 @@ function ReporteIncidencias({
   setEmergencias,
   setChannel
 }) {
-  const cfg = PLANT_CONFIG[driver.planta];
+  const cfg = PLANT_CONFIG[driver.planta] || PLANT_CONFIG_FALLBACK;
   const [step, setStep] = useState("list"); // list | pick | askCall | contacts | obra | aaa | auxilio | servicio | falla_rop | falla_rop_no | falla_choice | falla | falla_sent | dedupCheck | dedupConfirmed
   const [tipo, setTipo] = useState(null);
   const [obra, setObra] = useState("");
@@ -14966,6 +16159,8 @@ function ReporteIncidencias({
   const [dedupCandidate, setDedupCandidate] = useState(null); // incidencia similar activa encontrada
   const [pendingSubmitFn, setPendingSubmitFn] = useState(null); // fn a ejecutar si es "nuevo"
   const [dedupConfirmed, setDedupConfirmed] = useState(false); // mostrar mensaje de confirmación
+  const [enviandoAuxilio, setEnviandoAuxilio] = useState(false);
+  const [mensajeAuxilioError, setMensajeAuxilioError] = useState("");
   const mis = incidents.filter(i => i.chofer === driver.nombre || (i.afectados || []).includes(driver.nombre));
 
   // Chequeo de duplicado: busca incidencia activa similar (mismo tipo, misma planta, últimas 4 h)
@@ -15136,35 +16331,33 @@ function ReporteIncidencias({
     setAdjuntoServicio(null);
   };
   const submitServicio = () => checkAndSubmit("servicios", _doSubmitServicio);
-  const submitAuxilio = data => {
-    // El auxilio genera una incidencia con roadmap Y una notificación de emergencia
-    setIncidents(prev => [...prev, {
-      id: uid(),
-      tipo: "auxilio",
-      unidad: `M-${data.mixer}`,
-      planta: data.planta,
-      obra: `${data.carga} · ${data.desc}`,
-      hora: data.hora,
-      ts: Date.now(),
-      estado: "nueva",
-      solucion: "",
-      chofer: driver.nombre,
-      afectados: [],
-      leidoPor: [],
-      mensajes: [{
-        rol: "Chofer",
-        nombre: driver.nombre.split(" ").slice(0, 2).join(" "),
-        texto: `Auxilio: ${data.desc} (${data.carga})`,
-        hora: data.hora
-      }]
-    }]);
-    setEmergencias?.(prev => [{
-      id: uid(),
-      ...data,
-      origen: "Incidencias",
-      visto: false,
-      ts: Date.now()
-    }, ...prev]);
+  const submitAuxilio = async data => {
+    setEnviandoAuxilio(true);
+    let fotoPath = null;
+    if (data.fotoFile) {
+      const ext = (data.fotoFile.name.split(".").pop() || "jpg").toLowerCase();
+      const path = `${driver.id}/${Date.now()}.${ext}`;
+      const {
+        error: upErr
+      } = await sbClient.storage.from("auxilios-mecanicos").upload(path, data.fotoFile);
+      if (!upErr) fotoPath = path;
+    }
+    const {
+      error
+    } = await sbClient.rpc("registrar_auxilio_mecanico", {
+      p_chofer_id: driver.id,
+      p_mixer: data.mixer,
+      p_planta: data.planta,
+      p_cargada: data.carga === "Cargado",
+      p_lugar_incidente: data.lugar,
+      p_descripcion: data.desc,
+      p_foto_path: fotoPath
+    });
+    setEnviandoAuxilio(false);
+    if (error) {
+      setMensajeAuxilioError(`No se pudo registrar el auxilio (${error.message}). Llama directamente a tu AZT o al taller mientras se resuelve.`);
+      return;
+    }
     setStep("list");
     setTipo(null);
   };
@@ -15174,12 +16367,15 @@ function ReporteIncidencias({
     atencion: "En atención",
     resuelta: "Resuelta"
   };
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "flex-1 overflow-y-auto p-4",
     style: {
       background: "#f6f8fc"
     }
-  }, step === "list" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("button", {
+  }, step === "list" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("button", {
     onClick: () => setStep("pick"),
     className: "w-full py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 mb-4",
     style: {
@@ -15194,20 +16390,32 @@ function ReporteIncidencias({
     size: 13
   }), " Recuerda: la llamada telef\xF3nica es el canal principal."), /*#__PURE__*/React.createElement("h4", {
     className: "text-sm font-bold text-gray-700 mt-4 mb-2"
-  }, "Estado de mis incidencias"), mis.length === 0 && /*#__PURE__*/React.createElement("div", {
+  }, "Estado de mis incidencias"), mis.length === 0 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "text-sm text-gray-400 bg-white rounded-xl p-4 text-center"
   }, "A\xFAn no tienes incidencias reportadas."), /*#__PURE__*/React.createElement("div", {
     className: "space-y-3"
-  }, mis.slice().reverse().map(i => /*#__PURE__*/React.createElement(ChoferIncidentCard, {
+  }, mis.slice().reverse().map(i =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(ChoferIncidentCard, {
     key: i.id,
     incident: i
-  })))), step === "pick" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(BackBtn, {
+  })))), step === "pick" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", null, /*#__PURE__*/React.createElement(BackBtn, {
     onClick: () => setStep("list")
   }), /*#__PURE__*/React.createElement("h4", {
     className: "font-bold text-gray-700 mb-3"
   }, "\xBFQu\xE9 est\xE1 pasando?"), /*#__PURE__*/React.createElement("div", {
     className: "space-y-2"
-  }, INCIDENT_TYPES.filter(t => t.id !== "auxilio").map(t => /*#__PURE__*/React.createElement("button", {
+  }, INCIDENT_TYPES.filter(t => t.id !== "auxilio").map(t =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     key: t.id,
     onClick: () => start(t),
     className: "w-full flex items-center gap-3 bg-white rounded-xl px-3 py-3 shadow-sm text-left hover:bg-gray-50",
@@ -15227,7 +16435,10 @@ function ReporteIncidencias({
   }, t.label), /*#__PURE__*/React.createElement(ChevronRight, {
     size: 16,
     className: "text-gray-300"
-  }))))), step === "askCall" && tipo && /*#__PURE__*/React.createElement("div", {
+  }))))), step === "askCall" && tipo &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "flex flex-col items-center text-center pt-8"
   }, /*#__PURE__*/React.createElement("div", {
     className: "w-16 h-16 rounded-full flex items-center justify-center mb-4",
@@ -15259,7 +16470,10 @@ function ReporteIncidencias({
   }, "No a\xFAn")), /*#__PURE__*/React.createElement(BackBtn, {
     onClick: () => setStep("pick"),
     className: "mt-6"
-  })), step === "contacts" && tipo && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(BackBtn, {
+  })), step === "contacts" && tipo &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", null, /*#__PURE__*/React.createElement(BackBtn, {
     onClick: () => setStep(tipo.id === "mecanica" ? "pick" : "askCall")
   }), /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-3 mb-3",
@@ -15269,7 +16483,10 @@ function ReporteIncidencias({
     }
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-sm text-gray-700"
-  }, /*#__PURE__*/React.createElement("b", null, "Primero comun\xEDcate por tel\xE9fono."), " Estos son los contactos para: ", /*#__PURE__*/React.createElement("br", null), "\u201C", tipo.label, "\u201D.")), contactosPorTipo(tipo, cfg).map(([k, v]) => /*#__PURE__*/React.createElement("a", {
+  }, /*#__PURE__*/React.createElement("b", null, "Primero comun\xEDcate por tel\xE9fono."), " Estos son los contactos para: ", /*#__PURE__*/React.createElement("br", null), "\u201C", tipo.label, "\u201D.")), contactosPorTipo(tipo, cfg).map(([k, v]) =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("a", {
     key: k,
     className: "flex items-center justify-between bg-white rounded-xl px-3 py-3 shadow-sm mb-2"
   }, /*#__PURE__*/React.createElement("span", {
@@ -15281,14 +16498,20 @@ function ReporteIncidencias({
     }
   }, /*#__PURE__*/React.createElement(Phone, {
     size: 14
-  }), " ", v))), tipo.id !== "mecanica" && /*#__PURE__*/React.createElement("button", {
+  }), " ", v))), tipo.id !== "mecanica" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     onClick: () => setStep("obra"),
     className: "w-full py-3 rounded-xl font-semibold text-sm mt-2",
     style: {
       background: AZUL,
       color: "white"
     }
-  }, "Ya llam\xE9, registrar incidencia")), step === "obra" && tipo && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(BackBtn, {
+  }, "Ya llam\xE9, registrar incidencia")), step === "obra" && tipo &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", null, /*#__PURE__*/React.createElement(BackBtn, {
     onClick: () => setStep("askCall")
   }), /*#__PURE__*/React.createElement("h4", {
     className: "font-bold text-gray-700 mb-1"
@@ -15320,17 +16543,34 @@ function ReporteIncidencias({
       background: AMARILLO,
       color: AZUL
     }
-  }, "Enviar reporte")), step === "auxilio" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(BackBtn, {
+  }, "Enviar reporte")), step === "auxilio" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", null, /*#__PURE__*/React.createElement(BackBtn, {
     onClick: () => setStep("pick")
   }), /*#__PURE__*/React.createElement("h4", {
     className: "font-bold text-gray-700 mb-1"
   }, "Auxilio mec\xE1nico"), /*#__PURE__*/React.createElement("p", {
     className: "text-sm text-gray-500 mb-4"
-  }, "Completa los datos. Tu AZT y el taller ser\xE1n notificados."), /*#__PURE__*/React.createElement(AuxilioForm, {
+  }, "Completa los datos. Tu AZT y el taller ser\xE1n notificados."), mensajeAuxilioError &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "mb-3 text-xs font-semibold px-3 py-2 rounded-lg",
+    style: {
+      background: "#fef2f2",
+      color: "#b91c1c",
+      border: "1px solid #fecaca"
+    }
+  }, mensajeAuxilioError), /*#__PURE__*/React.createElement(AuxilioForm, {
     driver: driver,
     onSubmit: submitAuxilio,
-    onCancel: () => setStep("pick")
-  })), step === "falla_rop" && /*#__PURE__*/React.createElement("div", {
+    onCancel: () => setStep("pick"),
+    enviando: enviandoAuxilio
+  })), step === "falla_rop" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "flex flex-col items-center text-center pt-10 px-4"
   }, /*#__PURE__*/React.createElement("img", {
     src: UNIKIN_ONLINE_IMG,
@@ -15366,7 +16606,10 @@ function ReporteIncidencias({
   }, "No a\xFAn")), /*#__PURE__*/React.createElement("button", {
     onClick: () => setStep("falla_choice"),
     className: "mt-6 text-sm text-gray-400 hover:text-gray-600"
-  }, "\u2190 Volver")), step === "falla_rop_no" && /*#__PURE__*/React.createElement("div", {
+  }, "\u2190 Volver")), step === "falla_rop_no" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "flex flex-col items-center text-center pt-10 px-4"
   }, /*#__PURE__*/React.createElement("h4", {
     className: "font-bold text-lg leading-snug max-w-sm mb-3",
@@ -15380,7 +16623,10 @@ function ReporteIncidencias({
       background: AMARILLO,
       color: AZUL
     }
-  }, "Entendido")), step === "falla_choice" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(BackBtn, {
+  }, "Entendido")), step === "falla_choice" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", null, /*#__PURE__*/React.createElement(BackBtn, {
     onClick: () => setStep("pick")
   }), /*#__PURE__*/React.createElement("h4", {
     className: "font-bold text-gray-700 mb-1"
@@ -15442,7 +16688,10 @@ function ReporteIncidencias({
   }, "Tu unidad est\xE1 detenida o no puede seguir operando (sin luces, fuga de aire/aceite, trompo no acciona, llanta reventada, freno inoperativo).")), /*#__PURE__*/React.createElement(ChevronRight, {
     size: 16,
     className: "text-rose-300"
-  })))), step === "falla_form" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(BackBtn, {
+  })))), step === "falla_form" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", null, /*#__PURE__*/React.createElement(BackBtn, {
     onClick: () => setStep("falla_rop")
   }), /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-xl p-4 shadow-sm space-y-4",
@@ -15455,7 +16704,7 @@ function ReporteIncidencias({
     className: "text-xs font-semibold text-gray-600"
   }, "N\xBA de unidad"), /*#__PURE__*/React.createElement("input", {
     value: fallaMixer,
-    onChange: e => setFallaMixer(e.target.value.replace(/[^\d]/g, "")),
+    onChange: e => setFallaMixer(e.target.value.replace(/[^\d]/g, "").slice(0, 5)),
     inputMode: "numeric",
     placeholder: "Ej: 1116",
     className: "w-full mt-1 px-3 py-2.5 rounded-lg border text-sm outline-none text-center",
@@ -15473,7 +16722,7 @@ function ReporteIncidencias({
     className: "flex flex-wrap gap-2 mt-2"
   }, FALLA_TIPOS.filter(ft => ft !== "Otro").map(ft => {
     const sel = fallaTipos.includes(ft);
-    return /*#__PURE__*/React.createElement("button", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
       key: ft,
       onClick: () => setFallaTipos(prev => sel ? prev.filter(x => x !== ft) : [...prev, ft]),
       className: "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
@@ -15485,7 +16734,7 @@ function ReporteIncidencias({
     }, ft);
   }), (() => {
     const selOtro = fallaTipos.includes("Otro");
-    return /*#__PURE__*/React.createElement("div", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
       className: "flex items-center gap-2"
     }, /*#__PURE__*/React.createElement("button", {
       onClick: () => {
@@ -15498,7 +16747,10 @@ function ReporteIncidencias({
         color: selOtro ? "white" : "#374151",
         border: selOtro ? `1px solid ${AZUL}` : "1px solid #d5d9e4"
       }
-    }, "Otro"), selOtro && /*#__PURE__*/React.createElement("input", {
+    }, "Otro"), selOtro &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("input", {
       value: fallaOtroTexto,
       onChange: e => setFallaOtroTexto(e.target.value),
       placeholder: "\xBFCu\xE1l?",
@@ -15546,7 +16798,10 @@ function ReporteIncidencias({
   }, "Enviar reporte")), /*#__PURE__*/React.createElement("button", {
     onClick: () => setStep("falla_rop"),
     className: "w-full mt-3 text-sm text-gray-400 hover:text-gray-600 text-center py-2"
-  }, "\u2039 Volver")), step === "falla_sent" && /*#__PURE__*/React.createElement("div", {
+  }, "\u2039 Volver")), step === "falla_sent" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "flex flex-col items-center text-center pt-10 px-4"
   }, /*#__PURE__*/React.createElement("div", {
     className: "w-16 h-16 rounded-full flex items-center justify-center mb-5",
@@ -15571,7 +16826,10 @@ function ReporteIncidencias({
       background: AZUL,
       color: "white"
     }
-  }, "Entendido")), step === "falla_emergencia" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(BackBtn, {
+  }, "Entendido")), step === "falla_emergencia" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", null, /*#__PURE__*/React.createElement(BackBtn, {
     onClick: () => setStep("falla_choice")
   }), /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-4 mb-4",
@@ -15686,7 +16944,10 @@ function ReporteIncidencias({
     style: {
       color: AZUL
     }
-  }))), step === "servicio" && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(BackBtn, {
+  }))), step === "servicio" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", null, /*#__PURE__*/React.createElement(BackBtn, {
     onClick: () => setStep("pick")
   }), /*#__PURE__*/React.createElement("h4", {
     className: "font-bold text-gray-700 mb-1"
@@ -15694,7 +16955,10 @@ function ReporteIncidencias({
     className: "text-sm text-gray-500 mb-4"
   }, "Planta ", driver.planta), /*#__PURE__*/React.createElement("div", {
     className: "space-y-2"
-  }, SERVICIOS_PLANTA.map(s => /*#__PURE__*/React.createElement("button", {
+  }, SERVICIOS_PLANTA.map(s =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     key: s.id,
     onClick: () => {
       setServicio(s.id);
@@ -15711,11 +16975,20 @@ function ReporteIncidencias({
     color: servicio === s.id ? "white" : AZUL
   }), /*#__PURE__*/React.createElement("span", {
     className: "text-sm font-semibold flex-1"
-  }, s.label), servicio === s.id && /*#__PURE__*/React.createElement(Check, {
+  }, s.label), servicio === s.id &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(Check, {
     size: 16
-  })))), servicio && /*#__PURE__*/React.createElement("div", {
+  })))), servicio &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "mt-4 space-y-3"
-  }, servicio === "almuerzo" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, servicio === "almuerzo" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-3 flex gap-2",
     style: {
       background: "#fef3c7",
@@ -15731,7 +17004,10 @@ function ReporteIncidencias({
     className: "text-xs font-semibold text-gray-600 block mb-2"
   }, "\xBFCu\xE1l es el problema?"), /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-3 gap-2"
-  }, ["Tarde", "Agotado", "Mal estado"].map(opt => /*#__PURE__*/React.createElement("button", {
+  }, ["Tarde", "Agotado", "Mal estado"].map(opt =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     key: opt,
     onClick: () => setSubAlmuerzo(opt),
     className: "py-2 rounded-lg text-xs font-semibold",
@@ -15766,7 +17042,7 @@ function ReporteIncidencias({
     }
   }, "Reportar"))), step === "dedupCheck" && dedupCandidate && (() => {
     const totalAfectados = 1 + (dedupCandidate.afectados || []).length; // 1 = chofer original
-    return /*#__PURE__*/React.createElement("div", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
       className: "flex flex-col pt-4"
     }, /*#__PURE__*/React.createElement("div", {
       className: "rounded-xl p-4 mb-4",
@@ -15784,23 +17060,38 @@ function ReporteIncidencias({
       className: "text-sm font-bold text-amber-900"
     }, "Ya hay una incidencia activa de este tipo"), /*#__PURE__*/React.createElement("div", {
       className: "text-xs text-amber-800 mt-1 leading-snug"
-    }, "Registrada a las ", /*#__PURE__*/React.createElement("b", null, dedupCandidate.hora || "—"), ". Estado: ", /*#__PURE__*/React.createElement("b", null, dedupCandidate.estado === "atencion" ? "En atención" : "Enviada"), ".", totalAfectados > 1 && /*#__PURE__*/React.createElement(React.Fragment, null, " Choferes afectados: ", /*#__PURE__*/React.createElement("b", null, totalAfectados), "."))))), /*#__PURE__*/React.createElement("div", {
+    }, "Registrada a las ", /*#__PURE__*/React.createElement("b", null, dedupCandidate.hora || "—"), ". Estado: ", /*#__PURE__*/React.createElement("b", null, dedupCandidate.estado === "atencion" ? "En atención" : "Enviada"), ".", totalAfectados > 1 &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement(React.Fragment, null, " Choferes afectados: ", /*#__PURE__*/React.createElement("b", null, totalAfectados), "."))))), /*#__PURE__*/React.createElement("div", {
       className: "bg-white rounded-xl p-4 mb-4 shadow-sm space-y-2",
       style: {
         border: "1px solid #e6e8ee"
       }
     }, /*#__PURE__*/React.createElement("div", {
       className: "text-xs font-bold text-gray-500 uppercase tracking-wide mb-1"
-    }, "Incidencia existente"), dedupCandidate.tipo && /*#__PURE__*/React.createElement(ReadRow, {
+    }, "Incidencia existente"), dedupCandidate.tipo &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement(ReadRow, {
       label: "Tipo",
       value: INCIDENT_TYPES.find(t => t.id === dedupCandidate.tipo)?.label || dedupCandidate.tipo
-    }), dedupCandidate.planta && /*#__PURE__*/React.createElement(ReadRow, {
+    }), dedupCandidate.planta &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement(ReadRow, {
       label: "Planta",
       value: dedupCandidate.planta
-    }), dedupCandidate.obra && /*#__PURE__*/React.createElement(ReadRow, {
+    }), dedupCandidate.obra &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement(ReadRow, {
       label: "Obra / Servicio",
       value: dedupCandidate.obra
-    }), dedupCandidate.hora && /*#__PURE__*/React.createElement(ReadRow, {
+    }), dedupCandidate.hora &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement(ReadRow, {
       label: "Hora de registro",
       value: dedupCandidate.hora
     }), /*#__PURE__*/React.createElement(ReadRow, {
@@ -15843,7 +17134,10 @@ function ReporteIncidencias({
       },
       className: "w-full py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:text-gray-700"
     }, "Cancelar")));
-  })(), step === "dedupConfirmed" && /*#__PURE__*/React.createElement("div", {
+  })(), step === "dedupConfirmed" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "flex flex-col items-center text-center pt-8"
   }, /*#__PURE__*/React.createElement("div", {
     className: "w-16 h-16 rounded-full flex items-center justify-center mb-4",
@@ -15868,7 +17162,10 @@ function ReporteIncidencias({
       background: AZUL,
       color: "white"
     }
-  }, "Entendido")), step === "aaa" && /*#__PURE__*/React.createElement("div", {
+  }, "Entendido")), step === "aaa" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "flex flex-col items-center text-center pt-8"
   }, /*#__PURE__*/React.createElement(BackBtn, {
     onClick: () => setStep("pick"),
@@ -15893,6 +17190,628 @@ function ReporteIncidencias({
   }, /*#__PURE__*/React.createElement(Phone, {
     size: 18
   }), " Llamar al Canal AAA \xB7 ", cfg.contactos["Canal AAA (emergencias)"])));
+}
+
+// Categorías de "esto ya tiene un canal" — el texto descriptivo de cada una es exactamente lo
+// que se le explica a Gemini para que decida por CONTEXTO (no por palabra suelta) si la nota
+// del chofer pertenece a alguna de ellas. canal/nombreCanal/motivo son solo para armar el
+// aviso y el botón una vez que la IA ya eligió la categoría.
+const CATEGORIAS_OTRO_CANAL_BITACORA = {
+  auxilio_mecanico: {
+    canal: "bot",
+    nombreCanal: "UNI BOT",
+    motivo: "un auxilio mecánico",
+    descripcion: "el chofer está reportando ahora una avería, que está varado, o que necesita auxilio mecánico o un llantero"
+  },
+  emergencia_accidente: {
+    canal: "bot",
+    nombreCanal: "UNI BOT",
+    motivo: "una emergencia o accidente",
+    descripcion: "el chofer está reportando una emergencia o un accidente que está ocurriendo o ya ocurrió y necesita reportarse formalmente"
+  },
+  objeto_perdido_encontrado: {
+    canal: "bot",
+    nombreCanal: "UNI BOT",
+    motivo: "objetos perdidos o encontrados",
+    descripcion: "el chofer está reportando que perdió algo, o que encontró/halló un objeto (de él o de otra persona)"
+  },
+  // "unikin_no_funciona" NO es una categoría de bloqueo: a diferencia de las demás, esta nota
+  // sí se guarda en la bitácora (ya no hay un canal exclusivo para problemas de sistema/equipos
+  // desde que se quitó esa opción de Reportes de incidencia) — solo se le sugiere al chofer
+  // intentar resolverlo por UNIBOT, y se le abre automáticamente esa opción ya marcada. Ver
+  // manejo especial en guardar().
+  unikin_no_funciona: {
+    especial: "unikin",
+    descripcion: "el chofer menciona explícitamente que UNIKIN no está funcionando o está fallando (específicamente UNIKIN, no un problema genérico de sistema, tablet o RTS)"
+  },
+  pagos_beneficios: {
+    canal: "bot",
+    nombreCanal: "UNI BOT",
+    motivo: "tus pagos o beneficios",
+    descripcion: "pregunta o reclamo sobre Sodexo, bono, boleta de pago, préstamo, cuenta de abono o beneficios"
+  },
+  permisos_personal: {
+    canal: "bot",
+    nombreCanal: "UNI BOT",
+    motivo: "permisos o servicios de personal (descanso médico, vacaciones, uniformes, movilidad)",
+    descripcion: "trámite de descanso médico, licencia de paternidad, vacaciones, uniformes o movilidad de regreso"
+  },
+  charla_programacion: {
+    canal: "bot",
+    nombreCanal: "UNI BOT",
+    motivo: "la programación o recuperación de la charla semanal",
+    descripcion: "pregunta sobre CUÁNDO es la charla semanal o cómo recuperarla — NO una opinión u observación sobre lo que pasó en ella (eso sí es contenido válido de bitácora)"
+  },
+  alerta_preventiva: {
+    canal: "bot",
+    nombreCanal: "UNI BOT",
+    motivo: "una alerta preventiva para tus compañeros",
+    descripcion: "quiere avisar a sus compañeros de un grifo cerrado o una zona de tráfico, para publicarlo en el Canal de Avisos"
+  },
+  incidencia_cliente_servicio: {
+    canal: "incidencias",
+    nombreCanal: "Reportes de incidencia",
+    motivo: "una incidencia con el cliente en obra o un servicio no disponible en planta",
+    descripcion: "un problema ACTUAL con el cliente en obra (no le da acceso, no lo deja retirarse) o un servicio de planta no disponible ahora mismo (baños, comedor, luz, wifi, agua)"
+  },
+  parqueo_llaves: {
+    canal: "finvuelta",
+    nombreCanal: "Reporte de fin de vuelta",
+    motivo: "dónde dejaste el mixer, las llaves o la zona de lavadero",
+    descripcion: "está registrando dónde dejó o está dejando el mixer, dónde dejó las llaves, o que está entrando o está en la zona de lavadero — cualquier información sobre la ubicación física del mixer al terminar su turno"
+  }
+};
+// Clasificación por CONTEXTO (no por palabra suelta) usando la misma Edge Function de Gemini
+// que ya usa la app para leer citaciones — entiende sinónimos, negaciones ("no perdí nada") y
+// que una nota que solo MENCIONA un tema (ej. una opinión sobre la charla semanal) no es lo
+// mismo que un reporte que ese canal necesita procesar. Si Gemini falla o no responde, se deja
+// pasar el guardado (nunca bloquea la bitácora por una falla de la IA).
+async function clasificarBitacoraConIA(texto) {
+  const lista = Object.entries(CATEGORIAS_OTRO_CANAL_BITACORA).map(([id, c]) => `- "${id}": ${c.descripcion}`).join("\n");
+  const prompt = `Un chofer de mixer de concreto está escribiendo una nota libre en su "bitácora personal" (un espacio privado para notas de su día a día, tipo diario: probetas, slump, observaciones, lo que sea).
+
+Tu tarea es decidir si esta nota en realidad pertenece a otro canal que YA EXISTE en la app para resolver ese tema específico, en vez de quedarse en la bitácora. Categorías posibles:
+${lista}
+- "ninguno": no encaja en ninguna de las anteriores — es una nota personal válida para la bitácora.
+
+Importante: si el texto tiene una negación (ej. "no perdí nada", "no tuve ningún problema") o es solo una opinión/observación sobre algo que pasó (no un reporte que necesite acción de otro canal), responde "ninguno".
+
+Texto del chofer: "${texto}"
+
+Responde ÚNICAMENTE con este JSON, sin texto adicional ni markdown: {"categoria": "uno_de_los_ids_de_arriba_o_ninguno"}`;
+  try {
+    const resp = await fetchGeminiConReintentos({
+      contents: [{
+        parts: [{
+          text: prompt
+        }]
+      }],
+      generationConfig: {
+        temperature: 0,
+        responseMimeType: "application/json"
+      }
+    });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    const textoRespuesta = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!textoRespuesta) return null;
+    const parsed = JSON.parse(textoRespuesta);
+    return CATEGORIAS_OTRO_CANAL_BITACORA[parsed?.categoria] || null;
+  } catch (e) {
+    console.warn("No se pudo clasificar la bitácora con IA:", e.message);
+    return null;
+  }
+}
+// Cuaderno abierto + lápiz, para distinguirlo a simple vista del icono de "Reporte de fin de
+// vuelta" (que usa solo un portapapeles). Mismo API que los demás iconos (size, color) para
+// poder usarse en cualquier lugar donde se use un icono normal.
+function BitacoraIcon({
+  size = 24,
+  color = "currentColor"
+}) {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("span", {
+    style: {
+      position: "relative",
+      display: "inline-flex"
+    }
+  }, /*#__PURE__*/React.createElement(BookOpen, {
+    size: size,
+    color: color
+  }), /*#__PURE__*/React.createElement("span", {
+    style: {
+      position: "absolute",
+      bottom: -3,
+      right: -5,
+      width: Math.round(size * 0.6),
+      height: Math.round(size * 0.6),
+      borderRadius: "50%",
+      background: "white",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center"
+    }
+  }, /*#__PURE__*/React.createElement(Edit, {
+    size: Math.round(size * 0.4),
+    color: AZUL
+  })));
+}
+const BITACORA_POR_PAGINA = 8;
+function BitacoraPersonal({
+  driver,
+  setChannel,
+  onIrAUnikin
+}) {
+  const [texto, setTexto] = useState("");
+  const [fotoFile, setFotoFile] = useState(null);
+  const [fotoPreview, setFotoPreview] = useState(null);
+  const [guardando, setGuardando] = useState(false);
+  const [entradas, setEntradas] = useState([]);
+  const [cargando, setCargando] = useState(true);
+  const [pagina, setPagina] = useState(0);
+  const [entradaAbierta, setEntradaAbierta] = useState(null);
+  const [fotoDetalleUrl, setFotoDetalleUrl] = useState(null);
+  const [avisoCanal, setAvisoCanal] = useState(null);
+  const [avisoUnikinPendiente, setAvisoUnikinPendiente] = useState(false);
+  const [errorGuardado, setErrorGuardado] = useState("");
+  const [busqueda, setBusqueda] = useState("");
+  const [fechaFiltro, setFechaFiltro] = useState("");
+  const fileRef = useRef(null);
+  useEffect(() => {
+    if (!driver?.id) return;
+    let vigente = true;
+    (async () => {
+      const {
+        data
+      } = await sbClient.from("bitacora_personal").select("*").eq("chofer_id", driver.id).order("created_at", {
+        ascending: false
+      });
+      if (vigente && data) setEntradas(data);
+      setCargando(false);
+    })();
+    return () => {
+      vigente = false;
+    };
+  }, [driver?.id]);
+  const elegirFoto = e => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setFotoFile(f);
+    const reader = new FileReader();
+    reader.onload = ev => setFotoPreview(ev.target.result);
+    reader.readAsDataURL(f);
+    e.target.value = "";
+  };
+  const guardar = async () => {
+    if (!texto.trim() || guardando) return;
+    setGuardando(true);
+    setErrorGuardado("");
+    const clasif = await clasificarBitacoraConIA(texto.trim());
+    const esUnikin = clasif?.especial === "unikin";
+    // "unikin_no_funciona" no bloquea el guardado (ver comentario en la categoría) — el resto de
+    // categorías sí, como antes.
+    if (clasif && !esUnikin) {
+      setAvisoCanal(clasif);
+      setGuardando(false);
+      return;
+    }
+    let fotoPath = null;
+    if (fotoFile) {
+      const ext = (fotoFile.name.split(".").pop() || "jpg").toLowerCase();
+      const path = `${driver.id}/${Date.now()}.${ext}`;
+      const {
+        error: upErr
+      } = await sbClient.storage.from("bitacora-personal").upload(path, fotoFile);
+      if (upErr) {
+        setGuardando(false);
+        setErrorGuardado(`No se pudo subir la foto: ${upErr.message}`);
+        return;
+      }
+      fotoPath = path;
+    }
+    const {
+      data,
+      error
+    } = await sbClient.from("bitacora_personal").insert({
+      chofer_id: driver.id,
+      texto: texto.trim(),
+      foto_path: fotoPath
+    }).select().single();
+    if (error) {
+      setGuardando(false);
+      setErrorGuardado(`No se pudo guardar: ${error.message}`);
+      return;
+    }
+    setGuardando(false);
+    if (data) {
+      setEntradas(prev => [data, ...prev]);
+      setTexto("");
+      setFotoFile(null);
+      setFotoPreview(null);
+      setAvisoCanal(null);
+      setPagina(0);
+      if (esUnikin) setAvisoUnikinPendiente(true);
+    }
+  };
+  const abrirDetalle = async entrada => {
+    setEntradaAbierta(entrada);
+    setFotoDetalleUrl(null);
+    if (entrada.foto_path) {
+      const {
+        data
+      } = await sbClient.storage.from("bitacora-personal").createSignedUrl(entrada.foto_path, 300);
+      if (data?.signedUrl) setFotoDetalleUrl(data.signedUrl);
+    }
+  };
+  const fechaLocalYMD = iso => {
+    const d = new Date(iso);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+  const entradasFiltradas = entradas.filter(en => {
+    if (fechaFiltro && fechaLocalYMD(en.created_at) !== fechaFiltro) return false;
+    if (busqueda.trim() && !normalizarTextoExcel(en.texto).includes(normalizarTextoExcel(busqueda))) return false;
+    return true;
+  });
+  const hayFiltro = !!(busqueda.trim() || fechaFiltro);
+  const totalPaginas = Math.max(1, Math.ceil(entradasFiltradas.length / BITACORA_POR_PAGINA));
+  const paginaSegura = Math.min(pagina, totalPaginas - 1);
+  const entradasPagina = entradasFiltradas.slice(paginaSegura * BITACORA_POR_PAGINA, paginaSegura * BITACORA_POR_PAGINA + BITACORA_POR_PAGINA);
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 overflow-y-auto p-4",
+    style: {
+      background: "#f6f8fc"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "max-w-2xl mx-auto space-y-4"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-2xl p-4 shadow-sm",
+    style: {
+      border: "1px solid #eef0f4"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2 mb-2"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "w-9 h-9 rounded-xl flex items-center justify-center shrink-0",
+    style: {
+      background: "#eef1fb"
+    }
+  }, /*#__PURE__*/React.createElement(BitacoraIcon, {
+    size: 18,
+    color: AZUL
+  })), /*#__PURE__*/React.createElement("h3", {
+    className: "font-bold text-sm",
+    style: {
+      color: AZUL
+    }
+  }, "Tu bit\xE1cora personal")), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm text-gray-600 leading-relaxed mb-2"
+  }, "Este es un espacio donde puedes registrar todo lo que desees durante tu operaci\xF3n: probetas, slump, o cualquier nota que quieras guardar de tu d\xEDa."), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-gray-500 leading-relaxed mb-2"
+  }, "Aqu\xED ", /*#__PURE__*/React.createElement("b", null, "no"), " se reportan: objetos perdidos o encontrados (usa ", /*#__PURE__*/React.createElement("b", null, "UNI BOT"), "), incidencias con el cliente en obra o servicios no disponibles en planta (usa ", /*#__PURE__*/React.createElement("b", null, "Reportes de incidencia"), "), ni d\xF3nde dejaste el mixer (usa ", /*#__PURE__*/React.createElement("b", null, "Reporte de fin de vuelta"), ")."), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-1.5 text-xs font-semibold",
+    style: {
+      color: "#16a34a"
+    }
+  }, /*#__PURE__*/React.createElement(Lock, {
+    size: 13
+  }), " Solo t\xFA puedes ver esto. Ni tu AZT tiene acceso \u2014 la compartes t\xFA si quieres.")), /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-2xl p-4 shadow-sm",
+    style: {
+      border: "1px solid #eef0f4"
+    }
+  }, /*#__PURE__*/React.createElement("textarea", {
+    value: texto,
+    onChange: e => {
+      setTexto(e.target.value);
+      setAvisoCanal(null);
+      setErrorGuardado("");
+    },
+    placeholder: "Escribe lo que quieras registrar...",
+    rows: 4,
+    className: "w-full px-3 py-2.5 rounded-xl border text-sm outline-none resize-none",
+    style: {
+      borderColor: "#d5d9e4"
+    }
+  }), avisoCanal &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "mt-2 rounded-xl p-3 text-sm flex items-start gap-2",
+    style: {
+      background: "#fff7ed",
+      border: "1px solid #fdba74",
+      color: "#9a3412"
+    }
+  }, /*#__PURE__*/React.createElement(AlertTriangle, {
+    size: 16,
+    className: "shrink-0 mt-0.5"
+  }), /*#__PURE__*/React.createElement("div", null, "Tu bit\xE1cora no es el espacio para registrar esto. Para ", avisoCanal.motivo, " debes registrar por el canal ", /*#__PURE__*/React.createElement("button", {
+    onClick: () => setChannel(avisoCanal.canal),
+    className: "underline font-bold"
+  }, avisoCanal.nombreCanal), ".")), fotoPreview &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "mt-2 rounded-xl overflow-hidden relative",
+    style: {
+      border: "2px solid #16a34a"
+    }
+  }, /*#__PURE__*/React.createElement("img", {
+    src: fotoPreview,
+    alt: "Vista previa",
+    style: {
+      width: "100%",
+      maxHeight: 200,
+      objectFit: "cover",
+      display: "block"
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setFotoFile(null);
+      setFotoPreview(null);
+    },
+    className: "absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center",
+    style: {
+      background: "rgba(0,0,0,.55)",
+      color: "white"
+    }
+  }, /*#__PURE__*/React.createElement(X, {
+    size: 15
+  }))), /*#__PURE__*/React.createElement("input", {
+    ref: fileRef,
+    type: "file",
+    accept: "image/*",
+    style: {
+      display: "none"
+    },
+    onChange: elegirFoto
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2 mt-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => fileRef.current?.click(),
+    disabled: !!fotoPreview,
+    className: "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold disabled:opacity-40",
+    style: {
+      border: "2px dashed #d5d9e4",
+      color: "#374151"
+    }
+  }, /*#__PURE__*/React.createElement(Camera, {
+    size: 15
+  }), " ", fotoPreview ? "Foto adjunta" : "Adjuntar foto (opcional)"), /*#__PURE__*/React.createElement("button", {
+    onClick: guardar,
+    disabled: !texto.trim() || guardando,
+    className: "flex-1 py-2 rounded-xl font-bold text-sm disabled:opacity-40",
+    style: {
+      background: AMARILLO,
+      color: AZUL
+    }
+  }, guardando ? "Guardando..." : "Guardar")), errorGuardado &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "mt-2 text-xs font-semibold",
+    style: {
+      color: "#dc2626"
+    }
+  }, errorGuardado)), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-bold text-gray-400 uppercase tracking-wide px-1"
+  }, "Tu historial"), !cargando && entradas.length > 0 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "bg-white rounded-2xl p-2.5 shadow-sm flex items-center gap-2",
+    style: {
+      border: "1px solid #eef0f4"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 relative"
+  }, /*#__PURE__*/React.createElement(Search, {
+    size: 14,
+    color: "#9ca3af",
+    style: {
+      position: "absolute",
+      left: 10,
+      top: "50%",
+      transform: "translateY(-50%)"
+    }
+  }), /*#__PURE__*/React.createElement("input", {
+    value: busqueda,
+    onChange: e => {
+      setBusqueda(e.target.value);
+      setPagina(0);
+    },
+    placeholder: "Buscar en tus registros...",
+    className: "w-full pl-8 pr-2 py-1.5 text-xs rounded-lg border outline-none",
+    style: {
+      borderColor: "#d5d9e4"
+    }
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      minWidth: 130
+    }
+  }, /*#__PURE__*/React.createElement(MiniCalendarPicker, {
+    value: fechaFiltro,
+    max: new Date().toISOString().slice(0, 10),
+    onChange: v => {
+      setFechaFiltro(v);
+      setPagina(0);
+    }
+  })), (busqueda || fechaFiltro) &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
+    onClick: () => {
+      setBusqueda("");
+      setFechaFiltro("");
+      setPagina(0);
+    },
+    className: "text-xs text-gray-400 shrink-0"
+  }, /*#__PURE__*/React.createElement(X, {
+    size: 14
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-2xl shadow-sm overflow-hidden",
+    style: {
+      border: "1px solid #eef0f4"
+    }
+  }, cargando ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "text-center py-10 text-gray-400 text-sm"
+  }, "Cargando...") : entradas.length === 0 ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "text-center py-10 text-gray-400 text-sm"
+  }, "A\xFAn no tienes registros.") : entradasFiltradas.length === 0 ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "text-center py-10 text-gray-400 text-sm"
+  }, "No se encontraron registros con ese filtro.") :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("table", {
+    className: "w-full text-sm border-collapse"
+  }, /*#__PURE__*/React.createElement("tbody", null, entradasPagina.map(en =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("tr", {
+    key: en.id,
+    onClick: () => abrirDetalle(en),
+    className: "border-t cursor-pointer hover:bg-gray-50",
+    style: {
+      borderColor: "#f0f2f6"
+    }
+  }, /*#__PURE__*/React.createElement("td", {
+    className: "py-2.5 pl-4 text-xs text-gray-400 whitespace-nowrap align-top",
+    style: {
+      width: 100
+    }
+  }, new Date(en.created_at).toLocaleDateString("es-PE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  }), /*#__PURE__*/React.createElement("br", null), new Date(en.created_at).toLocaleTimeString("es-PE", {
+    hour: "2-digit",
+    minute: "2-digit"
+  })), /*#__PURE__*/React.createElement("td", {
+    className: "py-2.5 px-2 text-gray-700 align-top"
+  }, en.texto.length > 70 ? en.texto.slice(0, 70) + "…" : en.texto), /*#__PURE__*/React.createElement("td", {
+    className: "py-2.5 pr-4 text-right align-top"
+  }, en.foto_path &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(Camera, {
+    size: 14,
+    color: "#9ca3af"
+  })))))), totalPaginas > 1 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "flex items-center justify-center gap-3 py-3 border-t",
+    style: {
+      borderColor: "#f0f2f6"
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setPagina(p => Math.max(0, p - 1)),
+    disabled: paginaSegura === 0,
+    className: "disabled:opacity-30"
+  }, /*#__PURE__*/React.createElement(ChevronLeft, {
+    size: 18,
+    color: AZUL
+  })), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs font-semibold text-gray-500"
+  }, paginaSegura + 1, "/", totalPaginas), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setPagina(p => Math.min(totalPaginas - 1, p + 1)),
+    disabled: paginaSegura >= totalPaginas - 1,
+    className: "disabled:opacity-30"
+  }, /*#__PURE__*/React.createElement(ChevronRight, {
+    size: 18,
+    color: AZUL
+  }))))), avisoUnikinPendiente &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "fixed inset-0 z-50 flex items-center justify-center p-4",
+    style: {
+      background: "rgba(0,0,0,.5)"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-2xl p-5 shadow-2xl w-full max-w-sm text-center"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "w-12 h-12 rounded-full mx-auto mb-3 flex items-center justify-center",
+    style: {
+      background: "#eef1fb"
+    }
+  }, /*#__PURE__*/React.createElement(MessageCircle, {
+    size: 22,
+    color: AZUL
+  })), /*#__PURE__*/React.createElement("h4", {
+    className: "font-bold text-gray-800 mb-1"
+  }, "Registro guardado"), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm text-gray-600 mb-4"
+  }, "Mencionaste que UNIKIN no est\xE1 funcionando. Vamos a intentar resolverlo por UNI BOT."), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setAvisoUnikinPendiente(false),
+    className: "flex-1 py-2.5 rounded-xl font-semibold text-sm",
+    style: {
+      background: "#f3f4f6",
+      color: "#374151"
+    }
+  }, "Ahora no"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setAvisoUnikinPendiente(false);
+      onIrAUnikin?.();
+    },
+    className: "flex-1 py-2.5 rounded-xl font-bold text-sm",
+    style: {
+      background: AMARILLO,
+      color: AZUL
+    }
+  }, "Continuar")))), entradaAbierta &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "fixed inset-0 z-50 flex items-center justify-center p-4",
+    style: {
+      background: "rgba(0,0,0,.5)"
+    },
+    onClick: () => setEntradaAbierta(null)
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-2xl p-4 shadow-2xl w-full max-w-md overflow-y-auto",
+    style: {
+      maxHeight: "85vh"
+    },
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between mb-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-semibold text-gray-400"
+  }, new Date(entradaAbierta.created_at).toLocaleString("es-PE")), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setEntradaAbierta(null)
+  }, /*#__PURE__*/React.createElement(X, {
+    size: 18,
+    color: "#6b7280"
+  }))), entradaAbierta.foto_path && (fotoDetalleUrl ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("img", {
+    src: fotoDetalleUrl,
+    alt: "Foto de la bit\xE1cora",
+    style: {
+      width: "100%",
+      borderRadius: 12,
+      marginBottom: 12
+    }
+  }) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "text-xs text-gray-400 mb-3"
+  }, "Cargando foto...")), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm text-gray-700 whitespace-pre-wrap"
+  }, entradaAbierta.texto))));
 }
 function contactosPorTipo(tipo, cfg) {
   const c = cfg.contactos;
@@ -15943,11 +17862,23 @@ const limpiarNombreAutor = nombre => (nombre || "").replace(/\s*\([^)]*\)\s*$/, 
 const renderConLinks = texto => {
   if (!texto) return texto;
   const urlRe = /(https?:\/\/[^\s<]+|www\.[^\s<]+)/gi;
+  const boldRe = /\*\*(.+?)\*\*/g;
+  const parseBold = (segmento, prefijo) => {
+    const trozos = segmento.split(boldRe);
+    if (trozos.length === 1) return segmento;
+    return trozos.map((t, j) => j % 2 === 1 ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("b", {
+      key: `${prefijo}-b${j}`,
+      className: "font-semibold"
+    }, t) : t);
+  };
   const partes = texto.split(urlRe).filter(p => p !== undefined && p !== "");
   return partes.map((parte, i) => {
     if (/^(https?:\/\/|www\.)/i.test(parte)) {
       const href = parte.startsWith("http") ? parte : `https://${parte}`;
-      return /*#__PURE__*/React.createElement("a", {
+      return /*#__PURE__*/ /*#__PURE__*/React.createElement("a", {
         key: i,
         href: href,
         target: "_blank",
@@ -15959,7 +17890,9 @@ const renderConLinks = texto => {
         }
       }, parte);
     }
-    return parte;
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement(React.Fragment, {
+      key: i
+    }, parseBold(parte, i));
   });
 };
 
@@ -15979,7 +17912,7 @@ function NombreClickeable({
   onUpdateSelf
 }) {
   const [abierto, setAbierto] = useState(false);
-  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("button", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("button", {
     type: "button",
     onClick: e => {
       e.stopPropagation();
@@ -15989,7 +17922,10 @@ function NombreClickeable({
     style: {
       textAlign: "left"
     }
-  }, children || nombre), abierto && /*#__PURE__*/React.createElement(PerfilModal, {
+  }, children || nombre), abierto &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(PerfilModal, {
     dni: dni,
     id: id,
     dniViewer: dniViewer,
@@ -16013,6 +17949,8 @@ function PerfilModal({
   const [loading, setLoading] = useState(!cachePerfiles[claveCache]);
   const [editandoBio, setEditandoBio] = useState(false);
   const [bioTexto, setBioTexto] = useState(() => cachePerfiles[claveCache]?.bio || "");
+  const [editandoUnidad, setEditandoUnidad] = useState(false);
+  const [unidadTexto, setUnidadTexto] = useState(() => cachePerfiles[claveCache]?.unidad || "");
   const [guardando, setGuardando] = useState(false);
   const [subiendoFoto, setSubiendoFoto] = useState(false);
   const [mensaje, setMensaje] = useState("");
@@ -16029,6 +17967,7 @@ function PerfilModal({
       cachePerfiles[claveCache] = data;
       setPerfil(data);
       if (!editandoBio) setBioTexto(data.bio || "");
+      if (!editandoUnidad) setUnidadTexto(data.unidad || "");
     }
     setLoading(false);
   };
@@ -16129,8 +18068,35 @@ function PerfilModal({
     }
     setGuardando(false);
   };
+  const guardarUnidad = async () => {
+    setGuardando(true);
+    const {
+      error
+    } = await sbClient.from("perfiles").update({
+      unidad: unidadTexto
+    }).eq("id", perfil.id);
+    if (!error) {
+      setPerfil(p => ({
+        ...p,
+        unidad: unidadTexto
+      }));
+      cachePerfiles[claveCache] = {
+        ...cachePerfiles[claveCache],
+        unidad: unidadTexto
+      };
+      onUpdateSelf?.({
+        unidad: unidadTexto
+      });
+      setEditandoUnidad(false);
+      setMensaje("Guardado.");
+      setTimeout(() => setMensaje(""), 2000);
+    } else {
+      setMensaje("No se pudo guardar: " + error.message);
+    }
+    setGuardando(false);
+  };
   const plantaDisplay = perfil?.rol === "mantenimiento" ? "Todas (excepto Maravillas)" : (perfil?.planta || "").split(",").filter(Boolean).join(", ");
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 z-[998]",
     style: {
       background: "rgba(0,0,0,0.25)",
@@ -16149,25 +18115,43 @@ function PerfilModal({
     className: "mb-4 text-gray-400 hover:text-gray-600 flex items-center gap-1 text-sm"
   }, /*#__PURE__*/React.createElement(ChevronRight, {
     size: 18
-  }), " Cerrar"), loading ? /*#__PURE__*/React.createElement("div", {
+  }), " Cerrar"), loading ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "text-center py-10 text-gray-400 text-sm"
-  }, "Cargando perfil...") : !perfil ? /*#__PURE__*/React.createElement("div", {
+  }, "Cargando perfil...") : !perfil ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "text-center py-10 text-gray-400 text-sm"
-  }, "No se encontr\xF3 el perfil.") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, "No se encontr\xF3 el perfil.") :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-3 mb-2"
   }, /*#__PURE__*/React.createElement("div", {
     className: "relative flex-shrink-0"
-  }, perfil.foto_url ? /*#__PURE__*/React.createElement("img", {
+  }, perfil.foto_url ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("img", {
     src: perfil.foto_url,
     alt: perfil.nombre,
     className: "w-16 h-16 rounded-full object-cover"
-  }) : /*#__PURE__*/React.createElement("div", {
+  }) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "w-16 h-16 rounded-full flex items-center justify-center font-bold text-lg",
     style: {
       background: AMARILLO,
       color: AZUL
     }
-  }, perfil.nombre.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase()), esPropio && /*#__PURE__*/React.createElement("button", {
+  }, perfil.nombre.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase()), esPropio &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     onClick: () => fotoInputRef.current?.click(),
     disabled: subiendoFoto,
     className: "absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center shadow disabled:opacity-50",
@@ -16187,7 +18171,10 @@ function PerfilModal({
     }
   }, perfil.nombre), /*#__PURE__*/React.createElement("div", {
     className: "text-xs text-gray-500"
-  }, CARGO_LABEL[perfil.rol] || perfil.rol))), esPropio && /*#__PURE__*/React.createElement("div", {
+  }, CARGO_LABEL[perfil.rol] || perfil.rol))), esPropio &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "mb-4"
   }, /*#__PURE__*/React.createElement("input", {
     type: "file",
@@ -16205,7 +18192,10 @@ function PerfilModal({
     onClick: () => fotoInputRef.current?.click(),
     disabled: subiendoFoto,
     className: "text-blue-600 font-semibold disabled:opacity-50"
-  }, subiendoFoto ? "Subiendo..." : perfil.foto_url ? "Cambiar foto" : "Subir foto"), perfil.foto_url && /*#__PURE__*/React.createElement("button", {
+  }, subiendoFoto ? "Subiendo..." : perfil.foto_url ? "Cambiar foto" : "Subir foto"), perfil.foto_url &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     onClick: eliminarFoto,
     disabled: subiendoFoto,
     className: "text-red-600 font-semibold disabled:opacity-50"
@@ -16215,7 +18205,57 @@ function PerfilModal({
     className: "text-[11px] font-semibold text-gray-400 uppercase mb-1"
   }, "Planta"), /*#__PURE__*/React.createElement("div", {
     className: "text-gray-700"
-  }, plantaDisplay || "—", perfil.unidad ? ` · Unidad ${perfil.unidad}` : "")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  }, plantaDisplay || "—")), ROLES_CHOFER_SET.has(perfil.rol) &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "text-[11px] font-semibold text-gray-400 uppercase mb-1 flex items-center justify-between"
+  }, /*#__PURE__*/React.createElement("span", null, "Unidad (mixer)"), esPropio && !editandoUnidad &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
+    onClick: () => setEditandoUnidad(true),
+    className: "text-blue-600 font-semibold normal-case flex items-center gap-1"
+  }, /*#__PURE__*/React.createElement(Edit, {
+    size: 11
+  }), " Editar")), editandoUnidad ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("input", {
+    value: unidadTexto,
+    onChange: e => setUnidadTexto(e.target.value.replace(/[^\d]/g, "").slice(0, 5)),
+    inputMode: "numeric",
+    placeholder: "Ej. 142",
+    className: "w-full px-3 py-2 rounded-lg border text-sm",
+    style: {
+      borderColor: "#d5d9e4",
+      color: "#374151"
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2 mt-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setEditandoUnidad(false);
+      setUnidadTexto(perfil.unidad || "");
+    },
+    className: "flex-1 py-1.5 rounded-lg border text-xs font-semibold",
+    style: {
+      borderColor: "#d5d9e4"
+    }
+  }, "Cancelar"), /*#__PURE__*/React.createElement("button", {
+    onClick: guardarUnidad,
+    disabled: guardando || !unidadTexto,
+    className: "flex-1 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50",
+    style: {
+      background: AZUL,
+      color: "white"
+    }
+  }, guardando ? "Guardando..." : "Guardar"))) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "text-gray-700"
+  }, perfil.unidad || "Sin asignar")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     className: "text-[11px] font-semibold text-gray-400 uppercase mb-1"
   }, "Tel\xE9fono"), /*#__PURE__*/React.createElement("div", {
     className: "text-gray-700"
@@ -16225,17 +18265,24 @@ function PerfilModal({
     className: "text-gray-700"
   }, perfil.email_personal || "No registrado")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     className: "text-[11px] font-semibold text-gray-400 uppercase mb-1 flex items-center justify-between"
-  }, /*#__PURE__*/React.createElement("span", null, "Biograf\xEDa"), esPropio && !editandoBio && /*#__PURE__*/React.createElement("button", {
+  }, /*#__PURE__*/React.createElement("span", null, "Biograf\xEDa"), esPropio && !editandoBio &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     onClick: () => setEditandoBio(true),
     className: "text-blue-600 font-semibold normal-case"
-  }, "Editar")), editandoBio ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("textarea", {
+  }, "Editar")), editandoBio ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("textarea", {
     value: bioTexto,
     onChange: e => setBioTexto(e.target.value.slice(0, 300)),
     rows: 3,
     placeholder: "Cu\xE9ntanos algo sobre ti...",
     className: "w-full px-3 py-2 rounded-lg border text-sm",
     style: {
-      borderColor: "#d5d9e4"
+      borderColor: "#d5d9e4",
+      color: "#374151"
     }
   }), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2 mt-2"
@@ -16256,9 +18303,15 @@ function PerfilModal({
       background: AZUL,
       color: "white"
     }
-  }, guardando ? "Guardando..." : "Guardar"))) : /*#__PURE__*/React.createElement("div", {
+  }, guardando ? "Guardando..." : "Guardar"))) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "text-gray-700 whitespace-pre-wrap"
-  }, perfil.bio || (esPropio ? "Aún no has escrito nada sobre ti. Toca \"Editar\" para agregar una." : "Sin biografía.")), mensaje && /*#__PURE__*/React.createElement("div", {
+  }, perfil.bio || (esPropio ? "Aún no has escrito nada sobre ti. Toca \"Editar\" para agregar una." : "Sin biografía.")), mensaje &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "text-xs text-green-600 mt-1"
   }, mensaje))))));
 }
@@ -16831,7 +18884,7 @@ function GestionHumanaPanel({
     e.target.value = "";
   };
   const cargoOptions = editando && ROLES_CHOFER_SET.has(editando.rol) || editando && editando._tipo === "chofer" ? CARGOS_CHOFER_MAP : CARGOS_ADMIN_MAP;
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "w-full flex",
     style: {
       height: "100vh",
@@ -16950,13 +19003,22 @@ function GestionHumanaPanel({
     }
   }, /*#__PURE__*/React.createElement(Plus, {
     size: 16
-  }), " Agregar persona"))), mensaje && /*#__PURE__*/React.createElement("div", {
+  }), " Agregar persona"))), mensaje &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: `mb-4 text-sm px-3 py-2 rounded-lg border flex items-start justify-between gap-3 ${mensaje.tipo === "ok" ? "bg-green-50 border-green-200 text-green-700" : "bg-red-50 border-red-200 text-red-700"}`
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex-1"
-  }, /*#__PURE__*/React.createElement("div", null, mensaje.texto), mensaje.detalles && mensaje.detalles.length > 0 && /*#__PURE__*/React.createElement("ul", {
+  }, /*#__PURE__*/React.createElement("div", null, mensaje.texto), mensaje.detalles && mensaje.detalles.length > 0 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("ul", {
     className: "mt-1.5 pl-4 list-disc space-y-0.5"
-  }, mensaje.detalles.map((d, i) => /*#__PURE__*/React.createElement("li", {
+  }, mensaje.detalles.map((d, i) =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("li", {
     key: i
   }, d)))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setMensaje(null),
@@ -16974,7 +19036,10 @@ function GestionHumanaPanel({
     }
   }, /*#__PURE__*/React.createElement("option", {
     value: "Todas"
-  }, "Todas las plantas"), PLANTAS_TODAS.map(p => /*#__PURE__*/React.createElement("option", {
+  }, "Todas las plantas"), PLANTAS_TODAS.map(p =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("option", {
     key: p,
     value: p
   }, p))), /*#__PURE__*/React.createElement("select", {
@@ -16986,7 +19051,10 @@ function GestionHumanaPanel({
     }
   }, /*#__PURE__*/React.createElement("option", {
     value: "Todos"
-  }, "Todos los cargos"), Object.entries(CARGO_LABEL).map(([code, label]) => /*#__PURE__*/React.createElement("option", {
+  }, "Todos los cargos"), Object.entries(CARGO_LABEL).map(([code, label]) =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("option", {
     key: code,
     value: code
   }, label))), /*#__PURE__*/React.createElement("input", {
@@ -16998,9 +19066,15 @@ function GestionHumanaPanel({
     style: {
       borderColor: "#d5d9e4"
     }
-  })), loading ? /*#__PURE__*/React.createElement("div", {
+  })), loading ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "text-center py-12 text-gray-400 text-sm"
-  }, "Cargando personal...") : /*#__PURE__*/React.createElement("div", {
+  }, "Cargando personal...") :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "border rounded-xl overflow-hidden",
     style: {
       borderColor: "#e6e8ee"
@@ -17051,7 +19125,10 @@ function GestionHumanaPanel({
     style: {
       borderColor: "#e6e8ee"
     }
-  }, "Acciones"))), /*#__PURE__*/React.createElement("tbody", null, personalFiltrado.filter(p => p.activo).map(p => /*#__PURE__*/React.createElement("tr", {
+  }, "Acciones"))), /*#__PURE__*/React.createElement("tbody", null, personalFiltrado.filter(p => p.activo).map(p =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("tr", {
     key: p.id,
     className: "border-b",
     style: {
@@ -17097,12 +19174,18 @@ function GestionHumanaPanel({
   }, /*#__PURE__*/React.createElement(X, {
     size: 14,
     color: "#e11d48"
-  }))))), personalFiltrado.filter(p => p.activo).length === 0 && /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("td", {
+  }))))), personalFiltrado.filter(p => p.activo).length === 0 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("tr", null, /*#__PURE__*/React.createElement("td", {
     colSpan: 8,
     className: "text-center py-8 text-gray-400"
   }, "No hay personas que coincidan con el filtro."))))), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-gray-400 mt-3"
-  }, "Los cambios se guardan de inmediato y se reflejan la pr\xF3xima vez que la persona ingresa a la app.")), editando && /*#__PURE__*/React.createElement("div", {
+  }, "Los cambios se guardan de inmediato y se reflejan la pr\xF3xima vez que la persona ingresa a la app.")), editando &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
   }, /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-2xl p-6 w-full max-w-sm"
@@ -17111,7 +19194,10 @@ function GestionHumanaPanel({
     style: {
       color: AZUL
     }
-  }, editando._tipo === "nuevo" ? "Agregar persona" : "Editar persona"), errorModal && /*#__PURE__*/React.createElement("div", {
+  }, editando._tipo === "nuevo" ? "Agregar persona" : "Editar persona"), errorModal &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "mb-3 text-sm px-3 py-2 rounded-lg border bg-red-50 border-red-200 text-red-700"
   }, errorModal), /*#__PURE__*/React.createElement("label", {
     className: "text-xs font-semibold text-gray-600"
@@ -17161,15 +19247,24 @@ function GestionHumanaPanel({
     }
   }, /*#__PURE__*/React.createElement("optgroup", {
     label: "Chofer"
-  }, Object.entries(CARGOS_CHOFER_MAP).map(([code, label]) => /*#__PURE__*/React.createElement("option", {
+  }, Object.entries(CARGOS_CHOFER_MAP).map(([code, label]) =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("option", {
     key: code,
     value: code
   }, label))), /*#__PURE__*/React.createElement("optgroup", {
     label: "Administrativo"
-  }, Object.entries(CARGOS_ADMIN_MAP).map(([code, label]) => /*#__PURE__*/React.createElement("option", {
+  }, Object.entries(CARGOS_ADMIN_MAP).map(([code, label]) =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("option", {
     key: code,
     value: code
-  }, label)))), ROLES_CHOFER_SET.has(editando.rol) ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("label", {
+  }, label)))), ROLES_CHOFER_SET.has(editando.rol) ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("label", {
     className: "text-xs font-semibold text-gray-600"
   }, "Planta"), /*#__PURE__*/React.createElement("select", {
     value: editando.planta,
@@ -17181,7 +19276,10 @@ function GestionHumanaPanel({
     style: {
       borderColor: "#d5d9e4"
     }
-  }, PLANTAS_TODAS.filter(p => p !== "Transversal").map(p => /*#__PURE__*/React.createElement("option", {
+  }, PLANTAS_TODAS.filter(p => p !== "Transversal").map(p =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("option", {
     key: p,
     value: p
   }, p))), /*#__PURE__*/React.createElement("label", {
@@ -17190,14 +19288,18 @@ function GestionHumanaPanel({
     value: editando.unidad || "",
     onChange: e => setEditando({
       ...editando,
-      unidad: e.target.value
+      unidad: e.target.value.replace(/[^\d]/g, "").slice(0, 5)
     }),
-    placeholder: "Ej. M-101",
+    inputMode: "numeric",
+    placeholder: "Ej. 101",
     className: "w-full mt-1 mb-4 px-3 py-2 rounded-lg border text-sm",
     style: {
       borderColor: "#d5d9e4"
     }
-  })) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("label", {
+  })) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("label", {
     className: "text-xs font-semibold text-gray-600"
   }, "Plantas asignadas (puede marcar varias)"), /*#__PURE__*/React.createElement("div", {
     className: "mt-1 mb-4 max-h-40 overflow-y-auto border rounded-lg p-2",
@@ -17207,7 +19309,7 @@ function GestionHumanaPanel({
   }, PLANTAS_TODAS.map(p => {
     const arr = Array.isArray(editando.planta) ? editando.planta : [];
     const checked = arr.includes(p);
-    return /*#__PURE__*/React.createElement("label", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("label", {
       key: p,
       className: "flex items-center gap-2 py-1 text-sm cursor-pointer"
     }, /*#__PURE__*/React.createElement("input", {
@@ -17539,7 +19641,7 @@ function ModalSubirCitacionGeneral({
     }
     setProcesando(false);
   };
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 flex items-center justify-center p-4",
     style: {
       background: "rgba(0,0,0,.5)",
@@ -17583,7 +19685,10 @@ function ModalSubirCitacionGeneral({
       background: AMARILLO,
       color: AZUL
     }
-  }, procesando ? "⏳ Procesando..." : "Elegir archivo Excel"), resumen && /*#__PURE__*/React.createElement("div", {
+  }, procesando ? "⏳ Procesando..." : "Elegir archivo Excel"), resumen &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "mt-3 rounded-lg p-2.5",
     style: {
       background: "#f9fafb",
@@ -17617,7 +19722,7 @@ function BotonPruebaAjusteMixer() {
     setResumenPrueba(resultado);
     setCorriendoPrueba(false);
   };
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     style: {
       position: "fixed",
       top: 8,
@@ -17628,7 +19733,10 @@ function BotonPruebaAjusteMixer() {
       alignItems: "flex-end",
       gap: 6
     }
-  }, resumenPrueba && /*#__PURE__*/React.createElement("div", {
+  }, resumenPrueba &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     style: {
       background: "white",
       border: "2px solid #dc2626",
@@ -17685,7 +19793,7 @@ function HerramientasCanalAvisos({
   onEncuesta,
   onCitacion
 }) {
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "flex gap-1.5 px-3 py-2 border-b flex-wrap shrink-0",
     style: {
       borderColor: "#e6e8ee"
@@ -17697,7 +19805,10 @@ function HerramientasCanalAvisos({
       background: "#eef1fb",
       color: AZUL
     }
-  }, "\uD83D\uDCCA Encuesta"), esAZT && /*#__PURE__*/React.createElement("button", {
+  }, "\uD83D\uDCCA Encuesta"), esAZT &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     onClick: onCitacion,
     className: "flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold",
     style: {
@@ -17731,6 +19842,7 @@ function AztPanel({
   const [plantaElegidaMobile, setPlantaElegidaMobile] = useState(false); // ¿ya entró al chat de una planta desde la lista?
   const [subTabGestion, setSubTabGestion] = useState("choferes"); // "choferes" | "obras" — pestañas dentro de "Gestión de choferes y obras"
   const [previewAvisos, setPreviewAvisos] = useState({}); // { [planta]: { ultimo, hora, noLeidos } }
+  const [auxNoLeidos, setAuxNoLeidos] = useState(0); // total de auxilios mecánicos no leídos (para el badge del menú lateral)
   // Herramientas transversales (encuesta / citación) para admins con más de una planta — ver el
   // comentario en el menú de adjuntar de PanelAvisos sobre por qué viven aquí en ese caso.
   const [crearEncuestaTransversalAbierta, setCrearEncuestaTransversalAbierta] = useState(false);
@@ -17799,6 +19911,55 @@ function AztPanel({
     cargarPreviews();
   }, [admin?.dni, JSON.stringify(admin?.plantas)]);
 
+  // Total de auxilios mecánicos no leídos, para el badge del ítem "Auxilio mecánico" del menú
+  // lateral (antes quedaba en 0 fijo: el conteo real solo se calculaba adentro del buzón, así que
+  // nadie se enteraba de un auxilio nuevo si no había entrado ya a esa sección).
+  const ROLES_CON_AUXILIO_MECANICO_BADGE = new Set(["admin_zonal_transporte", "sgi", "mantenimiento"]);
+  const cargarAuxPreview = async () => {
+    if (!admin?.id || !admin?.plantas?.length || !ROLES_CON_AUXILIO_MECANICO_BADGE.has(admin?.rol)) return;
+    const plantasReales = admin.plantas.filter(p => p !== "Transversal");
+    const [{
+      data: filas
+    }, {
+      data: lecturas
+    }] = await Promise.all([sbClient.from("auxilios_mecanicos").select("planta, created_at").in("planta", plantasReales), sbClient.from("auxilios_lectura").select("planta, ultimo_leido_at").eq("usuario_id", admin.id).in("planta", plantasReales)]);
+    if (!filas) return;
+    const leidoPorPlanta = {};
+    (lecturas || []).forEach(l => {
+      leidoPorPlanta[l.planta] = l.ultimo_leido_at;
+    });
+    const total = filas.filter(a => {
+      const cursor = leidoPorPlanta[a.planta] ? new Date(leidoPorPlanta[a.planta]) : new Date(0);
+      return new Date(a.created_at) > cursor;
+    }).length;
+    setAuxNoLeidos(total);
+  };
+  useEffect(() => {
+    cargarAuxPreview();
+  }, [admin?.id, JSON.stringify(admin?.plantas)]);
+  useEffect(() => {
+    if (!admin?.id || !ROLES_CON_AUXILIO_MECANICO_BADGE.has(admin?.rol)) return;
+    const canal = sbClient.channel(`auxilio-badge-${admin.id}`).on("postgres_changes", {
+      event: "INSERT",
+      schema: "public",
+      table: "auxilios_mecanicos"
+    }, () => cargarAuxPreview()).on("postgres_changes", {
+      event: "*",
+      schema: "public",
+      table: "auxilios_lectura",
+      filter: `usuario_id=eq.${admin.id}`
+    }, () => cargarAuxPreview()).subscribe();
+    // Respaldo por sondeo: el canal de arriba no siempre entrega el evento INSERT de forma
+    // confiable (se confirmó con logs que a veces el cliente queda "SUBSCRIBED" pero no recibe
+    // el postgres_changes de otra sesión), así que se refuerza con una relectura periódica para
+    // que el badge nunca quede desactualizado por más de ~20s.
+    const intervalo = setInterval(() => cargarAuxPreview(), 20000);
+    return () => {
+      sbClient.removeChannel(canal);
+      clearInterval(intervalo);
+    };
+  }, [admin?.id, admin?.rol]);
+
   // Precarga completa (avisos + reacciones + respuestas) de TODAS las plantas a cargo,
   // apenas se conoce al AZT. Así, al tocar cualquier planta, el chat ya está listo
   // en caché y se abre instantáneo, sin esperar una consulta nueva a Supabase.
@@ -17815,12 +19976,13 @@ function AztPanel({
         });
         if (!avisosP) continue;
         const avisoIds = avisosP.map(a => a.id);
-        const [reaccionesP, respuestasP] = await Promise.all([avisoIds.length ? consultarPorLotes("aviso_reacciones", avisoIds) : Promise.resolve([]), avisoIds.length ? consultarPorLotes("aviso_respuestas_ruta", avisoIds) : Promise.resolve([])]);
+        const [reaccionesP, respuestasP, respuestasObjetoP] = await Promise.all([avisoIds.length ? consultarPorLotes("aviso_reacciones", avisoIds) : Promise.resolve([]), avisoIds.length ? consultarPorLotes("aviso_respuestas_ruta", avisoIds) : Promise.resolve([]), avisoIds.length ? consultarPorLotes("aviso_respuestas_objeto", avisoIds) : Promise.resolve([])]);
         cacheAvisosPorPlanta[p] = avisosP.map(a => ({
           ...a,
           reaccionesDeAviso: (reaccionesP || []).filter(r => r.aviso_id === a.id),
           miReaccion: (reaccionesP || []).find(r => r.aviso_id === a.id && r.chofer_id === admin.id)?.emoji || null,
-          respuestaRuta: (respuestasP || []).find(r => r.aviso_id === a.id) || null
+          respuestaRuta: (respuestasP || []).find(r => r.aviso_id === a.id) || null,
+          respuestaObjeto: (respuestasObjetoP || []).find(r => r.aviso_id === a.id) || null
         }));
       }
     })();
@@ -17953,6 +20115,7 @@ function AztPanel({
   // Social, Mantenimiento, etc.) solo publican avisos y gestionan incidencias de su planta.
   const ROLES_CON_GESTION_CHOFERES = new Set(["admin_zonal_transporte", "jefe_transporte", "supervisor_transportes", "gerente_transporte_distribucion"]);
   const ROLES_CON_REPORTES_MIXERS = new Set([...ROLES_CON_GESTION_CHOFERES, "despachador"]);
+  const ROLES_CON_AUXILIO_MECANICO = new Set(["admin_zonal_transporte", "sgi", "mantenimiento"]);
   const SECTIONS = [{
     id: "avisos",
     label: "Canal de Avisos",
@@ -17977,13 +20140,19 @@ function AztPanel({
     icon: RefreshCw,
     sub: "Reasignar chofer, obras y rutas",
     badge: 0
+  }] : []), ...(ROLES_CON_AUXILIO_MECANICO.has(admin?.rol) ? [{
+    id: "auxilio_mecanico",
+    label: "Auxilio mecánico",
+    icon: Wrench,
+    sub: "Buzón de auxilios reportados",
+    badge: auxNoLeidos
   }] : [])];
   const showSidebar = isDesktop || mobileList;
   const showMain = isDesktop || !mobileList;
 
   // Mientras carga el perfil real desde Supabase (venimos ya autenticados)
   if (!admin && initialDni) {
-    return /*#__PURE__*/React.createElement("div", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
       className: "w-full flex items-center justify-center",
       style: {
         flex: 1
@@ -17993,7 +20162,7 @@ function AztPanel({
     }, "Cargando panel..."));
   }
   if (!admin) {
-    return /*#__PURE__*/React.createElement("div", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
       className: "w-full flex items-center justify-center",
       style: {
         flex: 1
@@ -18002,13 +20171,19 @@ function AztPanel({
       className: "text-sm text-gray-400"
     }, "Sesi\xF3n no v\xE1lida. Vuelve a ingresar desde la pantalla principal."));
   }
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "relative w-full bg-white shadow-xl overflow-hidden flex",
     style: {
       flex: 1,
       minHeight: 0
     }
-  }, admin.rol === "admin_zonal_transporte" && /*#__PURE__*/React.createElement(BotonPruebaAjusteMixer, null), showSidebar && /*#__PURE__*/React.createElement("aside", {
+  }, admin.rol === "admin_zonal_transporte" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(BotonPruebaAjusteMixer, null), showSidebar &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("aside", {
     className: "flex flex-col border-r shrink-0",
     style: {
       width: isDesktop ? 280 : "100%",
@@ -18029,31 +20204,37 @@ function AztPanel({
       background: AZUL
     }
   }, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center gap-3"
+    className: "flex items-center gap-3 py-1"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "w-10 h-10 rounded-full flex items-center justify-center shrink-0 overflow-hidden",
+    className: "w-14 h-14 rounded-full flex items-center justify-center shrink-0 overflow-hidden",
     style: {
       background: AMARILLO,
       color: AZUL
     }
-  }, admin.foto_url ? /*#__PURE__*/React.createElement("img", {
+  }, admin.foto_url ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("img", {
     src: admin.foto_url,
     alt: admin.nombre,
     className: "w-full h-full object-cover"
-  }) : /*#__PURE__*/React.createElement(Shield, {
-    size: 20
+  }) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(Shield, {
+    size: 26
   })), /*#__PURE__*/React.createElement("div", {
     className: "min-w-0"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "font-bold truncate text-sm"
+    className: "font-bold truncate text-base"
   }, admin.nombre), /*#__PURE__*/React.createElement("div", {
-    className: "text-[11px] opacity-90"
+    className: "text-sm opacity-90 mt-0.5"
   }, admin.cargo, " \xB7 Panel de UNI App"))))), /*#__PURE__*/React.createElement("div", {
     className: "flex-1 overflow-y-auto py-2"
   }, SECTIONS.map(s => {
     const active = section === s.id;
-    const badge = s.id === "avisos" ? Object.values(previewAvisos).reduce((sum, p) => sum + (p?.noLeidos || 0), 0) : s.id === "incidencias" ? totalPend : s.badge;
-    return /*#__PURE__*/React.createElement("button", {
+    const badge = s.id === "avisos" ? Object.values(previewAvisos).reduce((sum, p) => sum + (p?.noLeidos || 0), 0) : s.id === "incidencias" ? totalPend : s.id === "auxilio_mecanico" ? auxNoLeidos : s.badge;
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
       key: s.id,
       onClick: () => openSection(s.id),
       className: "w-full flex items-center gap-3 px-4 py-3 text-left transition-colors",
@@ -18078,7 +20259,10 @@ function AztPanel({
       }
     }, s.label), /*#__PURE__*/React.createElement("div", {
       className: "text-xs text-gray-500 truncate"
-    }, s.sub)), badge > 0 && /*#__PURE__*/React.createElement("span", {
+    }, s.sub)), badge > 0 &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("span", {
       className: "text-[11px] font-bold text-white rounded-full px-2 py-0.5",
       style: {
         background: "#e11d48"
@@ -18104,12 +20288,18 @@ function AztPanel({
     }
   }, /*#__PURE__*/React.createElement(LogOut, {
     size: 16
-  }), " Cerrar sesi\xF3n")), showMain && /*#__PURE__*/React.createElement("main", {
+  }), " Cerrar sesi\xF3n")), showMain &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("main", {
     className: "flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden",
     style: {
       background: "#f6f8fc"
     }
-  }, !section && /*#__PURE__*/React.createElement("div", {
+  }, !section &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "flex-1 flex items-center justify-center p-6"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-center max-w-xs"
@@ -18123,7 +20313,10 @@ function AztPanel({
     color: AZUL
   })), /*#__PURE__*/React.createElement("p", {
     className: "text-sm font-semibold text-gray-600"
-  }, "Elige una opci\xF3n del men\xFA para comenzar"))), section === "estado" && /*#__PURE__*/React.createElement(EstadoMixers, {
+  }, "Elige una opci\xF3n del men\xFA para comenzar"))), section === "estado" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(EstadoMixers, {
     incidents: incidents,
     plant: plant,
     setPlant: setPlant,
@@ -18132,7 +20325,10 @@ function AztPanel({
     onBackMobile: () => setMobileList(true),
     plantaElegida: plantaElegidaMobile,
     setPlantaElegida: setPlantaElegidaMobile
-  }), section === "incidencias" && (isDesktop ? /*#__PURE__*/React.createElement("div", {
+  }), section === "incidencias" && (isDesktop ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "flex flex-1 min-h-0 overflow-hidden"
   }, /*#__PURE__*/React.createElement("aside", {
     className: "flex flex-col shrink-0 border-r overflow-y-auto",
@@ -18153,7 +20349,7 @@ function AztPanel({
   }, plantList.map(p => {
     const active = plant === p;
     const n = cntByPlant(p);
-    return /*#__PURE__*/React.createElement("button", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
       key: p,
       onClick: () => setPlant(p),
       className: "w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-left transition-colors",
@@ -18167,7 +20363,10 @@ function AztPanel({
       className: "shrink-0"
     }), /*#__PURE__*/React.createElement("span", {
       className: "text-sm font-semibold flex-1 truncate"
-    }, p), n > 0 && /*#__PURE__*/React.createElement("span", {
+    }, p), n > 0 &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("span", {
       className: "text-[10px] font-bold rounded-full px-1.5 py-0.5",
       style: {
         background: active ? "rgba(255,255,255,.25)" : "#fee2e2",
@@ -18196,7 +20395,10 @@ function AztPanel({
     }
   }, /*#__PURE__*/React.createElement(Inbox, {
     size: 13
-  }), " Incidencias", totalPend > 0 && /*#__PURE__*/React.createElement("span", {
+  }), " Incidencias", totalPend > 0 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("span", {
     className: "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
     style: {
       background: incView === "buzón" ? "#e11d48" : "#9ca3af",
@@ -18212,13 +20414,19 @@ function AztPanel({
     }
   }, /*#__PURE__*/React.createElement(Wrench, {
     size: 13
-  }), " Fallas mec\xE1nicas", pendEmerg > 0 && /*#__PURE__*/React.createElement("span", {
+  }), " Fallas mec\xE1nicas", pendEmerg > 0 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("span", {
     className: "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
     style: {
       background: incView === "emergencias" ? "#e11d48" : "#9ca3af",
       color: "white"
     }
-  }, pendEmerg))), incView === "buzón" ? /*#__PURE__*/React.createElement("div", {
+  }, pendEmerg))), incView === "buzón" ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "flex items-center gap-1 overflow-x-auto"
   }, /*#__PURE__*/React.createElement(PanelTab, {
     active: tab === "nuevas",
@@ -18236,7 +20444,10 @@ function AztPanel({
     onClick: () => setTab("resueltas"),
     label: "Resueltas",
     count: buckets.resueltas.length
-  })) : /*#__PURE__*/React.createElement("div", {
+  })) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "flex items-center gap-2 py-1"
   }, /*#__PURE__*/React.createElement("svg", {
     width: "22",
@@ -18289,7 +20500,10 @@ function AztPanel({
     style: {
       color: AZUL
     }
-  }, "Feed en vivo"))), incView === "buzón" ? /*#__PURE__*/React.createElement("div", {
+  }, "Feed en vivo"))), incView === "buzón" ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "flex-1 overflow-y-auto p-4",
     style: {
       background: "#f6f8fc"
@@ -18298,11 +20512,15 @@ function AztPanel({
     items: sortOld(buckets[tab]),
     onOpen: openIncident,
     tab: tab
-  })) : /*#__PURE__*/React.createElement(EmergenciasFeed, {
+  })) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(EmergenciasFeed, {
     emergencias: emergencias || [],
     onVisto: marcarVisto,
     plant: plant
   }))) :
+  /*#__PURE__*/
   /*#__PURE__*/
   // Móvil: cuadrícula fija de plantas + filtro de tipo en modal
   React.createElement("div", {
@@ -18327,7 +20545,7 @@ function AztPanel({
   }, plantList.map(p => {
     const active = plant === p;
     const n = cntByPlant(p);
-    return /*#__PURE__*/React.createElement("button", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
       key: p,
       onClick: () => setPlant(p),
       className: "relative flex items-center justify-center text-center rounded-lg px-1 py-2 transition-colors",
@@ -18341,7 +20559,10 @@ function AztPanel({
       style: {
         wordBreak: "break-word"
       }
-    }, p), n > 0 && /*#__PURE__*/React.createElement("span", {
+    }, p), n > 0 &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("span", {
       className: "absolute -top-1.5 -right-1.5 text-[10px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center",
       style: {
         background: "#e11d48",
@@ -18370,7 +20591,10 @@ function AztPanel({
     }
   }, /*#__PURE__*/React.createElement(Inbox, {
     size: 13
-  }), " Incidencias", totalPend > 0 && /*#__PURE__*/React.createElement("span", {
+  }), " Incidencias", totalPend > 0 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("span", {
     className: "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
     style: {
       background: incView === "buzón" ? "#e11d48" : "#9ca3af",
@@ -18386,13 +20610,19 @@ function AztPanel({
     }
   }, /*#__PURE__*/React.createElement(Wrench, {
     size: 13
-  }), " Fallas mec\xE1nicas", pendEmerg > 0 && /*#__PURE__*/React.createElement("span", {
+  }), " Fallas mec\xE1nicas", pendEmerg > 0 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("span", {
     className: "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
     style: {
       background: incView === "emergencias" ? "#e11d48" : "#9ca3af",
       color: "white"
     }
-  }, pendEmerg))), incView === "buzón" && /*#__PURE__*/React.createElement("button", {
+  }, pendEmerg))), incView === "buzón" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     onClick: () => setModalTipoAbierto(true),
     className: "w-full flex items-center justify-between rounded-lg border px-3 py-2 text-xs font-semibold mb-2",
     style: {
@@ -18401,7 +20631,10 @@ function AztPanel({
     }
   }, /*#__PURE__*/React.createElement("span", null, tiposSeleccionados.size === TIPOS_FILTRABLES.length ? "Tipo de incidencia: Todos" : tiposSeleccionados.size === 0 ? "Tipo de incidencia: Ninguno" : `Tipo: ${tiposSeleccionados.size} seleccionados`), /*#__PURE__*/React.createElement(ChevronDown, {
     size: 14
-  })), incView === "buzón" ? /*#__PURE__*/React.createElement("div", {
+  })), incView === "buzón" ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "flex items-center gap-1 overflow-x-auto"
   }, /*#__PURE__*/React.createElement(PanelTab, {
     active: tab === "nuevas",
@@ -18419,7 +20652,10 @@ function AztPanel({
     onClick: () => setTab("resueltas"),
     label: "Resueltas",
     count: buckets.resueltas.length
-  })) : /*#__PURE__*/React.createElement("div", {
+  })) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "flex items-center gap-2 py-1"
   }, /*#__PURE__*/React.createElement("svg", {
     width: "22",
@@ -18472,7 +20708,10 @@ function AztPanel({
     style: {
       color: AZUL
     }
-  }, "Feed en vivo"))), incView === "buzón" ? /*#__PURE__*/React.createElement("div", {
+  }, "Feed en vivo"))), incView === "buzón" ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "flex-1 overflow-y-auto p-4",
     style: {
       background: "#f6f8fc"
@@ -18481,11 +20720,17 @@ function AztPanel({
     items: sortOld(buckets[tab]),
     onOpen: openIncident,
     tab: tab
-  })) : /*#__PURE__*/React.createElement(EmergenciasFeed, {
+  })) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(EmergenciasFeed, {
     emergencias: emergencias || [],
     onVisto: marcarVisto,
     plant: plant
-  })), modalTipoAbierto && /*#__PURE__*/React.createElement("div", {
+  })), modalTipoAbierto &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "fixed inset-0 z-[997] flex items-end justify-center",
     style: {
       background: "rgba(0,0,0,0.3)"
@@ -18518,7 +20763,10 @@ function AztPanel({
       background: tiposSeleccionados.size === TIPOS_FILTRABLES.length ? AZUL : "white",
       border: `1.5px solid ${tiposSeleccionados.size === TIPOS_FILTRABLES.length ? AZUL : "#d5d9e4"}`
     }
-  }, tiposSeleccionados.size === TIPOS_FILTRABLES.length && /*#__PURE__*/React.createElement(Check, {
+  }, tiposSeleccionados.size === TIPOS_FILTRABLES.length &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(Check, {
     size: 13,
     color: "white"
   })), /*#__PURE__*/React.createElement("span", {
@@ -18531,7 +20779,7 @@ function AztPanel({
   }), TIPOS_FILTRABLES.map(t => {
     const checked = tiposSeleccionados.has(t.id);
     const Icon = t.icon;
-    return /*#__PURE__*/React.createElement("button", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
       key: t.id,
       onClick: () => setTiposSeleccionados(prev => {
         const next = new Set(prev);
@@ -18545,7 +20793,10 @@ function AztPanel({
         background: checked ? AZUL : "white",
         border: `1.5px solid ${checked ? AZUL : "#d5d9e4"}`
       }
-    }, checked && /*#__PURE__*/React.createElement(Check, {
+    }, checked &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement(Check, {
       size: 13,
       color: "white"
     })), /*#__PURE__*/React.createElement("div", {
@@ -18560,6 +20811,7 @@ function AztPanel({
       className: "text-sm text-gray-700 flex-1"
     }, t.label));
   }))))), section === "avisos" && (admin?.plantas?.length === 1 ?
+  /*#__PURE__*/
   /*#__PURE__*/
   // Un solo canal a cargo: nos saltamos la lista de canales y vamos directo al chat.
   React.createElement("div", {
@@ -18583,7 +20835,10 @@ function AztPanel({
     plantasAdmin: admin?.plantas,
     esAZT: admin?.rol === "admin_zonal_transporte",
     isDesktop: isDesktop
-  })) : isDesktop ? /*#__PURE__*/React.createElement("div", {
+  })) : isDesktop ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "flex flex-1 min-h-0 overflow-hidden"
   }, /*#__PURE__*/React.createElement("aside", {
     className: "flex flex-col shrink-0 border-r overflow-y-auto",
@@ -18608,7 +20863,7 @@ function AztPanel({
   }, plantList.filter(p => p !== "Todas").map(p => {
     const active = plant === p;
     const n = active ? 0 : previewAvisos[p]?.noLeidos || 0; // la planta abierta ahora mismo nunca muestra no-leídos
-    return /*#__PURE__*/React.createElement("button", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
       key: p,
       onClick: () => {
         const plantaAnterior = plant;
@@ -18641,7 +20896,10 @@ function AztPanel({
       className: "shrink-0"
     }), /*#__PURE__*/React.createElement("span", {
       className: "text-sm font-semibold flex-1 truncate"
-    }, p), n > 0 && /*#__PURE__*/React.createElement("span", {
+    }, p), n > 0 &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("span", {
       className: "text-[10px] font-bold rounded-full px-1.5 py-0.5",
       style: {
         background: active ? "rgba(255,255,255,.25)" : "#eef1f6",
@@ -18670,6 +20928,7 @@ function AztPanel({
     esAZT: admin?.rol === "admin_zonal_transporte",
     isDesktop: isDesktop
   }))) : !plantaElegidaMobile ?
+  /*#__PURE__*/
   /*#__PURE__*/
   // Vista de lista tipo WhatsApp: una fila por planta con preview del último mensaje
   React.createElement("div", {
@@ -18701,7 +20960,7 @@ function AztPanel({
     const prev = previewAvisos[p];
     const noLeidos = prev?.noLeidos || 0;
     const ultimo = prev?.ultimo;
-    return /*#__PURE__*/React.createElement("button", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
       key: p,
       onClick: () => abrirChatPlanta(p),
       className: "w-full flex items-center gap-3 px-4 py-3 border-b text-left",
@@ -18722,16 +20981,25 @@ function AztPanel({
       className: "font-semibold text-sm text-gray-800 truncate"
     }, p), /*#__PURE__*/React.createElement("div", {
       className: "text-xs text-gray-500 truncate"
-    }, ultimo ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
+    }, ultimo ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
       className: "font-medium"
     }, limpiarNombreAutor(ultimo.autor_nombre), ":"), " ", ultimo.contenido) : "Sin avisos aún")), /*#__PURE__*/React.createElement("div", {
       className: "flex flex-col items-end gap-1 shrink-0"
-    }, ultimo && /*#__PURE__*/React.createElement("div", {
+    }, ultimo &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       className: "text-[10px] text-gray-400"
     }, new Date(ultimo.created_at).toLocaleTimeString("es-PE", {
       hour: "2-digit",
       minute: "2-digit"
-    })), noLeidos > 0 && /*#__PURE__*/React.createElement("span", {
+    })), noLeidos > 0 &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("span", {
       className: "text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center",
       style: {
         background: "#25D366",
@@ -18739,6 +21007,7 @@ function AztPanel({
       }
     }, noLeidos)));
   })) :
+  /*#__PURE__*/
   /*#__PURE__*/
   // Chat abierto de la planta elegida
   React.createElement("div", {
@@ -18766,7 +21035,10 @@ function AztPanel({
     plantasAdmin: admin?.plantas,
     esAZT: admin?.rol === "admin_zonal_transporte",
     isDesktop: isDesktop
-  }))), crearEncuestaTransversalAbierta && /*#__PURE__*/React.createElement(ModalCrearEncuesta, {
+  }))), crearEncuestaTransversalAbierta &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(ModalCrearEncuesta, {
     plantasAdmin: admin?.plantas,
     yo: {
       id: admin?.id,
@@ -18775,7 +21047,10 @@ function AztPanel({
       cargo: admin?.cargo
     },
     onClose: () => setCrearEncuestaTransversalAbierta(false)
-  }), subirCitacionTransversalAbierta && /*#__PURE__*/React.createElement(ModalSubirCitacionGeneral, {
+  }), subirCitacionTransversalAbierta &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(ModalSubirCitacionGeneral, {
     plantasAdmin: admin?.plantas,
     yo: {
       id: admin?.id,
@@ -18784,9 +21059,15 @@ function AztPanel({
       cargo: admin?.cargo
     },
     onClose: () => setSubirCitacionTransversalAbierta(false)
-  }), section === "gestion" && /*#__PURE__*/React.createElement("div", {
+  }), section === "gestion" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "overflow-y-auto p-4"
-  }, !isDesktop && /*#__PURE__*/React.createElement("button", {
+  }, !isDesktop &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     onClick: () => setMobileList(true),
     className: "text-xs text-gray-500 mb-3 flex items-center gap-1"
   }, /*#__PURE__*/React.createElement(ChevronLeft, {
@@ -18809,12 +21090,29 @@ function AztPanel({
       color: subTabGestion === "obras" ? "white" : "#374151",
       border: `1px solid ${subTabGestion === "obras" ? AZUL : "#e6e8ee"}`
     }
-  }, "Obras")), subTabGestion === "choferes" ? /*#__PURE__*/React.createElement(CambioSede, {
+  }, "Obras")), subTabGestion === "choferes" ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(CambioSede, {
     plantasAzt: admin?.plantas || PLANTAS_TODAS,
     isDesktop: isDesktop
-  }) : /*#__PURE__*/React.createElement(GestionObras, {
+  }) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(GestionObras, {
     plantasAdmin: admin?.plantas || PLANTAS_TODAS
-  }))), selected && /*#__PURE__*/React.createElement(IncidentModal, {
+  })), section === "auxilio_mecanico" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(AuxilioMecanicoBuzon, {
+    admin: admin,
+    isDesktop: isDesktop,
+    setMobileList: setMobileList,
+    onLecturaCambiada: cargarAuxPreview
+  })), selected &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(IncidentModal, {
     incident: selected,
     onClose: () => setSelected(null),
     incidents: incidents,
@@ -18828,7 +21126,7 @@ function AztPanel({
 /* ====== Reportes de fin de vuelta: feed de lo que el chofer reporta en la app ====== */
 const REPORTES_DEMO = [{
   id: 1,
-  mixer: "M-076",
+  mixer: "076",
   chofer: "Toribio Alva Ruiz",
   planta: "San Juan",
   tipo: "lavadero",
@@ -18837,7 +21135,7 @@ const REPORTES_DEMO = [{
   ts: Date.now() - 5 * 60 * 1000
 }, {
   id: 2,
-  mixer: "M-101",
+  mixer: "101",
   chofer: "Miguel Flores",
   planta: "San Isidro",
   tipo: "ubicacion",
@@ -18849,7 +21147,7 @@ const REPORTES_DEMO = [{
   ts: Date.now() - 22 * 60 * 1000
 }, {
   id: 3,
-  mixer: "M-118",
+  mixer: "118",
   chofer: "Raúl Meza Curi",
   planta: "Ancieta",
   tipo: "lavadero",
@@ -18858,7 +21156,7 @@ const REPORTES_DEMO = [{
   ts: Date.now() - 35 * 60 * 1000
 }, {
   id: 4,
-  mixer: "M-303",
+  mixer: "303",
   chofer: "Marco Díaz Solís",
   planta: "San Juan",
   tipo: "ubicacion",
@@ -18870,7 +21168,7 @@ const REPORTES_DEMO = [{
   ts: Date.now() - 62 * 60 * 1000
 }, {
   id: 5,
-  mixer: "M-103",
+  mixer: "103",
   chofer: "Angel Martinez",
   planta: "San Isidro",
   tipo: "lavadero",
@@ -18879,7 +21177,7 @@ const REPORTES_DEMO = [{
   ts: Date.now() - 78 * 60 * 1000
 }, {
   id: 6,
-  mixer: "M-100",
+  mixer: "100",
   chofer: "Kurt Uzategui",
   planta: "San Isidro",
   tipo: "ubicacion",
@@ -18891,7 +21189,7 @@ const REPORTES_DEMO = [{
   ts: Date.now() - 108 * 60 * 1000
 }, {
   id: 7,
-  mixer: "M-241",
+  mixer: "241",
   chofer: "Elmer Ríos Paz",
   planta: "Ancieta",
   tipo: "ubicacion",
@@ -18925,7 +21223,7 @@ function EstadoMixers({
   const [tipo, setTipo] = useState("todos"); // todos | ubicacion | lavadero
   // Ordenar por más reciente primero
   const filtered = REPORTES_DEMO.filter(r => plant === "Todas" || r.planta === plant).filter(r => tipo === "todos" || r.tipo === tipo).filter(r => r.mixer.toLowerCase().includes(q.toLowerCase()) || r.chofer.toLowerCase().includes(q.toLowerCase())).sort((a, b) => b.ts - a.ts);
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "flex flex-1 min-h-0 overflow-hidden"
   }, /*#__PURE__*/React.createElement("aside", {
     className: "flex flex-col shrink-0 border-r overflow-y-auto",
@@ -18934,7 +21232,10 @@ function EstadoMixers({
       borderColor: "#e6e8ee",
       background: "#f8fafc"
     }
-  }, isDesktop && /*#__PURE__*/React.createElement("div", {
+  }, isDesktop &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "px-4 py-3 border-b shrink-0",
     style: {
       borderColor: "#e6e8ee"
@@ -18946,7 +21247,7 @@ function EstadoMixers({
   }, plantList.map(p => {
     const active = plant === p;
     const n = REPORTES_DEMO.filter(m => p === "Todas" || m.planta === p).length;
-    return /*#__PURE__*/React.createElement("button", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
       key: p,
       onClick: () => setPlant(p),
       className: isDesktop ? "w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-left transition-colors" : "w-full flex flex-col items-center gap-0.5 px-1 py-2 rounded-lg text-center transition-colors",
@@ -18955,7 +21256,10 @@ function EstadoMixers({
         color: active ? "white" : "#374151",
         border: active ? "none" : "1px solid #e6e8ee"
       }
-    }, isDesktop && /*#__PURE__*/React.createElement(MapPin, {
+    }, isDesktop &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement(MapPin, {
       size: 15,
       className: "shrink-0"
     }), /*#__PURE__*/React.createElement("span", {
@@ -18998,7 +21302,10 @@ function EstadoMixers({
   }, {
     id: "lavadero",
     label: "💧 Lavadero"
-  }].map(t => /*#__PURE__*/React.createElement("button", {
+  }].map(t =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     key: t.id,
     onClick: () => setTipo(t.id),
     className: "px-3 py-1 rounded-full text-[11px] font-semibold",
@@ -19014,9 +21321,15 @@ function EstadoMixers({
     style: {
       background: "#f6f8fc"
     }
-  }, filtered.length === 0 ? /*#__PURE__*/React.createElement("div", {
+  }, filtered.length === 0 ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "text-center text-gray-400 py-8 text-sm"
-  }, "No hay reportes que coincidan.") : filtered.map(r => /*#__PURE__*/React.createElement(ReporteCard, {
+  }, "No hay reportes que coincidan.") : filtered.map(r =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(ReporteCard, {
     key: r.id,
     r: r
   })))));
@@ -19026,7 +21339,7 @@ function ReporteCard({
 }) {
   const isLav = r.tipo === "lavadero";
   const conProblema = r.tipo === "ubicacion" && r.estado === "Reportar problema";
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-xl p-3",
     style: {
       border: "1px solid #e6e8ee",
@@ -19039,10 +21352,16 @@ function ReporteCard({
     style: {
       background: isLav ? "#e0f2fe" : "#eef2ff"
     }
-  }, isLav ? /*#__PURE__*/React.createElement(Droplets, {
+  }, isLav ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(Droplets, {
     size: 16,
     color: "#0891b2"
-  }) : /*#__PURE__*/React.createElement(MapPin, {
+  }) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(MapPin, {
     size: 16,
     color: AZUL
   })), /*#__PURE__*/React.createElement("div", {
@@ -19066,9 +21385,15 @@ function ReporteCard({
       background: isLav ? "#e0f2fe" : "#eef2ff",
       color: isLav ? "#0891b2" : AZUL
     }
-  }, isLav ? "Lavadero" : "Ubicación")), isLav ? /*#__PURE__*/React.createElement("div", {
+  }, isLav ? "Lavadero" : "Ubicación")), isLav ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "text-sm text-gray-800 pl-11"
-  }, r.lavadero) : /*#__PURE__*/React.createElement("div", {
+  }, r.lavadero) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "pl-11 space-y-1 text-[13px]"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2"
@@ -19091,7 +21416,10 @@ function ReporteCard({
     style: {
       color: conProblema ? "#e11d48" : "#16a34a"
     }
-  }, r.estado)), r.coment && /*#__PURE__*/React.createElement("div", {
+  }, r.estado)), r.coment &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "mt-1.5 rounded-lg p-2 text-xs",
     style: {
       background: conProblema ? "#fef2f2" : "#f6f8fc",
@@ -19115,7 +21443,7 @@ function EmergenciasFeed({
     return (e.mixer || "").toLowerCase().includes(q) || (e.chofer || "").toLowerCase().includes(q) || (e.desc || "").toLowerCase().includes(q);
   };
   const filtered = emergencias.filter(e => filterPlant(e) && filterSearch(e)).sort((a, b) => b.ts - a.ts);
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden"
   }, /*#__PURE__*/React.createElement("div", {
     className: "px-4 py-2.5 border-b shrink-0",
@@ -19146,7 +21474,10 @@ function EmergenciasFeed({
     style: {
       background: "#f6f8fc"
     }
-  }, filtered.length === 0 && /*#__PURE__*/React.createElement("div", {
+  }, filtered.length === 0 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "text-center text-gray-400 py-16"
   }, /*#__PURE__*/React.createElement(Wrench, {
     size: 40,
@@ -19159,7 +21490,7 @@ function EmergenciasFeed({
     className: "space-y-3"
   }, filtered.map(e => {
     const tiposStr = (e.fallaTipos || []).join(", ") || "Falla mecánica";
-    return /*#__PURE__*/React.createElement("div", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
       key: e.id,
       className: "bg-white rounded-xl overflow-hidden shadow-sm transition-shadow hover:shadow-md",
       style: {
@@ -19187,7 +21518,7 @@ function EmergenciasFeed({
       style: {
         color: AZUL
       }
-    }, "M-", e.mixer), /*#__PURE__*/React.createElement("span", {
+    }, e.mixer), /*#__PURE__*/React.createElement("span", {
       className: "text-[10px] font-bold rounded-full px-2 py-0.5",
       style: {
         background: e.visto ? "#eef1f6" : "#fecdd3",
@@ -19201,11 +21532,17 @@ function EmergenciasFeed({
       className: "text-[11px] text-gray-400 flex items-center gap-1"
     }, /*#__PURE__*/React.createElement(Clock, {
       size: 11
-    }), " ", e.hora), e.visto ? /*#__PURE__*/React.createElement("span", {
+    }), " ", e.hora), e.visto ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("span", {
       className: "text-[11px] font-semibold text-gray-400 flex items-center gap-1 mt-1"
     }, /*#__PURE__*/React.createElement(Check, {
       size: 13
-    }), " Revisado") : /*#__PURE__*/React.createElement("button", {
+    }), " Revisado") :
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("button", {
       onClick: () => onVisto(e.id),
       className: "text-[11px] font-bold rounded-lg px-2.5 py-1.5 flex items-center gap-1 mt-1",
       style: {
@@ -19221,12 +21558,18 @@ function EmergenciasFeed({
       }
     }, /*#__PURE__*/React.createElement("div", {
       className: "text-sm text-gray-800 leading-relaxed"
-    }, e.desc), e.ubicacion && /*#__PURE__*/React.createElement("div", {
+    }, e.desc), e.ubicacion &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       className: "flex items-center gap-2 text-xs text-gray-500"
     }, /*#__PURE__*/React.createElement(MapPin, {
       size: 13,
       className: "shrink-0"
-    }), " ", e.ubicacion), e.foto && /*#__PURE__*/React.createElement("div", {
+    }), " ", e.ubicacion), e.foto &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       className: "flex items-center gap-2 rounded-lg px-3 py-2",
       style: {
         background: "#f1f3f8"
@@ -19258,7 +21601,10 @@ function EmergenciasFeed({
       className: "text-[11px] text-gray-400 flex items-center gap-2"
     }, /*#__PURE__*/React.createElement(Phone, {
       size: 11
-    }), " ", e.telefono, e.origen && /*#__PURE__*/React.createElement("span", null, "\xB7 v\xEDa ", e.origen))))));
+    }), " ", e.telefono, e.origen &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("span", null, "\xB7 v\xEDa ", e.origen))))));
   }))));
 }
 function IncidentModal({
@@ -19340,7 +21686,7 @@ function IncidentModal({
       } : i));
     }
   };
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "absolute inset-0 flex items-center justify-center p-3 z-20",
     style: {
       background: "rgba(0,0,0,.4)"
@@ -19362,7 +21708,10 @@ function IncidentModal({
     className: "font-bold text-sm truncate"
   }, INCIDENT_TYPES.find(t => t.id === live.tipo)?.label || live.tipo), /*#__PURE__*/React.createElement("div", {
     className: "text-[11px] opacity-80"
-  }, "Registrada por: ", live.chofer, (live.afectados || []).length > 0 && /*#__PURE__*/React.createElement("button", {
+  }, "Registrada por: ", live.chofer, (live.afectados || []).length > 0 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     onClick: () => setShowAfectados(!showAfectados),
     className: "inline-flex items-center gap-0.5 ml-1 underline underline-offset-2 opacity-90 hover:opacity-100"
   }, " y ", (live.afectados || []).length === 1 ? "1 chofer más" : `otros ${(live.afectados || []).length} choferes`, " ", /*#__PURE__*/React.createElement(Users, {
@@ -19388,7 +21737,7 @@ function IncidentModal({
   })))), showAfectados && (live.afectados || []).length > 0 ? (() => {
     const afectadosNames = (live.afectados || []).map(n => n.split(" ").slice(0, 2).join(" "));
     const afectadosMsgs = msgs.filter(m => m.rol === "Chofer" && afectadosNames.some(a => m.nombre === a || (m.texto || "").includes("confirma el mismo problema")));
-    return /*#__PURE__*/React.createElement("div", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
       className: "flex-1 flex flex-col min-h-0 overflow-hidden"
     }, /*#__PURE__*/React.createElement("div", {
       className: "px-4 py-3 border-b shrink-0",
@@ -19441,7 +21790,7 @@ function IncidentModal({
       }
     }, "Chofer que registra")), (live.afectados || []).map((nombre, i) => {
       const m = afectadosMsgs.find(msg => msg.nombre === nombre.split(" ").slice(0, 2).join(" "));
-      return /*#__PURE__*/React.createElement("div", {
+      return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
         key: i,
         className: "bg-white rounded-xl px-4 py-3 shadow-sm",
         style: {
@@ -19461,13 +21810,25 @@ function IncidentModal({
         className: "flex-1 min-w-0"
       }, /*#__PURE__*/React.createElement("div", {
         className: "text-sm font-bold text-gray-800"
-      }, nombre), m && /*#__PURE__*/React.createElement("div", {
+      }, nombre), m &&
+      /*#__PURE__*/
+      /*#__PURE__*/
+      React.createElement("div", {
         className: "text-[11px] text-gray-500"
-      }, m.texto), m && /*#__PURE__*/React.createElement("div", {
+      }, m.texto), m &&
+      /*#__PURE__*/
+      /*#__PURE__*/
+      React.createElement("div", {
         className: "text-[10px] text-gray-400 mt-0.5"
       }, m.hora))));
     })));
-  })() : /*#__PURE__*/React.createElement(React.Fragment, null, showAdd && /*#__PURE__*/React.createElement("div", {
+  })() :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(React.Fragment, null, showAdd &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "px-4 py-3 border-b",
     style: {
       borderColor: "#e6e8ee",
@@ -19479,7 +21840,7 @@ function IncidentModal({
     className: "flex flex-wrap gap-2"
   }, ADMIN_ROLES.map(a => {
     const inChat = participantes.includes(a.rol);
-    return /*#__PURE__*/React.createElement("button", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
       key: a.rol,
       onClick: () => toggleParticipante(a.rol),
       className: "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all",
@@ -19488,9 +21849,15 @@ function IncidentModal({
         color: inChat ? ROLE_COLORS[a.rol] : "#8a91a0",
         border: inChat ? `2px solid ${ROLE_COLORS[a.rol]}` : "1px solid #e6e8ee"
       }
-    }, inChat ? /*#__PURE__*/React.createElement(Check, {
+    }, inChat ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement(Check, {
       size: 12
-    }) : /*#__PURE__*/React.createElement(Plus, {
+    }) :
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement(Plus, {
       size: 12
     }), a.rol);
   }))), /*#__PURE__*/React.createElement("div", {
@@ -19518,15 +21885,18 @@ function IncidentModal({
       background: WA_BG,
       minHeight: 180
     }
-  }, msgs.length === 0 && /*#__PURE__*/React.createElement("div", {
+  }, msgs.length === 0 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "text-center text-xs text-gray-400 py-6"
   }, "A\xFAn no hay mensajes en esta incidencia."), (() => {
     const afectadosNames = (live.afectados || []).map(n => n.split(" ").slice(0, 2).join(" "));
     const isAfectadoMsg = m => m.rol === "Chofer" && afectadosNames.some(a => m.nombre === a || (m.texto || "").includes("confirma el mismo problema"));
     const visibleMsgs = msgs.filter(m => !isAfectadoMsg(m));
     const hiddenMsgs = msgs.filter(m => isAfectadoMsg(m));
-    return /*#__PURE__*/React.createElement(React.Fragment, null, visibleMsgs.map((m, i) => {
-      if (m.rol === "Sistema") return /*#__PURE__*/React.createElement("div", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement(React.Fragment, null, visibleMsgs.map((m, i) => {
+      if (m.rol === "Sistema") return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
         key: i,
         className: "text-center"
       }, /*#__PURE__*/React.createElement("span", {
@@ -19534,7 +21904,7 @@ function IncidentModal({
       }, m.texto));
       const isChofer = m.rol === "Chofer";
       const c = ROLE_COLORS[m.rol] || AZUL;
-      return /*#__PURE__*/React.createElement("div", {
+      return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
         key: i,
         className: `flex ${isChofer ? "justify-start" : "justify-end"}`
       }, /*#__PURE__*/React.createElement("div", {
@@ -19555,12 +21925,18 @@ function IncidentModal({
         className: "text-[10px] text-gray-400 text-right mt-0.5"
       }, m.hora)));
     }));
-  })()), live.estado !== "resuelta" ? /*#__PURE__*/React.createElement("div", {
+  })()), live.estado !== "resuelta" ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "border-t shrink-0",
     style: {
       borderColor: "#e6e8ee"
     }
-  }, !resolving ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, !resolving ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-2 px-3 py-2.5"
   }, /*#__PURE__*/React.createElement("input", {
     value: msg,
@@ -19598,7 +21974,10 @@ function IncidentModal({
     }
   }, /*#__PURE__*/React.createElement(Check, {
     size: 16
-  }), " Marcar resuelta"))) : /*#__PURE__*/React.createElement("div", {
+  }), " Marcar resuelta"))) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "px-4 py-3 space-y-3"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-sm font-bold",
@@ -19642,7 +22021,10 @@ function IncidentModal({
     }
   }, /*#__PURE__*/React.createElement(Check, {
     size: 16
-  }), " Enviar y resolver")))) : /*#__PURE__*/React.createElement("div", {
+  }), " Enviar y resolver")))) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "p-4 border-t shrink-0",
     style: {
       borderColor: "#e6e8ee"
@@ -19667,7 +22049,7 @@ function IncidentList({
   onOpen,
   tab
 }) {
-  if (items.length === 0) return /*#__PURE__*/React.createElement("div", {
+  if (items.length === 0) return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "flex flex-col items-center justify-center text-center py-16 text-gray-400"
   }, /*#__PURE__*/React.createElement(Inbox, {
     size: 40,
@@ -19675,7 +22057,7 @@ function IncidentList({
   }), /*#__PURE__*/React.createElement("p", {
     className: "text-sm"
   }, "No hay incidencias en esta bandeja."));
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "space-y-2"
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-xs text-gray-500 mb-1"
@@ -19683,7 +22065,7 @@ function IncidentList({
     const t = INCIDENT_TYPES.find(x => x.id === i.tipo);
     const nAfectados = (i.afectados || []).length;
     const choferLabel = nAfectados > 0 ? `${i.chofer} y ${nAfectados === 1 ? "1 chofer más" : `otros ${nAfectados} choferes`}` : i.chofer;
-    return /*#__PURE__*/React.createElement("button", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
       key: i.id,
       onClick: () => onOpen(i),
       className: "w-full flex items-center gap-3 bg-white rounded-xl px-3 py-3 shadow-sm text-left hover:shadow-md transition-shadow",
@@ -19696,9 +22078,15 @@ function IncidentList({
         background: tab === "nuevas" ? "#FFF1F2" : tab === "resolver" ? "#FFF8DB" : "#eaf7ee",
         color: tab === "nuevas" ? "#e11d48" : tab === "resolver" ? "#B8860B" : "#16a34a"
       }
-    }, t?.icon ? /*#__PURE__*/React.createElement(t.icon, {
+    }, t?.icon ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement(t.icon, {
       size: 22
-    }) : /*#__PURE__*/React.createElement(AlertTriangle, {
+    }) :
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement(AlertTriangle, {
       size: 22
     })), /*#__PURE__*/React.createElement("div", {
       className: "flex-1 min-w-0"
@@ -19706,7 +22094,10 @@ function IncidentList({
       className: "font-semibold text-sm text-gray-800 truncate"
     }, t?.label), /*#__PURE__*/React.createElement("div", {
       className: "text-xs text-gray-500 truncate flex items-center gap-1"
-    }, i.chofer, nAfectados > 0 && /*#__PURE__*/React.createElement("span", {
+    }, i.chofer, nAfectados > 0 &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("span", {
       className: "inline-flex items-center gap-0.5 text-amber-700 font-medium"
     }, " y ", nAfectados === 1 ? "1 chofer más" : `otros ${nAfectados} choferes`, " ", /*#__PURE__*/React.createElement(Users, {
       size: 11
@@ -19716,7 +22107,10 @@ function IncidentList({
       className: "text-right shrink-0"
     }, /*#__PURE__*/React.createElement("div", {
       className: "text-[11px] text-gray-400"
-    }, i.hora), nAfectados > 0 && /*#__PURE__*/React.createElement("span", {
+    }, i.hora), nAfectados > 0 &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("span", {
       className: "text-[10px] font-bold rounded-full px-2 py-0.5 inline-block mt-0.5",
       style: {
         background: "#fef3c7",
@@ -19731,6 +22125,310 @@ function IncidentList({
     }, tab === "nuevas" ? "NUEVA" : tab === "resolver" ? "EN ATENCIÓN" : "RESUELTA")));
   }));
 }
+// Buzón real de "Auxilio mecánico" para AZT/SGI/Mantenimiento — mismo patrón de "plantas a tu
+// cargo" con contador de no leídos que ya usa "Incidencias". La campanita de cada planta baja
+// al abrir esa planta (se marca todo lo visible como leído en ese momento); no es un marcado
+// fila por fila mientras se hace scroll, para no complicar el alcance de esta primera versión.
+function AuxilioMecanicoBuzon({
+  admin,
+  isDesktop,
+  setMobileList,
+  onLecturaCambiada
+}) {
+  const [auxilios, setAuxilios] = useState([]);
+  const [cargando, setCargando] = useState(true);
+  const [lecturas, setLecturas] = useState({}); // { [planta]: ultimo_leido_at }
+  const [plantaSel, setPlantaSel] = useState("Todas");
+  const [abierto, setAbierto] = useState(null);
+  const [fotoUrl, setFotoUrl] = useState(null);
+  const plantList = ["Todas", ...(admin?.plantas || [])];
+  useEffect(() => {
+    if (!admin?.id) return;
+    let vigente = true;
+    (async () => {
+      const [{
+        data: filas
+      }, {
+        data: lect
+      }] = await Promise.all([sbClient.from("auxilios_mecanicos").select("*").order("created_at", {
+        ascending: false
+      }), sbClient.from("auxilios_lectura").select("planta, ultimo_leido_at").eq("usuario_id", admin.id)]);
+      if (!vigente) return;
+      if (filas) setAuxilios(filas);
+      if (lect) setLecturas(Object.fromEntries(lect.map(l => [l.planta, l.ultimo_leido_at])));
+      setCargando(false);
+    })();
+    const canal = sbClient.channel(`auxilios-mecanicos-${admin.id}`).on("postgres_changes", {
+      event: "INSERT",
+      schema: "public",
+      table: "auxilios_mecanicos"
+    }, payload => {
+      setAuxilios(prev => [payload.new, ...prev]);
+    }).subscribe();
+    return () => {
+      vigente = false;
+      sbClient.removeChannel(canal);
+    };
+  }, [admin?.id]);
+  const noLeidosEnPlanta = p => {
+    const cursor = lecturas[p] ? new Date(lecturas[p]) : new Date(0);
+    return auxilios.filter(a => a.planta === p && new Date(a.created_at) > cursor).length;
+  };
+  const totalNoLeidos = (admin?.plantas || []).reduce((sum, p) => sum + noLeidosEnPlanta(p), 0);
+  const abrirPlanta = async p => {
+    setPlantaSel(p);
+    if (!isDesktop) setMobileList(false);
+    const plantasAMarcar = p === "Todas" ? admin?.plantas || [] : [p];
+    const ahora = new Date().toISOString();
+    setLecturas(prev => {
+      const copia = {
+        ...prev
+      };
+      plantasAMarcar.forEach(pl => {
+        copia[pl] = ahora;
+      });
+      return copia;
+    });
+    await Promise.all(plantasAMarcar.map(pl => sbClient.from("auxilios_lectura").upsert({
+      usuario_id: admin.id,
+      planta: pl,
+      ultimo_leido_at: ahora
+    })));
+    onLecturaCambiada?.(); // avisa al panel para que el badge del menú lateral baje de inmediato
+  };
+  const abrirDetalle = async a => {
+    setAbierto(a);
+    setFotoUrl(null);
+    if (a.foto_path) {
+      const {
+        data
+      } = await sbClient.storage.from("auxilios-mecanicos").createSignedUrl(a.foto_path, 300);
+      if (data?.signedUrl) setFotoUrl(data.signedUrl);
+    }
+  };
+  const visibles = auxilios.filter(a => plantaSel === "Todas" || a.planta === plantaSel);
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    className: isDesktop ? "flex flex-1 min-h-0 overflow-hidden" : "flex flex-col flex-1 min-h-0 overflow-hidden"
+  }, /*#__PURE__*/React.createElement("aside", {
+    className: "flex flex-col shrink-0 border-r overflow-y-auto",
+    style: {
+      width: isDesktop ? 280 : "100%",
+      maxHeight: isDesktop ? "none" : 180,
+      borderColor: "#e6e8ee",
+      background: "#f8fafc"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "px-4 py-3 border-b shrink-0",
+    style: {
+      borderColor: "#e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] font-bold uppercase tracking-wide text-gray-400"
+  }, "Plantas a tu cargo")), /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 p-2 space-y-1"
+  }, plantList.map(p => {
+    const active = plantaSel === p;
+    const n = p === "Todas" ? totalNoLeidos : noLeidosEnPlanta(p);
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
+      key: p,
+      onClick: () => abrirPlanta(p),
+      className: "w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-left transition-colors",
+      style: {
+        background: active ? AZUL : "white",
+        color: active ? "white" : "#374151",
+        border: active ? "none" : "1px solid #e6e8ee"
+      }
+    }, /*#__PURE__*/React.createElement(MapPin, {
+      size: 15,
+      className: "shrink-0"
+    }), /*#__PURE__*/React.createElement("span", {
+      className: "text-sm font-semibold flex-1 truncate"
+    }, p), n > 0 &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("span", {
+      className: "text-[10px] font-bold rounded-full px-1.5 py-0.5",
+      style: {
+        background: active ? "rgba(255,255,255,.25)" : "#fee2e2",
+        color: active ? "white" : "#b91c1c"
+      }
+    }, n));
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 flex flex-col min-w-0 overflow-hidden"
+  }, !isDesktop &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
+    onClick: () => setMobileList(true),
+    className: "text-xs text-gray-500 m-3 mb-0 flex items-center gap-1 shrink-0"
+  }, /*#__PURE__*/React.createElement(ChevronLeft, {
+    size: 14
+  }), " Men\xFA"), /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 overflow-y-auto p-4"
+  }, cargando ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "text-center py-12 text-gray-400 text-sm"
+  }, "Cargando...") : visibles.length === 0 ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "flex flex-col items-center justify-center text-center py-16 text-gray-400"
+  }, /*#__PURE__*/React.createElement(Wrench, {
+    size: 40,
+    className: "mb-2"
+  }), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm"
+  }, "No hay auxilios mec\xE1nicos reportados", plantaSel !== "Todas" ? ` en ${plantaSel}` : "", ".")) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "max-w-2xl mx-auto space-y-2"
+  }, admin?.rol === "mantenimiento" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "bg-white rounded-2xl p-4 shadow-sm mb-2",
+    style: {
+      border: "1px solid #eef0f4"
+    }
+  }, /*#__PURE__*/React.createElement("h4", {
+    className: "font-bold text-sm mb-2",
+    style: {
+      color: AZUL
+    }
+  }, "\uD83D\uDCCA Registro de auxilios mec\xE1nicos"), AUXILIO_MECANICO_SHEET_URL ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("a", {
+    href: AUXILIO_MECANICO_SHEET_URL,
+    target: "_blank",
+    rel: "noopener noreferrer",
+    className: "w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-bold text-sm",
+    style: {
+      background: AMARILLO,
+      color: AZUL
+    }
+  }, "Abrir hoja de auxilios mec\xE1nicos \u2197") :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("p", {
+    className: "text-xs text-gray-400"
+  }, "El enlace de la hoja todav\xEDa no est\xE1 configurado.")), visibles.map(a =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
+    key: a.id,
+    onClick: () => abrirDetalle(a),
+    className: "w-full flex items-center gap-3 bg-white rounded-xl px-3 py-3 shadow-sm text-left hover:shadow-md transition-shadow",
+    style: {
+      border: "1px solid #e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "w-11 h-11 rounded-xl flex items-center justify-center shrink-0",
+    style: {
+      background: "#FFF8DB",
+      color: "#B8860B"
+    }
+  }, /*#__PURE__*/React.createElement(Wrench, {
+    size: 20
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 min-w-0"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "font-semibold text-sm text-gray-800 truncate"
+  }, a.chofer_nombre, " \xB7 ", a.mixer), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs text-gray-500 truncate"
+  }, a.descripcion), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs text-gray-400"
+  }, a.planta, " \xB7 ", a.lugar_incidente, " \xB7 ", a.cargada ? "Cargado" : "Vacío")), /*#__PURE__*/React.createElement("div", {
+    className: "text-right shrink-0"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-[11px] text-gray-400"
+  }, new Date(a.created_at).toLocaleTimeString("es-PE", {
+    hour: "2-digit",
+    minute: "2-digit"
+  })), a.foto_path &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(Camera, {
+    size: 14,
+    color: "#9ca3af",
+    className: "mt-1 ml-auto"
+  }))))))), abierto &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "fixed inset-0 z-50 flex items-center justify-center p-4",
+    style: {
+      background: "rgba(0,0,0,.5)"
+    },
+    onClick: () => setAbierto(null)
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-2xl p-4 shadow-2xl w-full max-w-md overflow-y-auto",
+    style: {
+      maxHeight: "85vh"
+    },
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between mb-3"
+  }, /*#__PURE__*/React.createElement("h4", {
+    className: "font-bold text-sm",
+    style: {
+      color: AZUL
+    }
+  }, "Auxilio mec\xE1nico"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setAbierto(null)
+  }, /*#__PURE__*/React.createElement(X, {
+    size: 18,
+    color: "#6b7280"
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-1.5 text-sm mb-3"
+  }, /*#__PURE__*/React.createElement(ReadRow, {
+    label: "Chofer",
+    value: abierto.chofer_nombre
+  }), /*#__PURE__*/React.createElement(ReadRow, {
+    label: "Tel\xE9fono",
+    value: abierto.chofer_telefono || "—"
+  }), /*#__PURE__*/React.createElement(ReadRow, {
+    label: "Mixer",
+    value: abierto.mixer
+  }), /*#__PURE__*/React.createElement(ReadRow, {
+    label: "Planta",
+    value: abierto.planta
+  }), /*#__PURE__*/React.createElement(ReadRow, {
+    label: "\xBFCargado?",
+    value: abierto.cargada ? "Sí" : "No"
+  }), /*#__PURE__*/React.createElement(ReadRow, {
+    label: "Lugar",
+    value: abierto.lugar_incidente
+  }), /*#__PURE__*/React.createElement(ReadRow, {
+    label: "Responsable AZT",
+    value: abierto.responsable_azt || "—"
+  }), /*#__PURE__*/React.createElement(ReadRow, {
+    label: "Hora",
+    value: new Date(abierto.created_at).toLocaleString("es-PE")
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-semibold text-gray-500 mb-1"
+  }, "Descripci\xF3n"), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm text-gray-700 whitespace-pre-wrap mb-3"
+  }, abierto.descripcion), abierto.foto_path && (fotoUrl ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("img", {
+    src: fotoUrl,
+    alt: "Foto del auxilio",
+    style: {
+      width: "100%",
+      borderRadius: 12
+    }
+  }) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "text-xs text-gray-400"
+  }, "Cargando foto...")))));
+}
 function CambioSede({
   plantasAzt,
   isDesktop
@@ -19739,6 +22437,18 @@ function CambioSede({
   const [loading, setLoading] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState(null);
+  // Conflicto de mixer duplicado: { row, otro: {id,dni,nombre}, resto } — se resuelve con Sí/No
+  // antes de seguir procesando el resto de la cola de cambios de unidad.
+  const [conflicto, setConflicto] = useState(null);
+  // Contadores del guardado en curso (no son estado porque se actualizan dentro de un loop
+  // recursivo async y no necesitan re-render en cada paso, solo al final).
+  const resumenRef = useRef({
+    okPlanta: 0,
+    totalPlanta: 0,
+    okUnidad: 0,
+    totalUnidad: 0,
+    dobles: 0
+  });
   const cargarChoferes = async () => {
     setLoading(true);
     const {
@@ -19751,6 +22461,7 @@ function CambioSede({
         dni: p.dni,
         nombre: p.nombre,
         unidad: p.unidad || "",
+        nuevaUnidad: p.unidad || "",
         actual: p.planta,
         nueva: p.planta
       })));
@@ -19778,37 +22489,150 @@ function CambioSede({
     ...r,
     nueva: val
   } : r));
-  const guardarReasignaciones = async () => {
-    const cambiados = rows.filter(r => r.nueva !== r.actual);
-    if (cambiados.length === 0) return;
-    setGuardando(true);
-    let okCount = 0;
-    for (const r of cambiados) {
-      const {
-        error
-      } = await sbClient.from("perfiles").update({
-        planta: r.nueva
-      }).eq("id", r.id);
-      if (!error) okCount++;
-    }
+  const changeUnidad = (id, val) => setRows(rs => rs.map(r => r.id === id ? {
+    ...r,
+    nuevaUnidad: val.replace(/[^\d]/g, "").slice(0, 5)
+  } : r));
+  const finalizarGuardado = () => {
+    const {
+      okPlanta,
+      totalPlanta,
+      okUnidad,
+      totalUnidad,
+      dobles
+    } = resumenRef.current;
+    const partes = [];
+    if (totalPlanta > 0) partes.push(`${okPlanta}/${totalPlanta} reasignaciones de sede aplicadas`);
+    if (totalUnidad > 0) partes.push(`${okUnidad}/${totalUnidad} cambios de mixer aplicados${dobles > 0 ? ` (${dobles} también asignado al otro chofer)` : ""}`);
     setMensaje({
-      tipo: okCount === cambiados.length ? "ok" : "error",
-      texto: `${okCount}/${cambiados.length} reasignaciones aplicadas.`
+      tipo: "ok",
+      texto: partes.length ? partes.join(". ") + "." : "Sin cambios pendientes."
     });
     setGuardando(false);
     cargarChoferes();
   };
-  if (loading) return /*#__PURE__*/React.createElement("div", {
+
+  // Procesa la cola de cambios de mixer de a uno: si detecta que el número ya está asignado a otro
+  // chofer activo, pausa y muestra el diálogo de conflicto antes de seguir con el siguiente.
+  const procesarSiguienteUnidad = async cola => {
+    if (cola.length === 0) {
+      finalizarGuardado();
+      return;
+    }
+    const [row, ...resto] = cola;
+    const valorNuevo = row.nuevaUnidad.trim();
+    if (!valorNuevo) {
+      // Dejar sin mixer asignado no necesita chequeo de conflicto.
+      const {
+        error
+      } = await sbClient.rpc("actualizar_unidad_chofer", {
+        p_chofer_id: row.id,
+        p_unidad_nueva: valorNuevo
+      });
+      if (!error) resumenRef.current.okUnidad++;
+      procesarSiguienteUnidad(resto);
+      return;
+    }
+    const {
+      data: enUso
+    } = await sbClient.from("perfiles").select("id,dni,nombre").eq("unidad", valorNuevo).eq("activo", true).neq("id", row.id);
+    if (enUso && enUso.length > 0) {
+      setConflicto({
+        row,
+        otro: enUso[0],
+        resto
+      });
+    } else {
+      const {
+        error
+      } = await sbClient.rpc("actualizar_unidad_chofer", {
+        p_chofer_id: row.id,
+        p_unidad_nueva: valorNuevo
+      });
+      if (!error) resumenRef.current.okUnidad++;
+      procesarSiguienteUnidad(resto);
+    }
+  };
+  const guardarReasignaciones = async () => {
+    const cambiadosPlanta = rows.filter(r => r.nueva !== r.actual);
+    const cambiadosUnidad = rows.filter(r => r.nuevaUnidad.trim() !== (r.unidad || "").trim());
+    if (cambiadosPlanta.length === 0 && cambiadosUnidad.length === 0) return;
+    setGuardando(true);
+    setMensaje(null);
+    let okPlanta = 0;
+    for (const r of cambiadosPlanta) {
+      // Actualización vía RPC security definer: un AZT actualizando el perfil de OTRO chofer
+      // no pasa las políticas RLS de una escritura directa a la tabla (falla en silencio, sin
+      // error, pero sin aplicar el cambio) — actualizar_planta_chofer sí está autorizado.
+      const {
+        error
+      } = await sbClient.rpc("actualizar_planta_chofer", {
+        p_chofer_id: r.id,
+        p_planta_nueva: r.nueva
+      });
+      if (!error) okPlanta++;
+    }
+    resumenRef.current = {
+      okPlanta,
+      totalPlanta: cambiadosPlanta.length,
+      okUnidad: 0,
+      totalUnidad: cambiadosUnidad.length,
+      dobles: 0
+    };
+    if (cambiadosUnidad.length > 0) {
+      procesarSiguienteUnidad(cambiadosUnidad);
+    } else {
+      finalizarGuardado();
+    }
+  };
+
+  // Respuesta del diálogo "¿deseas también asignarle este camión?"
+  const resolverConflicto = async asignarTambien => {
+    const {
+      row,
+      otro,
+      resto
+    } = conflicto;
+    const valorNuevo = row.nuevaUnidad.trim();
+    if (asignarTambien) {
+      const [r1, r2] = await Promise.all([sbClient.rpc("actualizar_unidad_chofer", {
+        p_chofer_id: row.id,
+        p_unidad_nueva: valorNuevo
+      }), sbClient.rpc("actualizar_unidad_chofer", {
+        p_chofer_id: otro.id,
+        p_unidad_nueva: valorNuevo
+      })]);
+      if (!r1.error) resumenRef.current.okUnidad++;
+      if (!r2.error) resumenRef.current.dobles++;
+    } else {
+      // No se guarda: se revierte el campo local a su valor original y el AZT puede seguir
+      // editando con otro número, o dejarlo así (sin reasignación) al guardar.
+      setRows(rs => rs.map(r => r.id === row.id ? {
+        ...r,
+        nuevaUnidad: r.unidad
+      } : r));
+    }
+    setConflicto(null);
+    procesarSiguienteUnidad(resto);
+  };
+  if (loading) return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "text-center py-12 text-gray-400 text-sm"
   }, "Cargando choferes...");
-  return /*#__PURE__*/React.createElement("div", {
+  const hayPendientes = rows.some(r => r.nueva !== r.actual || r.nuevaUnidad.trim() !== (r.unidad || "").trim());
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "max-w-3xl mx-auto"
-  }, mensaje && /*#__PURE__*/React.createElement("div", {
+  }, mensaje &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: `mb-3 text-sm px-3 py-2 rounded-lg border ${mensaje.tipo === "ok" ? "bg-green-50 border-green-200 text-green-700" : "bg-red-50 border-red-200 text-red-700"}`
   }, mensaje.texto), /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-xl shadow-sm overflow-hidden"
-  }, isDesktop ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-    className: "grid grid-cols-12 px-4 py-2 text-[11px] font-bold text-gray-500 border-b",
+  }, isDesktop ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-12 gap-x-3 px-4 py-2 text-[11px] font-bold text-gray-500 border-b",
     style: {
       borderColor: "#e6e8ee"
     }
@@ -19816,13 +22640,16 @@ function CambioSede({
     className: "col-span-5"
   }, "Chofer"), /*#__PURE__*/React.createElement("div", {
     className: "col-span-2"
-  }, "Unidad"), /*#__PURE__*/React.createElement("div", {
+  }, "Mixer"), /*#__PURE__*/React.createElement("div", {
     className: "col-span-2"
   }, "Sede actual"), /*#__PURE__*/React.createElement("div", {
     className: "col-span-3"
-  }, "Reasignar a")), rows.map(r => /*#__PURE__*/React.createElement("div", {
+  }, "Reasignar a")), rows.map(r =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     key: r.id,
-    className: "grid grid-cols-12 items-center px-4 py-3 border-b text-sm",
+    className: "grid grid-cols-12 gap-x-3 items-center px-4 py-3 border-b text-sm",
     style: {
       borderColor: "#f0f2f6"
     }
@@ -19833,9 +22660,20 @@ function CambioSede({
   }, r.nombre), /*#__PURE__*/React.createElement("div", {
     className: "text-[11px] text-gray-400"
   }, "DNI ", r.dni)), /*#__PURE__*/React.createElement("div", {
-    className: "col-span-2 text-gray-600"
-  }, r.unidad), /*#__PURE__*/React.createElement("div", {
-    className: "col-span-2 text-gray-600"
+    className: "col-span-2"
+  }, /*#__PURE__*/React.createElement("input", {
+    value: r.nuevaUnidad,
+    onChange: e => changeUnidad(r.id, e.target.value),
+    inputMode: "numeric",
+    placeholder: "Ej. 142",
+    className: "w-full text-sm rounded-lg border px-2 py-1.5 outline-none",
+    style: {
+      borderColor: r.nuevaUnidad.trim() !== (r.unidad || "").trim() ? AZUL : "#d5d9e4",
+      color: r.nuevaUnidad.trim() !== (r.unidad || "").trim() ? AZUL : "#374151",
+      fontWeight: r.nuevaUnidad.trim() !== (r.unidad || "").trim() ? 700 : 400
+    }
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "col-span-2 text-gray-600 truncate"
   }, r.actual), /*#__PURE__*/React.createElement("div", {
     className: "col-span-3"
   }, /*#__PURE__*/React.createElement("select", {
@@ -19847,21 +22685,29 @@ function CambioSede({
       color: r.nueva !== r.actual ? AZUL : "#374151",
       fontWeight: r.nueva !== r.actual ? 700 : 400
     }
-  }, PLANTAS_TODAS.filter(p => p !== "Transversal").map(p => /*#__PURE__*/React.createElement("option", {
+  }, PLANTAS_TODAS.filter(p => p !== "Transversal").map(p =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("option", {
     key: p
-  }, p))))))) : rows.map(r => /*#__PURE__*/React.createElement("div", {
+  }, p))))))) : rows.map(r =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     key: r.id,
-    className: "flex items-center gap-2 px-3 py-2.5 border-b",
+    className: "px-3 py-2.5 border-b",
     style: {
       borderColor: "#f0f2f6"
     }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex-1 min-w-0"
   }, /*#__PURE__*/React.createElement("div", {
     className: "font-medium text-gray-800 text-sm truncate"
   }, r.nombre), /*#__PURE__*/React.createElement("div", {
     className: "text-[10px] text-gray-400 truncate"
-  }, "DNI ", r.dni, " \xB7 ", r.unidad || "s/u", " \xB7 ", r.actual)), /*#__PURE__*/React.createElement("select", {
+  }, "DNI ", r.dni, " \xB7 ", r.actual)), /*#__PURE__*/React.createElement("select", {
     value: r.nueva,
     onChange: e => change(r.id, e.target.value),
     className: "text-xs rounded-lg border px-1.5 py-1.5 outline-none shrink-0",
@@ -19871,21 +22717,85 @@ function CambioSede({
       color: r.nueva !== r.actual ? AZUL : "#374151",
       fontWeight: r.nueva !== r.actual ? 700 : 400
     }
-  }, PLANTAS_TODAS.filter(p => p !== "Transversal").map(p => /*#__PURE__*/React.createElement("option", {
+  }, PLANTAS_TODAS.filter(p => p !== "Transversal").map(p =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("option", {
     key: p
-  }, p))))), rows.length === 0 && /*#__PURE__*/React.createElement("div", {
+  }, p)))), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-1.5 mt-1.5"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-[10px] text-gray-400 shrink-0"
+  }, "Mixer:"), /*#__PURE__*/React.createElement("input", {
+    value: r.nuevaUnidad,
+    onChange: e => changeUnidad(r.id, e.target.value),
+    inputMode: "numeric",
+    placeholder: "Ej. 142",
+    className: "flex-1 text-xs rounded-lg border px-2 py-1 outline-none",
+    style: {
+      borderColor: r.nuevaUnidad.trim() !== (r.unidad || "").trim() ? AZUL : "#d5d9e4",
+      color: r.nuevaUnidad.trim() !== (r.unidad || "").trim() ? AZUL : "#374151",
+      fontWeight: r.nuevaUnidad.trim() !== (r.unidad || "").trim() ? 700 : 400
+    }
+  })))), rows.length === 0 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "text-center py-8 text-gray-400 text-sm"
   }, "No hay choferes activos en tu(s) planta(s).")), /*#__PURE__*/React.createElement("button", {
     onClick: guardarReasignaciones,
-    disabled: guardando || rows.every(r => r.nueva === r.actual),
+    disabled: guardando || !hayPendientes,
     className: "mt-4 px-5 py-3 rounded-xl font-bold text-sm disabled:opacity-40",
     style: {
       background: AMARILLO,
       color: AZUL
     }
-  }, guardando ? "Guardando..." : "Guardar reasignaciones"), /*#__PURE__*/React.createElement("p", {
+  }, guardando ? "Guardando..." : "Guardar cambios"), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-gray-400 mt-3"
-  }, "Los cambios se aplican de inmediato: el chofer ver\xE1 un aviso para reingresar sesi\xF3n, y Gesti\xF3n Humana ver\xE1 el cambio reflejado."));
+  }, "Los cambios se aplican de inmediato: el chofer ver\xE1 un aviso para ver sus datos actualizados (sede o mixer), y Gesti\xF3n Humana ver\xE1 el cambio reflejado."), conflicto &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "fixed inset-0 z-50 flex items-center justify-center p-4",
+    style: {
+      background: "rgba(0,0,0,.5)"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl text-center"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center",
+    style: {
+      background: "#fef3c7"
+    }
+  }, /*#__PURE__*/React.createElement(AlertTriangle, {
+    size: 28,
+    color: "#d97706"
+  })), /*#__PURE__*/React.createElement("h3", {
+    className: "font-black text-lg mb-2",
+    style: {
+      color: AZUL
+    }
+  }, "Este mixer ya est\xE1 asignado"), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm text-gray-600 mb-1"
+  }, /*#__PURE__*/React.createElement("strong", null, conflicto.otro.nombre), " (DNI ", conflicto.otro.dni, ") ya tiene asignado el mixer ", /*#__PURE__*/React.createElement("strong", null, conflicto.row.nuevaUnidad.trim()), "."), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm text-gray-600 mb-6"
+  }, "\xBFDeseas asignarle tambi\xE9n este cami\xF3n a ", /*#__PURE__*/React.createElement("strong", null, conflicto.row.nombre), "?"), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => resolverConflicto(false),
+    className: "flex-1 py-2.5 rounded-xl font-semibold text-sm",
+    style: {
+      background: "#eef1f6",
+      color: AZUL
+    }
+  }, "No"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => resolverConflicto(true),
+    className: "flex-1 py-2.5 rounded-xl font-bold text-sm",
+    style: {
+      background: AZUL,
+      color: "white"
+    }
+  }, "S\xED")))));
 }
 
 // Catálogo de obras por planta que UNIBOT ofrece a elegir en "Rutas y acceso a obra" (ver
@@ -20201,7 +23111,7 @@ function GestionObras({
   const totalPaginas = Math.max(1, Math.ceil(obrasFiltradas.length / OBRAS_POR_PAGINA));
   const paginaSegura = Math.min(pagina, totalPaginas - 1);
   const obrasPagina = obrasFiltradas.slice(paginaSegura * OBRAS_POR_PAGINA, paginaSegura * OBRAS_POR_PAGINA + OBRAS_POR_PAGINA);
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "max-w-3xl mx-auto"
   }, /*#__PURE__*/React.createElement("h3", {
     className: "font-bold text-sm mb-1",
@@ -20212,7 +23122,10 @@ function GestionObras({
     className: "text-xs text-gray-400 mb-3"
   }, "Las obras que agregues aqu\xED son las que UNIBOT ofrece elegir cuando un chofer consulta \"Rutas y acceso a obra\"."), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-1.5 mb-3"
-  }, plantasAdmin.map(p => /*#__PURE__*/React.createElement("button", {
+  }, plantasAdmin.map(p =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     key: p,
     onClick: () => {
       setFiltroPlanta(p);
@@ -20265,7 +23178,10 @@ function GestionObras({
     style: {
       color: AZUL
     }
-  }, "\uD83D\uDCE5 Descargar plantilla")), mensaje && /*#__PURE__*/React.createElement("div", {
+  }, "\uD83D\uDCE5 Descargar plantilla")), mensaje &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "mb-3 text-sm px-3 py-2 rounded-lg border",
     style: {
       background: mensaje.tipo === "error" ? "#fef2f2" : "#f0fdf4",
@@ -20275,11 +23191,20 @@ function GestionObras({
     }
   }, mensaje.texto), /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-xl shadow-sm overflow-hidden"
-  }, loading ? /*#__PURE__*/React.createElement("div", {
+  }, loading ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "text-center py-12 text-gray-400 text-sm"
-  }, "Cargando...") : obrasFiltradas.length === 0 ? /*#__PURE__*/React.createElement("div", {
+  }, "Cargando...") : obrasFiltradas.length === 0 ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "text-center py-12 text-gray-400 text-sm"
-  }, "Sin obras registradas para ", filtroPlanta, ".") : /*#__PURE__*/React.createElement("table", {
+  }, "Sin obras registradas para ", filtroPlanta, ".") :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("table", {
     className: "w-full text-sm border-collapse"
   }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", {
     className: "text-left text-xs text-gray-400 border-b",
@@ -20290,7 +23215,10 @@ function GestionObras({
     className: "pb-1.5 pt-3 pl-4 font-semibold"
   }, "Obra"), /*#__PURE__*/React.createElement("th", {
     className: "pb-1.5 pt-3 pr-4 font-semibold w-10"
-  }))), /*#__PURE__*/React.createElement("tbody", null, obrasPagina.map(o => /*#__PURE__*/React.createElement("tr", {
+  }))), /*#__PURE__*/React.createElement("tbody", null, obrasPagina.map(o =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("tr", {
     key: o.id,
     className: "border-b",
     style: {
@@ -20305,7 +23233,10 @@ function GestionObras({
     className: "text-gray-400 hover:text-red-500"
   }, /*#__PURE__*/React.createElement(X, {
     size: 15
-  })))))))), totalPaginas > 1 && /*#__PURE__*/React.createElement("div", {
+  })))))))), totalPaginas > 1 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "flex items-center justify-center gap-3 mt-3"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => setPagina(p => Math.max(0, p - 1)),
@@ -20332,7 +23263,7 @@ function Card({
   title,
   children
 }) {
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-2xl p-4 shadow-sm",
     style: {
       border: "1px solid #eef0f4"
@@ -20357,11 +23288,11 @@ function ChipGroup({
   onChange,
   wrap
 }) {
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: `flex gap-2 ${wrap ? "flex-wrap" : "flex-wrap"}`
   }, options.map(o => {
     const active = value === o;
-    return /*#__PURE__*/React.createElement("button", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
       key: o,
       onClick: () => onChange(o),
       className: "px-3 py-2 rounded-xl text-sm font-medium transition-all",
@@ -20381,7 +23312,7 @@ function BigOption({
   color
 }) {
   const c = color || AZUL;
-  return /*#__PURE__*/React.createElement("button", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
     onClick: onClick,
     className: "w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-base font-semibold text-left transition-all",
     style: {
@@ -20389,7 +23320,10 @@ function BigOption({
       color: active ? c : "#374151",
       border: active ? `2px solid ${c}` : "1px solid #e6e8ee"
     }
-  }, /*#__PURE__*/React.createElement("span", null, children), active ? /*#__PURE__*/React.createElement("span", {
+  }, /*#__PURE__*/React.createElement("span", null, children), active ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("span", {
     className: "w-6 h-6 rounded-full flex items-center justify-center",
     style: {
       background: c
@@ -20398,7 +23332,10 @@ function BigOption({
     size: 15,
     color: "#fff",
     strokeWidth: 3
-  })) : /*#__PURE__*/React.createElement("span", {
+  })) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("span", {
     className: "w-6 h-6 rounded-full",
     style: {
       border: "2px solid #d5d9e4"
@@ -20411,11 +23348,11 @@ function ChipGrid({
   value,
   onChange
 }) {
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "flex flex-col gap-2.5"
   }, options.map(o => {
     const active = value === o;
-    return /*#__PURE__*/React.createElement("button", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
       key: o,
       onClick: () => onChange(o),
       className: "w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-base font-semibold text-left transition-all",
@@ -20424,7 +23361,10 @@ function ChipGrid({
         color: active ? AZUL : "#374151",
         border: active ? `2px solid ${AZUL}` : "1px solid #e6e8ee"
       }
-    }, /*#__PURE__*/React.createElement("span", null, o), active ? /*#__PURE__*/React.createElement("span", {
+    }, /*#__PURE__*/React.createElement("span", null, o), active ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("span", {
       className: "w-6 h-6 rounded-full flex items-center justify-center",
       style: {
         background: AZUL
@@ -20433,7 +23373,10 @@ function ChipGrid({
       size: 15,
       color: "#fff",
       strokeWidth: 3
-    })) : /*#__PURE__*/React.createElement("span", {
+    })) :
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("span", {
       className: "w-6 h-6 rounded-full",
       style: {
         border: "2px solid #d5d9e4"
@@ -20447,11 +23390,11 @@ function NumberGrid({
   value,
   onChange
 }) {
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-5 gap-2.5"
   }, options.map(o => {
     const active = value === o;
-    return /*#__PURE__*/React.createElement("button", {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
       key: o,
       onClick: () => onChange(o),
       className: "rounded-xl text-base font-bold transition-all flex items-center justify-center",
@@ -20471,7 +23414,7 @@ function Dropdown({
   onChange,
   placeholder
 }) {
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "relative"
   }, /*#__PURE__*/React.createElement("select", {
     value: value,
@@ -20484,7 +23427,10 @@ function Dropdown({
     }
   }, /*#__PURE__*/React.createElement("option", {
     value: ""
-  }, placeholder), options.map(o => /*#__PURE__*/React.createElement("option", {
+  }, placeholder), options.map(o =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("option", {
     key: o,
     value: o
   }, o))), /*#__PURE__*/React.createElement(ChevronDown, {
@@ -20518,7 +23464,7 @@ function DropdownConOtro({
     setOtra(v);
     onChange(v);
   };
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "space-y-2"
   }, /*#__PURE__*/React.createElement("div", {
     className: "relative"
@@ -20533,7 +23479,10 @@ function DropdownConOtro({
     }
   }, /*#__PURE__*/React.createElement("option", {
     value: ""
-  }, placeholder), opcionesFiltradas.map(o => /*#__PURE__*/React.createElement("option", {
+  }, placeholder), opcionesFiltradas.map(o =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("option", {
     key: o,
     value: o
   }, o)), /*#__PURE__*/React.createElement("option", {
@@ -20542,7 +23491,10 @@ function DropdownConOtro({
     size: 18,
     className: "absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none",
     color: seleccionSelect ? AZUL : "#8a91a0"
-  })), modoLibre && /*#__PURE__*/React.createElement("input", {
+  })), modoLibre &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("input", {
     value: otra,
     onChange: e => handleOtra(e.target.value),
     placeholder: "Escribe el nombre de la obra",
@@ -20561,7 +23513,7 @@ function BigCard({
   label,
   onClick
 }) {
-  return /*#__PURE__*/React.createElement("button", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
     onClick: onClick,
     className: "rounded-2xl p-4 flex flex-col items-center justify-center gap-2 transition-all relative",
     style: {
@@ -20569,7 +23521,10 @@ function BigCard({
       background: active ? "#eef1fb" : "white",
       border: active ? `2px solid ${AZUL}` : "1px solid #e6e8ee"
     }
-  }, active && /*#__PURE__*/React.createElement("span", {
+  }, active &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("span", {
     className: "absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center",
     style: {
       background: AZUL
@@ -20617,7 +23572,7 @@ function FotoAdjuntar({
     reader.readAsDataURL(f);
     e.target.value = "";
   };
-  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("input", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("input", {
     ref: fileRef,
     type: "file",
     accept: "image/*",
@@ -20625,7 +23580,10 @@ function FotoAdjuntar({
       display: "none"
     },
     onChange: handleFile
-  }), preview && /*#__PURE__*/React.createElement("div", {
+  }), preview &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "mb-2 rounded-xl overflow-hidden relative",
     style: {
       border: "2px solid #16a34a"
@@ -20659,9 +23617,15 @@ function FotoAdjuntar({
       color: attached ? "#166534" : "#374151",
       border: attached ? "2px dashed #16a34a" : "2px dashed #d5d9e4"
     }
-  }, attached ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Check, {
+  }, attached ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Check, {
     size: 17
-  }), " ", attached, " \xB7 toca para cambiar") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Camera, {
+  }), " ", attached, " \xB7 toca para cambiar") :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Camera, {
     size: 17
   }), " Adjuntar foto (opcional)")));
 }
@@ -20671,7 +23635,7 @@ function BigToggle({
   children,
   color
 }) {
-  return /*#__PURE__*/React.createElement("button", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
     onClick: onClick,
     className: "flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all",
     style: {
@@ -20688,7 +23652,10 @@ function MiniInput({
   placeholder,
   num
 }) {
-  return /*#__PURE__*/React.createElement("div", null, label && /*#__PURE__*/React.createElement("label", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", null, label &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("label", {
     className: "text-xs font-semibold text-gray-600"
   }, label), /*#__PURE__*/React.createElement("input", {
     value: value,
@@ -20700,6 +23667,118 @@ function MiniInput({
       borderColor: "#d5d9e4"
     }
   }));
+}
+/* Selector de fecha con mini calendario propio (no usa el date picker nativo del navegador,
+   para que la elección sea siempre visible/consistente) — no trae un valor por defecto: el
+   chofer tiene que abrir el calendario y elegir un día explícitamente. */
+function MiniCalendarPicker({
+  value,
+  onChange,
+  max,
+  label
+}) {
+  const [open, setOpen] = useState(false);
+  const [mesVista, setMesVista] = useState(() => {
+    const base = value ? new Date(`${value}T00:00:00`) : new Date();
+    return new Date(base.getFullYear(), base.getMonth(), 1);
+  });
+  const wrapRef = useRef(null);
+  useEffect(() => {
+    const onClickFuera = e => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onClickFuera);
+    return () => document.removeEventListener("mousedown", onClickFuera);
+  }, []);
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const maxDate = max ? new Date(`${max}T00:00:00`) : null;
+  const primerDiaSemana = new Date(mesVista.getFullYear(), mesVista.getMonth(), 1).getDay();
+  const diasEnMes = new Date(mesVista.getFullYear(), mesVista.getMonth() + 1, 0).getDate();
+  const celdas = [];
+  for (let i = 0; i < primerDiaSemana; i++) celdas.push(null);
+  for (let d = 1; d <= diasEnMes; d++) celdas.push(d);
+  const formatYMD = (y, m, d) => `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+  const label2 = value ? new Date(`${value}T00:00:00`).toLocaleDateString("es-PE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  }) : "Selecciona la fecha";
+  return /*#__PURE__*/React.createElement("div", {
+    ref: wrapRef,
+    className: "relative"
+  }, label && /*#__PURE__*/React.createElement("label", {
+    className: "text-xs font-semibold text-gray-600"
+  }, label), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => setOpen(o => !o),
+    className: "w-full mt-1 px-3 py-2 rounded-lg border text-sm outline-none text-left flex items-center justify-between",
+    style: {
+      borderColor: "#d5d9e4",
+      color: value ? "#111827" : "#9ca3af"
+    }
+  }, /*#__PURE__*/React.createElement("span", null, label2), /*#__PURE__*/React.createElement("span", null, "\uD83D\uDCC5")), open && /*#__PURE__*/React.createElement("div", {
+    className: "absolute z-30 mt-1 bg-white rounded-xl shadow-lg p-3",
+    style: {
+      border: "1px solid #e6e8ee",
+      width: 260
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between mb-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => setMesVista(m => new Date(m.getFullYear(), m.getMonth() - 1, 1)),
+    className: "p-1"
+  }, /*#__PURE__*/React.createElement(ChevronLeft, {
+    size: 16
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "text-sm font-bold",
+    style: {
+      color: AZUL
+    }
+  }, (() => {
+    const t = mesVista.toLocaleDateString("es-PE", {
+      month: "long",
+      year: "numeric"
+    });
+    return t.charAt(0).toUpperCase() + t.slice(1);
+  })()), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => setMesVista(m => new Date(m.getFullYear(), m.getMonth() + 1, 1)),
+    className: "p-1"
+  }, /*#__PURE__*/React.createElement(ChevronRight, {
+    size: 16
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-7 gap-1 text-center text-[10px] text-gray-400 mb-1"
+  }, ["D", "L", "M", "M", "J", "V", "S"].map((d, i) => /*#__PURE__*/React.createElement("div", {
+    key: i
+  }, d))), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-7 gap-1"
+  }, celdas.map((d, i) => {
+    if (!d) return /*#__PURE__*/React.createElement("div", {
+      key: i
+    });
+    const ymd = formatYMD(mesVista.getFullYear(), mesVista.getMonth(), d);
+    const fechaCelda = new Date(mesVista.getFullYear(), mesVista.getMonth(), d);
+    const deshabilitado = !!(maxDate && fechaCelda > maxDate);
+    const esHoy = fechaCelda.getTime() === hoy.getTime();
+    const seleccionado = value === ymd;
+    return /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      key: i,
+      disabled: deshabilitado,
+      onClick: () => {
+        onChange(ymd);
+        setOpen(false);
+      },
+      className: "rounded-full text-xs py-1 disabled:opacity-30 disabled:cursor-not-allowed",
+      style: {
+        background: seleccionado ? AZUL : esHoy ? "#eef1f6" : "transparent",
+        color: seleccionado ? "white" : "#374151",
+        fontWeight: seleccionado || esHoy ? 700 : 400
+      }
+    }, d);
+  }))));
 }
 /* Autocompletar de planta: se escribe y filtra la lista hacia abajo */
 function PlantaAutocomplete({
@@ -20728,10 +23807,13 @@ function PlantaAutocomplete({
     setQ(o);
     setOpen(false);
   };
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     ref: wrapRef,
     className: "relative"
-  }, label && /*#__PURE__*/React.createElement("label", {
+  }, label &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("label", {
     className: "text-xs font-semibold text-gray-600"
   }, label), /*#__PURE__*/React.createElement("input", {
     value: q,
@@ -20748,12 +23830,18 @@ function PlantaAutocomplete({
       color: value ? AZUL : "#374151",
       fontWeight: value ? 600 : 400
     }
-  }), open && filtered.length > 0 && /*#__PURE__*/React.createElement("div", {
+  }), open && filtered.length > 0 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "absolute z-30 left-0 right-0 mt-1 bg-white rounded-lg shadow-lg overflow-hidden max-h-56 overflow-y-auto",
     style: {
       border: "1px solid #e6e8ee"
     }
-  }, filtered.map(o => /*#__PURE__*/React.createElement("button", {
+  }, filtered.map(o =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     key: o,
     onClick: () => pick(o),
     className: "w-full text-left px-3 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-2",
@@ -20772,32 +23860,43 @@ function AuxilioForm({
   onSubmit,
   onCancel,
   embedded,
-  compact
+  compact,
+  enviando
 }) {
-  const [mixer, setMixer] = useState(driver?.unidad?.replace(/[^\d]/g, "") || "");
+  const [mixer, setMixer] = useState(driver?.unidad?.replace(/[^\d]/g, "").slice(0, 5) || "");
   const [planta, setPlanta] = useState("");
   const [carga, setCarga] = useState(null);
+  const [lugar, setLugar] = useState(null);
   const [desc, setDesc] = useState("");
-  const [foto, setFoto] = useState(null);
-  const valido = mixer && planta && carga && desc.trim();
+  const [fotoFile, setFotoFile] = useState(null);
+  const [fotoPreview, setFotoPreview] = useState(null);
+  const fileRef = useRef(null);
+  const valido = mixer && planta && carga && lugar && desc.trim();
+  const elegirFoto = e => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setFotoFile(f);
+    const reader = new FileReader();
+    reader.onload = ev => setFotoPreview(ev.target.result);
+    reader.readAsDataURL(f);
+    e.target.value = "";
+  };
   const enviar = () => {
-    if (!valido) return;
+    if (!valido || enviando) return;
     onSubmit({
       mixer,
       planta,
       carga,
+      lugar,
       desc,
-      foto,
-      chofer: driver.nombre,
-      telefono: driver.dni ? `Cel. del login (${driver.dni})` : "—",
-      hora: hhmm()
+      fotoFile
     });
   };
   const py = compact ? "py-1.5" : "py-2.5";
   const sp = compact ? "space-y-2" : "space-y-3";
   const lbl = compact ? "text-[11px] font-semibold text-gray-500" : "text-xs font-semibold text-gray-600";
   const inp = compact ? "w-full mt-0.5 px-2.5 py-1.5 rounded-lg border text-xs outline-none" : "w-full mt-1 px-3 py-2.5 rounded-lg border text-sm outline-none";
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: embedded ? "" : "bg-white rounded-xl p-3 shadow-sm",
     style: compact ? {
       maxWidth: "88%"
@@ -20808,7 +23907,7 @@ function AuxilioForm({
     className: lbl
   }, "N\xBA Mixer"), /*#__PURE__*/React.createElement("input", {
     value: mixer,
-    onChange: e => setMixer(e.target.value.replace(/[^\d]/g, "")),
+    onChange: e => setMixer(e.target.value.replace(/[^\d]/g, "").slice(0, 5)),
     inputMode: "numeric",
     placeholder: "Ej. 1193",
     className: inp,
@@ -20826,7 +23925,10 @@ function AuxilioForm({
     className: lbl
   }, "\xBFCargado o vac\xEDo?"), /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-2 gap-1.5 mt-0.5"
-  }, ["Cargado", "Vacío"].map(c => /*#__PURE__*/React.createElement("button", {
+  }, ["Cargado", "Vacío"].map(c =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     key: c,
     onClick: () => setCarga(c),
     className: `${compact ? "py-1.5 text-xs" : "py-2.5 text-sm"} rounded-lg font-semibold transition-all`,
@@ -20836,6 +23938,22 @@ function AuxilioForm({
       border: carga === c ? "none" : "1px solid #e6e8ee"
     }
   }, c)))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: lbl
+  }, "Lugar del incidente"), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 gap-1.5 mt-0.5"
+  }, ["Planta", "Ruta"].map(l =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
+    key: l,
+    onClick: () => setLugar(l),
+    className: `${compact ? "py-1.5 text-xs" : "py-2.5 text-sm"} rounded-lg font-semibold transition-all`,
+    style: {
+      background: lugar === l ? AZUL : "white",
+      color: lugar === l ? "white" : "#374151",
+      border: lugar === l ? "none" : "1px solid #e6e8ee"
+    }
+  }, l)))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
     className: lbl
   }, "Descripci\xF3n"), /*#__PURE__*/React.createElement("textarea", {
     value: desc,
@@ -20848,12 +23966,68 @@ function AuxilioForm({
     }
   })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
     className: `${lbl} block mb-0.5`
-  }, "Foto o video"), /*#__PURE__*/React.createElement(FotoAdjuntar, {
-    attached: foto,
-    onToggle: setFoto
-  })), /*#__PURE__*/React.createElement("div", {
+  }, "Foto o video"), /*#__PURE__*/React.createElement("input", {
+    ref: fileRef,
+    type: "file",
+    accept: "image/*,video/*",
+    style: {
+      display: "none"
+    },
+    onChange: elegirFoto
+  }), fotoPreview &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "mb-1.5 rounded-lg overflow-hidden relative",
+    style: {
+      border: "2px solid #16a34a"
+    }
+  }, /*#__PURE__*/React.createElement("img", {
+    src: fotoPreview,
+    alt: "Vista previa",
+    style: {
+      width: "100%",
+      maxHeight: 160,
+      objectFit: "cover",
+      display: "block"
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setFotoFile(null);
+      setFotoPreview(null);
+    },
+    className: "absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center",
+    style: {
+      background: "rgba(0,0,0,.55)",
+      color: "white"
+    }
+  }, /*#__PURE__*/React.createElement(X, {
+    size: 13
+  }))), /*#__PURE__*/React.createElement("button", {
+    onClick: () => fileRef.current?.click(),
+    disabled: !!fotoFile,
+    className: "w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg font-semibold text-xs disabled:opacity-60",
+    style: {
+      background: fotoFile ? "#eaf7ee" : "white",
+      color: fotoFile ? "#166534" : "#374151",
+      border: fotoFile ? "2px dashed #16a34a" : "2px dashed #d5d9e4"
+    }
+  }, fotoFile ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Check, {
+    size: 14
+  }), " ", fotoFile.name, " \xB7 toca la \u2715 para cambiar") :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Camera, {
+    size: 14
+  }), " Adjuntar foto o video (opcional)"))), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-2 pt-0.5"
-  }, onCancel && /*#__PURE__*/React.createElement("button", {
+  }, onCancel &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     onClick: onCancel,
     className: `flex-1 ${compact ? "py-1.5 text-xs" : "py-2.5 text-sm"} rounded-xl font-semibold`,
     style: {
@@ -20862,7 +24036,7 @@ function AuxilioForm({
     }
   }, "Cancelar"), /*#__PURE__*/React.createElement("button", {
     onClick: enviar,
-    disabled: !valido,
+    disabled: !valido || enviando,
     className: `flex-1 ${compact ? "py-1.5 text-xs" : "py-2.5 text-sm"} rounded-xl font-bold disabled:opacity-40 flex items-center justify-center gap-1`,
     style: {
       background: AMARILLO,
@@ -20870,13 +24044,13 @@ function AuxilioForm({
     }
   }, /*#__PURE__*/React.createElement(Wrench, {
     size: compact ? 13 : 15
-  }), " Enviar auxilio"))));
+  }), " ", enviando ? "Enviando..." : "Enviar auxilio"))));
 }
 function ReadRow({
   label,
   value
 }) {
-  return /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between text-sm"
   }, /*#__PURE__*/React.createElement("span", {
     className: "text-gray-500"
@@ -20888,7 +24062,7 @@ function BackBtn({
   onClick,
   className = ""
 }) {
-  return /*#__PURE__*/React.createElement("button", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
     onClick: onClick,
     className: `flex items-center gap-1 text-sm text-gray-500 mb-3 ${className}`
   }, /*#__PURE__*/React.createElement(ChevronLeft, {
@@ -20903,16 +24077,22 @@ function PanelTab({
   icon: Icon,
   danger
 }) {
-  return /*#__PURE__*/React.createElement("button", {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
     onClick: onClick,
     className: "flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-t-lg whitespace-nowrap transition-colors relative",
     style: {
       color: active ? AZUL : "#8a91a0",
       borderBottom: active ? `3px solid ${AZUL}` : "3px solid transparent"
     }
-  }, Icon && /*#__PURE__*/React.createElement(Icon, {
+  }, Icon &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(Icon, {
     size: 15
-  }), " ", label, count > 0 && /*#__PURE__*/React.createElement("span", {
+  }), " ", label, count > 0 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("span", {
     className: "text-[10px] font-bold text-white rounded-full px-1.5 py-0.5",
     style: {
       background: danger ? "#e11d48" : AZUL
