@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-09-28T18:28:13.878Z */
+/* UniconApp — Bundle generado el 2026-09-28T23:01:09.778Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 16768 — CERO simplificaciones */
+/* Líneas originales del JSX: 16770 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -18240,7 +18240,8 @@ function PerfilModal({
     },
     className: "flex-1 py-1.5 rounded-lg border text-xs font-semibold",
     style: {
-      borderColor: "#d5d9e4"
+      borderColor: "#d5d9e4",
+      color: "#374151"
     }
   }, "Cancelar"), /*#__PURE__*/React.createElement("button", {
     onClick: guardarUnidad,
@@ -18293,7 +18294,8 @@ function PerfilModal({
     },
     className: "flex-1 py-1.5 rounded-lg border text-xs font-semibold",
     style: {
-      borderColor: "#d5d9e4"
+      borderColor: "#d5d9e4",
+      color: "#374151"
     }
   }, "Cancelar"), /*#__PURE__*/React.createElement("button", {
     onClick: guardarBio,
