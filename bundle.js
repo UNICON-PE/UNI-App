@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-09-28T23:01:09.778Z */
+/* UniconApp — Bundle generado el 2026-09-28T23:08:43.837Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 16770 — CERO simplificaciones */
+/* Líneas originales del JSX: 16775 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -22385,36 +22385,61 @@ function AuxilioMecanicoBuzon({
     size: 18,
     color: "#6b7280"
   }))), /*#__PURE__*/React.createElement("div", {
-    className: "space-y-1.5 text-sm mb-3"
+    className: "rounded-xl border divide-y divide-gray-200 text-sm mb-3",
+    style: {
+      borderColor: "#e6e8ee",
+      background: "#f9fafb"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "px-3 py-2"
   }, /*#__PURE__*/React.createElement(ReadRow, {
     label: "Chofer",
     value: abierto.chofer_nombre
-  }), /*#__PURE__*/React.createElement(ReadRow, {
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "px-3 py-2"
+  }, /*#__PURE__*/React.createElement(ReadRow, {
     label: "Tel\xE9fono",
     value: abierto.chofer_telefono || "—"
-  }), /*#__PURE__*/React.createElement(ReadRow, {
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "px-3 py-2"
+  }, /*#__PURE__*/React.createElement(ReadRow, {
     label: "Mixer",
     value: abierto.mixer
-  }), /*#__PURE__*/React.createElement(ReadRow, {
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "px-3 py-2"
+  }, /*#__PURE__*/React.createElement(ReadRow, {
     label: "Planta",
     value: abierto.planta
-  }), /*#__PURE__*/React.createElement(ReadRow, {
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "px-3 py-2"
+  }, /*#__PURE__*/React.createElement(ReadRow, {
     label: "\xBFCargado?",
     value: abierto.cargada ? "Sí" : "No"
-  }), /*#__PURE__*/React.createElement(ReadRow, {
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "px-3 py-2"
+  }, /*#__PURE__*/React.createElement(ReadRow, {
     label: "Lugar",
     value: abierto.lugar_incidente
-  }), /*#__PURE__*/React.createElement(ReadRow, {
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "px-3 py-2"
+  }, /*#__PURE__*/React.createElement(ReadRow, {
     label: "Responsable AZT",
     value: abierto.responsable_azt || "—"
-  }), /*#__PURE__*/React.createElement(ReadRow, {
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "px-3 py-2"
+  }, /*#__PURE__*/React.createElement(ReadRow, {
     label: "Hora",
     value: new Date(abierto.created_at).toLocaleString("es-PE")
-  })), /*#__PURE__*/React.createElement("div", {
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl border px-3 py-2 mb-3",
+    style: {
+      borderColor: "#e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
     className: "text-xs font-semibold text-gray-500 mb-1"
   }, "Descripci\xF3n"), /*#__PURE__*/React.createElement("p", {
-    className: "text-sm text-gray-700 whitespace-pre-wrap mb-3"
-  }, abierto.descripcion), abierto.foto_path && (fotoUrl ?
+    className: "text-sm text-gray-700 whitespace-pre-wrap"
+  }, abierto.descripcion)), abierto.foto_path && (fotoUrl ?
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("img", {
@@ -23919,9 +23944,10 @@ function AuxilioForm({
       fontWeight: mixer ? 600 : 400
     }
   })), /*#__PURE__*/React.createElement(PlantaAutocomplete, {
-    label: compact ? "Planta donde operas" : "Planta donde estás trabajando",
+    label: "Planta en donde operas HOY",
     value: planta,
     onChange: setPlanta,
+    options: PLANTAS_TODAS.filter(p => p !== "Transversal"),
     placeholder: "Escribe la planta\u2026"
   }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
     className: lbl
