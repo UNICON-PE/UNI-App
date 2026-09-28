@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-09-28T23:08:43.837Z */
+/* UniconApp — Bundle generado el 2026-09-28T23:21:31.693Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 16775 — CERO simplificaciones */
+/* Líneas originales del JSX: 16784 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -8266,7 +8266,7 @@ const BOT_DYNAMIC_TEXTS = {
   unikin_pregunta_senal: "Mira la esquina superior derecha de tu pantalla, donde están las barras de señal (como en la imagen). ¿Tienes \"buena señal\" o \"señal débil\"?",
   unikin_buena_senal_paso1: "Intenta lo siguiente:\n\n1. Cierra sesión en UNIKIN.",
   unikin_buena_senal_paso2: "2. Reinicia tu celular.\n3. Vuelve a ingresar a UNIKIN.\n\nEs importante hacer los 3 pasos completos y en orden. Si solo reinicias el celular sin cerrar sesión antes, es probable que el problema continúe.\n\n¿Se solucionó tu problema?",
-  unikin_senal_debil: "Intenta conectarte a una red Wi-Fi disponible si tienes acceso a una, o ubícate en una zona con mejor señal. Cuando tengas mejor conexión, vuelve a intentar en UNIKIN.\n\nSi no se soluciona vuelve a contactarte conmigo 😊",
+  unikin_senal_debil: "Intenta conectarte a una red Wi-Fi disponible si tienes acceso a una, o ubícate en una zona con mejor señal. Cuando tengas mejor conexión, vuelve a intentar en UNIKIN.\n\nSi tras ello no se soluciona vuelve a contactarte conmigo para ver intentar otra alternativa haciendo clic [[AQUI_BUENA_SENAL]] 😊",
   unikin_escalamiento: "📞 [Nombre y Apellidos] · AZT turno mañana · [Teléfono]\n📞 [Nombre y Apellidos] · AZT turno noche · [Teléfono]",
   // Consultas sobre procedimientos mixer (paso a UNIKIN)
   handoff_unikin_procedimientos_1: "Voy a comunicarte con UNIKIN para ayudarte con tu consulta. Espera un momento, por favor. 😊",
@@ -14944,8 +14944,29 @@ Por favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
       return /*#__PURE__*/ /*#__PURE__*/React.createElement("b", null, clean);
     }
 
-    // Parsear inline: **bold** y URLs
+    // Parsear inline: **bold**, URLs, y el enlace especial [[AQUI_BUENA_SENAL]]
     const parseInline = text => {
+      // Enlace clicable embebido en el texto de "señal débil" de UNIKIN: al tocar "AQUÍ" se
+      // simula la misma respuesta que si el chofer hubiera marcado "Tengo buena señal".
+      const linkRegex = /\[\[AQUI_BUENA_SENAL\]\]/g;
+      if (linkRegex.test(text)) {
+        const segmentos = text.split(linkRegex);
+        return segmentos.map((seg, i) =>
+        /*#__PURE__*/
+        /*#__PURE__*/
+        React.createElement(React.Fragment, {
+          key: "lnk" + i
+        }, parseInline(seg), i < segmentos.length - 1 &&
+        /*#__PURE__*/
+        /*#__PURE__*/
+        React.createElement("button", {
+          onClick: () => answerUnikinSenal(true),
+          className: "font-semibold underline",
+          style: {
+            color: "#2563eb"
+          }
+        }, "AQU\xCD")));
+      }
       // Primero separar por URLs
       const urlRegex = /(https?:\/\/[^\s,;)}\]]+)/g;
       const parts = text.split(urlRegex);
