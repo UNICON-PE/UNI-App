@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-09-29T06:35:24.806Z */
+/* UniconApp — Bundle generado el 2026-09-29T06:43:11.026Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 16804 — CERO simplificaciones */
+/* Líneas originales del JSX: 16818 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -8181,12 +8181,6 @@ const BOT_ANSWERS = {
     respuesta: "Conoce todos tus beneficios (bienestar físico, emocional, financiero y social) y las promociones del mes en el portal Una Vida Sana 😊\n\n👉 Enlace aquí: https://padlet.com/bsocialunicon/una-vida-sana-pdatzjsvgx967w8h",
     escalamiento: "📞 [Nombre y Apellidos] · Trabajadora Social · [Teléfono]"
   },
-  pa_sodexo: {
-    tipo: "simple_con_confirmacion",
-    respuesta: "La tarjeta Sodexo se recarga cada fin de mes, en el último día, para que puedas utilizarla todo el mes siguiente.\n\nPara los nuevos ingresos:\n\nPor ejemplo, ingresas a trabajar el 8 de setiembre, tu carga se procesa a fines de ese mes y la tarjeta física te llega en la primera semana del mes siguiente (por ejemplo, el 3 de octubre).\n\n[IMG:Recargar fin de mes]\n\nSi ingresas después del día 20, que es la fecha de corte, no alcanzas la carga de ese mes; pasa automáticamente al siguiente.\n\n[IMG:Despues del 20]\n\nRecojo: puedes recoger tu tarjeta Sodexo en la oficina principal de planta Villa/Concremax. Puedes recogerla tú mismo, o tu Administrador de Transporte Zonal de tu planta puede recogerla por todo el personal a su cargo.",
-    imgs: ["sodexo_fin", "sodexo_20"],
-    escalamiento: "📞 [Nombre y Apellidos] · Administración de Personal · [Teléfono]"
-  },
   pa_bono: {
     tipo: "simple_con_confirmacion",
     respuesta: "🍽️ El bono de pase directo (S/20 diarios) se acredita cuando trabajas en tu hora de almuerzo y sigues despachando. No tienes que hacer ningún trámite: tu Administrador de Transporte Zonal reporta en una tabla quiénes tienen el pase y cuántos días. 😊\n\n📅 Los Administradores de Transporte Zonal tienen plazo hasta el día 20 - 21 de cada mes para enviar esa tabla, y el bono se paga en el último día del mes.",
@@ -13943,6 +13937,26 @@ function UniBot({
     if (opt.id === "em_reportar") {
       push("bot", BOT_DYNAMIC_TEXTS.emergencia_pregunta_tipo);
       setMode("askEmergenciaTipo");
+      return;
+    }
+
+    // 8. ¿YA CARGARON MI SODEXO? — cada diagrama va en su propio globo (texto + imagen, sin
+    // título debajo), en vez de un solo globo largo con ambas imágenes incrustadas.
+    if (opt.id === "pa_sodexo") {
+      push("bot_img", {
+        texto: "La tarjeta Sodexo se recarga cada fin de mes, en el último día, para que puedas utilizarla todo el mes siguiente.\n\nPara los nuevos ingresos:\n\nPor ejemplo, ingresas a trabajar el 8 de setiembre, tu carga se procesa a fines de ese mes y la tarjeta física te llega en la primera semana del mes siguiente (por ejemplo, el 3 de octubre).",
+        img: IMG_SODEXO_FIN,
+        imgMaxWidth: 280
+      });
+      push("bot_img", {
+        texto: "Si ingresas después del día 20, que es la fecha de corte, no alcanzas la carga de ese mes; pasa automáticamente al siguiente.",
+        img: IMG_SODEXO_20,
+        imgMaxWidth: 280
+      });
+      push("bot", "Recojo: puedes recoger tu tarjeta Sodexo en la oficina principal de planta Villa/Concremax. Puedes recogerla tú mismo, o tu Administrador de Transporte Zonal de tu planta puede recogerla por todo el personal a su cargo.");
+      push("bot", "¿Resolví tu consulta?");
+      setPendingAsk(opt.id);
+      setMode("askConfirmacionSimple");
       return;
     }
 
