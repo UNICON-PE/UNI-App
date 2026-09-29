@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-09-28T23:21:31.693Z */
+/* UniconApp — Bundle generado el 2026-09-29T04:52:40.756Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 16784 — CERO simplificaciones */
+/* Líneas originales del JSX: 16787 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -15155,14 +15155,15 @@ Por favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
           key: li,
           className: "my-2 rounded-lg overflow-hidden border",
           style: {
-            borderColor: "#e6e8ee"
+            borderColor: "#e6e8ee",
+            maxWidth: 220
           }
         }, /*#__PURE__*/React.createElement("img", {
           src: src,
           alt: caption,
           className: "w-full",
           style: {
-            maxWidth: 220
+            display: "block"
           }
         }), /*#__PURE__*/React.createElement("div", {
           className: "text-[10px] text-gray-500 px-2 py-1 bg-gray-50 text-center"
@@ -15181,7 +15182,8 @@ Por favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
           className: "my-2 rounded-lg overflow-hidden border",
           style: {
             borderColor: "#e6e8ee",
-            cursor: "zoom-in"
+            cursor: "zoom-in",
+            maxWidth: 260
           },
           onClick: () => window.open(url, "_blank")
         }, /*#__PURE__*/React.createElement("img", {
@@ -15189,7 +15191,7 @@ Por favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
           alt: "Citaci\xF3n",
           className: "w-full",
           style: {
-            maxWidth: 260
+            display: "block"
           }
         }));
       }
@@ -15211,14 +15213,15 @@ Por favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
           key: li,
           className: "my-2 rounded-lg overflow-hidden border",
           style: {
-            borderColor: "#FBBF24"
+            borderColor: "#FBBF24",
+            maxWidth: 240
           }
         }, /*#__PURE__*/React.createElement("img", {
           src: imgData.src,
           alt: imgData.caption,
           className: "w-full",
           style: {
-            maxWidth: 240
+            display: "block"
           }
         }), /*#__PURE__*/React.createElement("div", {
           className: "text-[10px] px-2 py-1 text-center font-semibold",
