@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-09-29T05:15:14.047Z */
+/* UniconApp — Bundle generado el 2026-09-29T06:35:24.806Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 16801 — CERO simplificaciones */
+/* Líneas originales del JSX: 16804 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -20151,25 +20151,28 @@ function AztPanel({
   const ROLES_CON_GESTION_CHOFERES = new Set(["admin_zonal_transporte", "jefe_transporte", "supervisor_transportes", "gerente_transporte_distribucion"]);
   const ROLES_CON_REPORTES_MIXERS = new Set([...ROLES_CON_GESTION_CHOFERES, "despachador"]);
   const ROLES_CON_AUXILIO_MECANICO = new Set(["admin_zonal_transporte", "sgi", "mantenimiento"]);
-  const SECTIONS = [{
+  // Mantenimiento solo gestiona auxilios mecánicos: no publica avisos ni atiende incidencias de
+  // planta, así que esas dos secciones (antes visibles para todos los cargos administrativos)
+  // se ocultan específicamente para ese rol.
+  const SECTIONS = [...(admin?.rol !== "mantenimiento" ? [{
     id: "avisos",
     label: "Canal de Avisos",
     icon: Bell,
     sub: "Publica al canal",
     badge: 0
-  }, ...(ROLES_CON_REPORTES_MIXERS.has(admin?.rol) ? [{
+  }] : []), ...(ROLES_CON_REPORTES_MIXERS.has(admin?.rol) ? [{
     id: "estado",
     label: "Reportes de Mixers",
     icon: Truck,
     sub: "Fin de vuelta que reportan los choferes",
     badge: 0
-  }] : []), {
+  }] : []), ...(admin?.rol !== "mantenimiento" ? [{
     id: "incidencias",
     label: "Incidencias",
     icon: Inbox,
     sub: "Buzón por planta",
     badge: totalPend + pendEmerg
-  }, ...(ROLES_CON_GESTION_CHOFERES.has(admin?.rol) ? [{
+  }] : []), ...(ROLES_CON_GESTION_CHOFERES.has(admin?.rol) ? [{
     id: "gestion",
     label: "Gestión de choferes y obras",
     icon: RefreshCw,
