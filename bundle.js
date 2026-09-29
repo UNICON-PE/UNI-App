@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-09-29T04:52:40.756Z */
+/* UniconApp — Bundle generado el 2026-09-29T04:55:59.769Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 16787 — CERO simplificaciones */
+/* Líneas originales del JSX: 16800 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -8201,7 +8201,7 @@ const BOT_ANSWERS = {
     tipo: "bifurcacion_boleta",
     pregunta: "📋 Tu boleta llega a tu correo electrónico registrado 3 días después de fin de mes. Para cualquier aclaración sobre tu boleta (horas extra, descuentos, etc.), primero debes tener tu boleta en mano, sin ella no se puede revisar el caso.\n\n¿Tienes tu boleta de pago? 🤔",
     respuesta_si: "Para dudas sobre cuántas horas te contaron: habla directamente con tu AZT:\n\n📞 [Nombre y Apellidos] · AZT turno mañana · [Teléfono]\n📞 [Nombre y Apellidos] · AZT turno noche · [Teléfono]\n\nSi el problema no se resuelve, o tienes otra duda: comunícate con Administración de Personal:\n\n📞 [Nombre y Apellidos] · Administración de Personal · [Teléfono]",
-    respuesta_no: "Tus boletas de pago se envían automáticamente a tu correo electrónico registrado (personal o el correo institucional) en UNICON. Revisa tu bandeja de entrada y también la de spam buscando el correo de boletasunicon@unicon.com.pe para encontrarlo.\n\nUna vez lo encuentres, descárgalo y vuelve a contactarte conmigo 😊"
+    respuesta_no: "Tus boletas de pago se envían automáticamente a tu correo electrónico registrado (personal o el correo institucional) en UNICON. Revisa tu bandeja de entrada y también la de spam buscando el correo de boletasunicon@unicon.com.pe para encontrarlo.\n\nUna vez lo encuentres, descárgalo y vuelve a contactarte conmigo haciendo clic [[AQUI_TENGO_BOLETA]] 😊"
   },
   pa_cuenta: {
     tipo: "simple_con_confirmacion",
@@ -14944,28 +14944,36 @@ Por favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
       return /*#__PURE__*/ /*#__PURE__*/React.createElement("b", null, clean);
     }
 
-    // Parsear inline: **bold**, URLs, y el enlace especial [[AQUI_BUENA_SENAL]]
+    // Parsear inline: **bold**, URLs, y enlaces especiales tipo [[AQUI_ALGO]]
+    // Cada marcador dispara automáticamente la misma respuesta que una opción del chat, para
+    // que el chofer no tenga que retroceder y volver a elegirla manualmente.
+    const ENLACES_BOT = {
+      // "Señal débil" en UNIKIN → simula que marcó "Tengo buena señal"
+      AQUI_BUENA_SENAL: () => answerUnikinSenal(true),
+      // "No tengo mi boleta" → simula que respondió "Sí" una vez que ya la descargó
+      AQUI_TENGO_BOLETA: () => answerBoleta(true)
+    };
     const parseInline = text => {
-      // Enlace clicable embebido en el texto de "señal débil" de UNIKIN: al tocar "AQUÍ" se
-      // simula la misma respuesta que si el chofer hubiera marcado "Tengo buena señal".
-      const linkRegex = /\[\[AQUI_BUENA_SENAL\]\]/g;
+      const linkRegex = /\[\[(AQUI_[A-Z_]+)\]\]/g;
       if (linkRegex.test(text)) {
         const segmentos = text.split(linkRegex);
-        return segmentos.map((seg, i) =>
-        /*#__PURE__*/
-        /*#__PURE__*/
-        React.createElement(React.Fragment, {
-          key: "lnk" + i
-        }, parseInline(seg), i < segmentos.length - 1 &&
-        /*#__PURE__*/
-        /*#__PURE__*/
-        React.createElement("button", {
-          onClick: () => answerUnikinSenal(true),
-          className: "font-semibold underline",
-          style: {
-            color: "#2563eb"
+        // text.split con grupo capturante intercala: [texto, marcador, texto, marcador, ...texto]
+        return segmentos.map((seg, i) => {
+          if (i % 2 === 1) {
+            const accion = ENLACES_BOT[seg];
+            return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
+              key: "lnk" + i,
+              onClick: () => accion?.(),
+              className: "font-semibold underline",
+              style: {
+                color: "#2563eb"
+              }
+            }, "AQU\xCD");
           }
-        }, "AQU\xCD")));
+          return /*#__PURE__*/ /*#__PURE__*/React.createElement(React.Fragment, {
+            key: "seg" + i
+          }, parseInline(seg));
+        });
       }
       // Primero separar por URLs
       const urlRegex = /(https?:\/\/[^\s,;)}\]]+)/g;
