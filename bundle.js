@@ -1,4 +1,4 @@
-/* UniconApp — Bundle generado el 2026-09-29T05:12:33.771Z */
+/* UniconApp — Bundle generado el 2026-09-29T05:15:14.047Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
 /* Líneas originales del JSX: 16801 — CERO simplificaciones */
 
@@ -8233,7 +8233,7 @@ const BOT_ANSWERS = {
   ps_uniforme: "🦺 El recojo y el cambio de uniforme/EPP se hacen en el almacén de tu planta. Se entregan 2 dotaciones al año: verano (enero-febrero) e invierno (junio-julio). Si un artículo se malogra o rompe antes de tiempo, llévalo al almacén de tu planta para el cambio. 😊",
   ps_movilidad: "🚗 La movilidad de regreso, cuando el camión debe trasladarse a otro taller, actualmente no se encuentra contemplada dentro del procedimiento. En estos casos, el chofer registra su salida en el punto donde deja el vehículo y el retorno queda a su cargo. Por ello, no se contempla movilidad ni un pago adicional para el traslado de regreso. 😊",
   // ==== CHARLA SEMANAL ====
-  ch_prog: "Las charlas semanales se realizan según tu planta:\n\n🏭 Plantas grandes: Ancieta, Materiales y Villa Concremax — sábados.\n🏭 Otras plantas: Oquendo, San Antonio, Huachipa, entre otras — miércoles.\n\n🕐 Las charlas se dictan entre las 6:00 a. m. y 9:00 a. m. y debes participar en el grupo que te corresponda, según la citación enviada por tu AZT para ese día.\n\nPara mayor información, espera la comunicación del SGI y AZT de tu planta a través del Canal de Avisos. 😊\n\n📞 [Nombre y Apellidos] · SGI · [Teléfono]",
+  ch_prog: "Las charlas semanales se realizan según tu planta:\n\n🏭 Plantas grandes: Lurín, Villa Concremax, San Juan, Ancieta, Materiales, Meiggs y Collique — sábados.\n\n🏭 Otras plantas: Oquendo, San Antonio, Huachipa, Villa UNICON, Chilca — miércoles.\n\n🕐 Las charlas se dictan entre las 6:00 a. m. y 9:00 a. m. y debes participar en el grupo que te corresponda, según la citación enviada por tu Administrador Zonal de Transporte para ese día.\n\nPara mayor información, espera la comunicación del SGI y Administrador Zonal de Transporte de tu planta a través del Canal de Avisos 😊",
   ch_recuperar: "Las charlas semanales son presenciales y no se graban. Si te la perdiste, consulta directamente con el SGI o AZT de tu planta si puedes asistir a otro grupo/horario esa misma semana 😊\n\n📞 [Nombre y Apellidos] · SGI · [Teléfono]\n📞 [Nombre y Apellidos] · AZT de turno (mañana) · [Teléfono]\n📞 [Nombre y Apellidos] · AZT de turno (noche) · [Teléfono]",
   // ==== EMERGENCIAS ====
   // em_accidente y em_reportar: dinámicas (ver flujos específicos en UniBot)
