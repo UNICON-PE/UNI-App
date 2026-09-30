@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-09-29T16:19:51.793Z */
+/* UniconApp — Bundle generado el 2026-09-30T02:59:34.586Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 16824 — CERO simplificaciones */
+/* Líneas originales del JSX: 16936 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -6280,7 +6280,7 @@ const UNIKIN_ARBOL = {
     }]
   },
   "ayuda": {
-    "respuesta": "Si no encontraste lo que buscas, comunícate directamente con tu AZT o tu Jefe de Planta. Ellos te orientarán. 😊\n\n📞 AZT turno mañana · [Teléfono]\n📞 AZT turno noche · [Teléfono]",
+    "respuesta": "Si no encontraste lo que buscas, comunícate directamente con tu AZT o tu Jefe de Planta. Ellos te orientarán. 😊\n\n📞 [nombre de Administrador Zonal de Transporte (turno día)] · Administrador Zonal de Transporte (turno día) · [teléfono de Administrador Zonal de Transporte (turno día)]\n📞 [nombre de Administrador Zonal de Transporte (turno noche)] · Administrador Zonal de Transporte (turno noche) · [teléfono de Administrador Zonal de Transporte (turno noche)]",
     "escalamiento": "AZT"
   },
   "cat_jornada": {
@@ -7030,7 +7030,7 @@ const UNIKIN_ARBOL = {
     }]
   },
   "tra_descuento_si": {
-    "respuesta": "Para dudas sobre horas: habla con tu AZT.\nSi no se resuelve o tienes otra duda: comunícate con Administración de Personal.\n\n📞 AZT turno mañana · [Teléfono]\n📞 AZT turno noche · [Teléfono]\n📞 Administración de Personal · [Teléfono]",
+    "respuesta": "Para dudas sobre horas: habla con tu AZT.\nSi no se resuelve o tienes otra duda: comunícate con Administración de Personal.\n\n📞 [nombre de Administrador Zonal de Transporte (turno día)] · Administrador Zonal de Transporte (turno día) · [teléfono de Administrador Zonal de Transporte (turno día)]\n📞 [nombre de Administrador Zonal de Transporte (turno noche)] · Administrador Zonal de Transporte (turno noche) · [teléfono de Administrador Zonal de Transporte (turno noche)]\n📞 [nombre de Administración de Personal] · Administración de Personal · [teléfono de Administración de Personal]",
     "escalamiento": "AZT → Administración de Personal"
   },
   "tra_descuento_no": {
@@ -7094,7 +7094,7 @@ const UNIKIN_ARBOL = {
     "escalamiento": "Trabajadora Social"
   },
   "tra_vacaciones": {
-    "respuesta": "Las vacaciones se coordinan directamente con tu jefe inmediato mediante el formato correspondiente, con al menos 15 días de anticipación.\n\nSi no obtienes respuesta, comunícate con el Jefe de Transporte.\n\n📞 AZT turno mañana · [Teléfono]\n📞 AZT turno noche · [Teléfono]\n📞 Jefe de Transporte · [Teléfono]",
+    "respuesta": "Las vacaciones se coordinan directamente con tu jefe inmediato mediante el formato correspondiente, con al menos 15 días de anticipación.\n\nSi no obtienes respuesta, comunícate con el Jefe de Transporte.\n\n📞 [nombre de Administrador Zonal de Transporte (turno día)] · Administrador Zonal de Transporte (turno día) · [teléfono de Administrador Zonal de Transporte (turno día)]\n📞 [nombre de Administrador Zonal de Transporte (turno noche)] · Administrador Zonal de Transporte (turno noche) · [teléfono de Administrador Zonal de Transporte (turno noche)]\n📞 [nombre de Jefe de Transporte] · Jefe de Transporte · [teléfono de Jefe de Transporte]",
     "escalamiento": "AZT → Jefe de Transporte"
   },
   "tra_otros": {
@@ -7130,7 +7130,7 @@ const UNIKIN_ARBOL = {
     "escalamiento": "Administrador de Planta"
   },
   "tra_movilidad": {
-    "respuesta": "La modalidad de movilidad de regreso puede variar según planta y turno. Confirma con tu AZT.\n\n📞 AZT turno mañana · [Teléfono]\n📞 AZT turno noche · [Teléfono]",
+    "respuesta": "La modalidad de movilidad de regreso puede variar según planta y turno. Confirma con tu AZT.\n\n📞 [nombre de Administrador Zonal de Transporte (turno día)] · Administrador Zonal de Transporte (turno día) · [teléfono de Administrador Zonal de Transporte (turno día)]\n📞 [nombre de Administrador Zonal de Transporte (turno noche)] · Administrador Zonal de Transporte (turno noche) · [teléfono de Administrador Zonal de Transporte (turno noche)]",
     "escalamiento": "AZT"
   },
   "tra_celular": {
@@ -8159,20 +8159,23 @@ const PDF_MAP = {
     - Consultas con BIFURCACIÓN Sí/No: objeto { pregunta, si, no }.
     - Consultas DINÁMICAS (que dependen de datos de la app): manejadas en la lógica de UniBot, 
       no en este mapa (ver funciones dinamicas: consultarCitacion, consultarMixer, consultarRuta, etc.)
-    Placeholders "[Nombre y Apellidos]", "[Teléfono]", "[correo de ...]" quedan literales para completar. */
+    Placeholders "[nombre de <Cargo>]", "[teléfono de <Cargo>]", "[correo de <Cargo>]" (con "<Cargo>"
+    opcionalmente seguido de " (turno día)" / " (turno noche)") se resuelven en vivo contra perfiles
+    reales — ver resolverPlaceholdersContacto() en UniBot. "<Cargo>" debe calzar exacto con una key
+    de CARGO_LABEL (ej. "Administrador Zonal de Transporte", "Trabajadora Social"). */
 
 const BOT_ANSWERS = {
   // ==== OPERACIÓN DE TURNO ====
   // op_citacion: dinámica (busca en canal de avisos)
-  op_horario: "Si notas alguna diferencia entre tu citación por SMS y otra información que hayas recibido, por favor contacta directamente a tu AZT para confirmar el horario correcto antes de presentarte. 😊\n\n📞 [Nombre y Apellidos] · AZT turno mañana · [Teléfono]\n📞 [Nombre y Apellidos] · AZT turno noche · [Teléfono]",
-  op_nolista: "Si no apareces en la lista de la citación para mañana, deberás asistir a tu planta en el horario mes que tienes asignado o en el horario previamente coordinado por llamada con tu AZT. 😊",
+  op_horario: "Si notas alguna diferencia entre tu citación por SMS y otra información que hayas recibido, por favor contacta directamente a tu AZT para confirmar el horario correcto antes de presentarte. 😊\n\n📞 [nombre de Administrador Zonal de Transporte (turno día)] · Administrador Zonal de Transporte (turno día) · [teléfono de Administrador Zonal de Transporte (turno día)]\n📞 [nombre de Administrador Zonal de Transporte (turno noche)] · Administrador Zonal de Transporte (turno noche) · [teléfono de Administrador Zonal de Transporte (turno noche)]",
+  op_nolista: "Si no apareces en la lista de la citación para mañana, deberás coordinar con tu AZT 😊\n\n📞 [nombre de Administrador Zonal de Transporte (turno día)] · Administrador Zonal de Transporte (turno día) · [teléfono de Administrador Zonal de Transporte (turno día)]\n📞 [nombre de Administrador Zonal de Transporte (turno noche)] · Administrador Zonal de Transporte (turno noche) · [teléfono de Administrador Zonal de Transporte (turno noche)]",
   // op_ruta: dinámica (rutas y acceso a obra)
   // op_proc: dinámica (chat con UNIKIN sobre manual de mixer)
   // op_unikin: dinámica (imagen de señal + bifurcación)
   op_instalar: {
     tipo: "simple_con_confirmacion",
     respuesta: "Hola 😊\nDescarga UNIKIN aquí: https://si.unicon.com.pe/unikin",
-    escalamiento: "📞 [Nombre y Apellidos] · AZT turno mañana · [Teléfono]\n📞 [Nombre y Apellidos] · AZT turno noche · [Teléfono]"
+    escalamiento: "📞 [nombre de Administrador Zonal de Transporte (turno día)] · Administrador Zonal de Transporte (turno día) · [teléfono de Administrador Zonal de Transporte (turno día)]\n📞 [nombre de Administrador Zonal de Transporte (turno noche)] · Administrador Zonal de Transporte (turno noche) · [teléfono de Administrador Zonal de Transporte (turno noche)]"
   },
   // ==== MI UNIDAD ====
   // un_mixer: dinámica (busca en reporte de fin de vuelta)
@@ -8181,51 +8184,51 @@ const BOT_ANSWERS = {
   pa_beneficios: {
     tipo: "simple_con_confirmacion",
     respuesta: "Conoce todos tus beneficios (bienestar físico, emocional, financiero y social) y las promociones del mes en el portal Una Vida Sana 😊\n\n👉 Enlace aquí: https://padlet.com/bsocialunicon/una-vida-sana-pdatzjsvgx967w8h",
-    escalamiento: "📞 [Nombre y Apellidos] · Trabajadora Social · [Teléfono]"
+    escalamiento: "📞 [nombre de Trabajadora Social] · Trabajadora Social · [teléfono de Trabajadora Social]"
   },
   pa_bono: {
     tipo: "simple_con_confirmacion",
     respuesta: "🍽️ El bono de pase directo (S/20 diarios) se acredita cuando trabajas en tu hora de almuerzo y sigues despachando. No tienes que hacer ningún trámite: tu Administrador de Transporte Zonal reporta en una tabla quiénes tienen el pase y cuántos días. 😊\n\n📅 Los Administradores de Transporte Zonal tienen plazo hasta el día 20 - 21 de cada mes para enviar esa tabla, y el bono se paga en el último día del mes.",
-    escalamiento: "📞 [Nombre y Apellidos] · AZT turno mañana · [Teléfono]\n📞 [Nombre y Apellidos] · AZT turno noche · [Teléfono]"
+    escalamiento: "📞 [nombre de Administrador Zonal de Transporte (turno día)] · Administrador Zonal de Transporte (turno día) · [teléfono de Administrador Zonal de Transporte (turno día)]\n📞 [nombre de Administrador Zonal de Transporte (turno noche)] · Administrador Zonal de Transporte (turno noche) · [teléfono de Administrador Zonal de Transporte (turno noche)]"
   },
   pa_boleta: {
     tipo: "simple_con_confirmacion",
     respuesta: "📄 Tus boletas de pago llegan automáticamente por correo electrónico, enviadas desde boletasunicon@unicon.com.pe, al correo que tienes registrado en la empresa. Revisa tu bandeja de entrada y también spam 📧. Una vez lo encuentres, descárgalo para visualizarla.\n\n✉️ Si cambiaste de correo o los mensajes te están rebotando, no puedes actualizarlo tú mismo: envía una declaración jurada a Administración de Personal: [correo de Administración de Personal], quien lo actualizará el mismo día y te reenviará tus últimas 3 boletas.\n\n👉 Declaración jurada: [PDF: DECLARACIÓN JURADA DE CORREO ELECTRÓNICO.pdf]",
     pdfs: ["DECLARACION_JURADA_CORREO"],
-    escalamiento: "📞 [Nombre y Apellidos] · Administración de Personal · [Teléfono]"
+    escalamiento: "📞 [nombre de Administración de Personal] · Administración de Personal · [teléfono de Administración de Personal]"
   },
   pa_descuento: {
     tipo: "bifurcacion_boleta",
     pregunta: "📋 Tu boleta llega a tu correo electrónico registrado 3 días después de fin de mes. Para cualquier aclaración sobre tu boleta (horas extra, descuentos, etc.), primero debes tener tu boleta en mano, sin ella no se puede revisar el caso.\n\n¿Tienes tu boleta de pago? 🤔",
-    respuesta_si: "Para dudas sobre cuántas horas te contaron: habla directamente con tu AZT:\n\n📞 [Nombre y Apellidos] · AZT turno mañana · [Teléfono]\n📞 [Nombre y Apellidos] · AZT turno noche · [Teléfono]\n\nSi el problema no se resuelve, o tienes otra duda: comunícate con Administración de Personal:\n\n📞 [Nombre y Apellidos] · Administración de Personal · [Teléfono]",
+    respuesta_si: "Para dudas sobre cuántas horas te contaron: habla directamente con tu AZT:\n\n📞 [nombre de Administrador Zonal de Transporte (turno día)] · Administrador Zonal de Transporte (turno día) · [teléfono de Administrador Zonal de Transporte (turno día)]\n📞 [nombre de Administrador Zonal de Transporte (turno noche)] · Administrador Zonal de Transporte (turno noche) · [teléfono de Administrador Zonal de Transporte (turno noche)]\n\nSi el problema no se resuelve, o tienes otra duda: comunícate con Administración de Personal:\n\n📞 [nombre de Administración de Personal] · Administración de Personal · [teléfono de Administración de Personal]",
     respuesta_no: "Tus boletas de pago se envían automáticamente a tu correo electrónico registrado (personal o el correo institucional) en UNICON. Revisa tu bandeja de entrada y también la de spam buscando el correo de boletasunicon@unicon.com.pe para encontrarlo.\n\nUna vez lo encuentres, descárgalo y vuelve a contactarte conmigo haciendo clic [[AQUI_TENGO_BOLETA]] 😊"
   },
   pa_cuenta: {
     tipo: "simple_con_confirmacion",
     respuesta: "🏦 Para cambiar tu cuenta de abono, sigue los siguientes pasos:\n\n1️⃣ Llena el formato de cambio de cuenta y adjunta la constancia de apertura de cuenta o un voucher que sustente que la cuenta a la que quieres cambiar es tuya.\n\n👉 Formato: [PDF: FORMATO CAMBIO DE CUENTA PARA PAGO HABERES.pdf]\n\n2️⃣ Envíalo por correo a Administración de Personal: [correo de Administración de Personal]\n\n⏰ Ten en cuenta los plazos:\n• Hasta el día 9 - 10 del mes para que el cambio se aplique en el pago quincenal (día 15).\n• Hasta el día 20-22 para que el cambio se aplique en el pago de fin de mes.",
     pdfs: ["FORMATO_CAMBIO_CUENTA"],
-    escalamiento: "📞 [Nombre y Apellidos] · Administración de Personal · [Teléfono]"
+    escalamiento: "📞 [nombre de Administración de Personal] · Administración de Personal · [teléfono de Administración de Personal]"
   },
   pa_prestamo: {
     tipo: "simple_con_confirmacion",
-    respuesta: "💰 ¿Qué tipo de préstamo necesitas?\n\n🏠 **Vivienda** — Requisitos:\n• Cotización\n• Título de propiedad o certificado de posesión\n• Recibo de agua\n• Fotos de la vivienda\n\n🏥 **Salud** — Requisitos:\n• Informe médico o diagnóstico\n• Cotización del tratamiento u operación\n• Fotos o evidencias del estado de salud\n\n🎓 **Educación** — Requisitos:\n• Cotización del curso o programa\n\nUna vez que tengas listos tus documentos:\n\n1️⃣ Te compartimos el formato de solicitud de préstamo para completar y firmar.\n👉 Formato: [PDF: POLÍTICA VIGENTE DE PRÉSTAMOS.pdf]\n\n2️⃣ Envía tu solicitud junto con los documentos requeridos:\n• Vivienda y Salud: a la trabajadora social de tu planta ([correo de trabajadora social]).\n• Educación: a Ítalo Luyo ([correo de Ítalo Luyo]).\n\n3️⃣ Evaluación de tu solicitud:\n• Vivienda y Salud: la trabajadora social de tu planta se pondrá en contacto contigo para evaluar tu caso.\n• Educación: Ítalo Luyo se pondrá en contacto contigo para evaluar tu caso.\n\n⚠️ ¡Recuerda! La aprobación no es automática: se hace una evaluación social de tu situación antes de confirmar el préstamo y el monto.",
+    respuesta: "💰 ¿Qué tipo de préstamo necesitas?\n\n🏠 **Vivienda** — Requisitos:\n• Cotización\n• Título de propiedad o certificado de posesión\n• Recibo de agua\n• Fotos de la vivienda\n\n🏥 **Salud** — Requisitos:\n• Informe médico o diagnóstico\n• Cotización del tratamiento u operación\n• Fotos o evidencias del estado de salud\n\n🎓 **Educación** — Requisitos:\n• Cotización del curso o programa\n\nUna vez que tengas listos tus documentos:\n\n1️⃣ Te compartimos el formato de solicitud de préstamo para completar y firmar.\n👉 Formato: [PDF: POLÍTICA VIGENTE DE PRÉSTAMOS.pdf]\n\n2️⃣ Envía tu solicitud junto con los documentos requeridos:\n• Vivienda y Salud: a la trabajadora social de tu planta ([correo de Trabajadora Social]).\n• Educación: al Jefe de Capacitación ([correo de Jefe de Capacitación]).\n\n3️⃣ Evaluación de tu solicitud:\n• Vivienda y Salud: la trabajadora social de tu planta se pondrá en contacto contigo para evaluar tu caso.\n• Educación: el Jefe de Capacitación se pondrá en contacto contigo para evaluar tu caso.\n\n⚠️ ¡Recuerda! La aprobación no es automática: se hace una evaluación social de tu situación antes de confirmar el préstamo y el monto.",
     pdfs: ["POLITICA_PRESTAMOS"],
-    escalamiento: "Para préstamos de vivienda y salud:\n📞 [Nombre y Apellidos] · Trabajadora Social · [Teléfono]\n\nPara préstamos de educación:\n📞 [Nombre y Apellidos] · [Teléfono]"
+    escalamiento: "Para préstamos de vivienda y salud:\n📞 [nombre de Trabajadora Social] · Trabajadora Social · [teléfono de Trabajadora Social]\n\nPara préstamos de educación:\n📞 [nombre de Jefe de Capacitación] · Jefe de Capacitación · [teléfono de Jefe de Capacitación]"
   },
   // ==== PERMISOS Y SERVICIOS ====
   ps_descanso: {
     tipo: "simple_con_confirmacion",
     respuesta: "🏥 Ten en cuenta estos 6 puntos al presentar tu descanso médico:\n\n1️⃣ Se entrega el formato de permiso en físico y original:\n• Villa Concremax y Termal Vigilancia: puedes entregarlo cualquier día de la semana a la trabajadora social de tu planta.\n• San Juan, Maravillas y Ancieta: la trabajadora social solo asiste a tu planta los días miércoles. Si tu descanso médico es en otro día, avisa por WhatsApp a tu trabajadora social asignada como referencia, pero deberás regularizar la entrega en físico y original el miércoles siguiente en tu planta, o antes en Coop. Las Vertientes / Villa Concremax (lo que te quede más cerca).\n• Cualquier otro caso: debes entregarlo en físico y original en Coop. Las Vertientes Mz. F, Lt 3A - Villa El Salvador (ref. alt. km 18.5 Panamericana Sur). No se aceptan por WhatsApp ni correo electrónico.\n\n👉 [PDF: FORMATO DE SOLICITUD DE PRÉSTAMO - descansos médicos.pdf]\n\n2️⃣ Solo tú o tu familiar pueden entregarlo; no lo puede gestionar tu jefe, tu administrador ni Salud Ocupacional.\n3️⃣ Plazo máximo: 24 horas desde la emisión (según el RIT); si no, no se considera en el tareo. ⏰\n4️⃣ El documento debe estar sin borrones ni enmendaduras, con tus datos completos (DNI/CE, diagnóstico, fecha) y firma/sello legibles del médico tratante.\n5️⃣ Solo se reciben documentos emitidos por EsSalud, MINSA, clínicas o médicos particulares, en formato de receta valorada, adjuntando receta médica y comprobante de pago.\n6️⃣ Si acumulas o superas los 20 días de descanso médico en el año, se genera subsidio y debes comunicarte con Bienestar Social.",
     pdfs: ["FORMATO_DESCANSOS_MEDICOS"],
-    escalamiento: "📞 [Nombre y Apellidos] · Trabajadora Social · [Teléfono]"
+    escalamiento: "📞 [nombre de Trabajadora Social] · Trabajadora Social · [teléfono de Trabajadora Social]"
   },
   ps_paternidad: {
     tipo: "simple_con_confirmacion",
-    respuesta: "La licencia por paternidad son 10 días calendario consecutivos, remunerados y de carácter obligatorio (irrenunciable). Puedes elegir la fecha de inicio: el nacimiento del bebé, la fecha de alta de la madre o el bebé, o desde 3 días antes de la fecha probable de parto (con certificado médico).\n\nRequisitos (documentos originales, dentro de 3 días hábiles desde la emisión):\n• Formato de licencia por paternidad, firmado por ti y tu jefe.\n\n👉 [PDF: FORMATOS DE PERMISOS Y LICENCIAS - PATERNIDAD.pdf]\n\n• Acta de nacimiento (RENIEC) o certificado de nacido vivo.\n• Copia de tu DNI.\n\nAmpliación: 20 días si es parto prematuro o múltiple; 30 días si hay complicaciones graves de la madre, discapacidad severa o enfermedad congénita terminal del bebé.\n\nExcepción: si la madre fallece durante el parto o mientras goza de su licencia por maternidad, el padre recibe esa licencia con goce de haber.\n\nVacaciones: puedes tomarlas justo después de la licencia por paternidad, coordinando con tu jefe con al menos 15 días de anticipación.\n\nAdemás debes hacer:\n\n• Registro en el sistema de UNICON: ficha de datos del derechohabiente firmada + copia de DNI + acta de nacimiento.\n\n👉 [PDF: FORMATO DE REGISTRO DE DERECHOHABIENTE.pdf]\n\n• Registro y lactancia en EsSalud: se activa automático en 5-7 días hábiles tras registrar al bebé en RENIEC; valida en http://ww7.essalud.gob.pe/SmartLactanciaWeb/. Si no se activa, escribe a plataformaenlinea@essalud.gob.pe con el Formulario 1040, copia de DNI, acta de nacimiento y boletas de pago del mes de nacimiento + 3 anteriores (EsSalud también otorga un bono de S/820, cobrado por la mamá).\n\n👉 [PDF: FORMULARIO 1040.pdf]\n\n• Formato Vida Ley: llenar el recuadro de esposa e hijos y legalizarlo ante notario.\n\n👉 [PDF: FORMATO VIDA LEY.pdf]\n\nEnvía toda la documentación al correo 👉 [correo de Jefa de Bienestar Social]",
+    respuesta: "La licencia por paternidad son 10 días calendario consecutivos, remunerados y de carácter obligatorio (irrenunciable). Puedes elegir la fecha de inicio: el nacimiento del bebé, la fecha de alta de la madre o el bebé, o desde 3 días antes de la fecha probable de parto (con certificado médico).\n\nRequisitos (documentos originales, dentro de 3 días hábiles desde la emisión):\n• Formato de licencia por paternidad, firmado por ti y tu jefe.\n\n👉 [PDF: FORMATOS DE PERMISOS Y LICENCIAS - PATERNIDAD.pdf]\n\n• Acta de nacimiento (RENIEC) o certificado de nacido vivo.\n• Copia de tu DNI.\n\nAmpliación: 20 días si es parto prematuro o múltiple; 30 días si hay complicaciones graves de la madre, discapacidad severa o enfermedad congénita terminal del bebé.\n\nExcepción: si la madre fallece durante el parto o mientras goza de su licencia por maternidad, el padre recibe esa licencia con goce de haber.\n\nVacaciones: puedes tomarlas justo después de la licencia por paternidad, coordinando con tu jefe con al menos 15 días de anticipación.\n\nAdemás debes hacer:\n\n• Registro en el sistema de UNICON: ficha de datos del derechohabiente firmada + copia de DNI + acta de nacimiento.\n\n👉 [PDF: FORMATO DE REGISTRO DE DERECHOHABIENTE.pdf]\n\n• Registro y lactancia en EsSalud: se activa automático en 5-7 días hábiles tras registrar al bebé en RENIEC; valida en http://ww7.essalud.gob.pe/SmartLactanciaWeb/. Si no se activa, escribe a plataformaenlinea@essalud.gob.pe con el Formulario 1040, copia de DNI, acta de nacimiento y boletas de pago del mes de nacimiento + 3 anteriores (EsSalud también otorga un bono de S/820, cobrado por la mamá).\n\n👉 [PDF: FORMULARIO 1040.pdf]\n\n• Formato Vida Ley: llenar el recuadro de esposa e hijos y legalizarlo ante notario.\n\n👉 [PDF: FORMATO VIDA LEY.pdf]\n\nEnvía toda la documentación al correo 👉 [correo de Trabajadora Social]",
     pdfs: ["FORMATO_PATERNIDAD", "FORMULARIO_1040", "FORMATO_VIDA_LEY"],
-    escalamiento: "📞 [Nombre y Apellidos] · Trabajadora Social · [Teléfono]"
+    escalamiento: "📞 [nombre de Trabajadora Social] · Trabajadora Social · [teléfono de Trabajadora Social]"
   },
-  ps_vacaciones: "🏖️ Las vacaciones se coordinan directamente con tu jefe inmediato, mediante el formato correspondiente. Si no obtienes respuesta, comunícate con tu AZT. 😊\n\n📞 [Nombre y Apellidos] · AZT turno mañana · [Teléfono]\n📞 [Nombre y Apellidos] · AZT turno noche · [Teléfono]",
+  ps_vacaciones: "🏖️ Las vacaciones se coordinan directamente con tu jefe inmediato, mediante el formato correspondiente. Si no obtienes respuesta, comunícate con tu AZT. 😊\n\n📞 [nombre de Administrador Zonal de Transporte (turno día)] · Administrador Zonal de Transporte (turno día) · [teléfono de Administrador Zonal de Transporte (turno día)]\n📞 [nombre de Administrador Zonal de Transporte (turno noche)] · Administrador Zonal de Transporte (turno noche) · [teléfono de Administrador Zonal de Transporte (turno noche)]",
   ps_uniforme: "🦺 El recojo y el cambio de uniforme/EPP se hacen en el almacén de tu planta. Se entregan 2 dotaciones al año: verano (enero-febrero) e invierno (junio-julio). Si un artículo se malogra o rompe antes de tiempo, llévalo al almacén de tu planta para el cambio. 😊",
   ps_movilidad: "🚗 La movilidad de regreso, cuando el camión debe trasladarse a otro taller, actualmente no se encuentra contemplada dentro del procedimiento. En estos casos, el chofer registra su salida en el punto donde deja el vehículo y el retorno queda a su cargo. Por ello, no se contempla movilidad ni un pago adicional para el traslado de regreso. 😊",
   // ==== CHARLA SEMANAL ====
@@ -8249,7 +8252,7 @@ const BOT_DYNAMIC_TEXTS = {
     txt += `\n\nPor favor verifica que la ubicación del mixer y llaves sean las correctas. ¿Esta información está conforme? 😊`;
     return txt;
   },
-  mixer_no_encontrado: "No hay datos actualizados de la ubicación de tu mixer. Por favor, comunícate con:\n\n📞 [Nombre y Apellidos] · Chom Líder · [Teléfono]\n📞 [Nombre y Apellidos] · AZT de turno · [Teléfono]\n\nEllos podrán ayudarte. 💪",
+  mixer_no_encontrado: "No hay datos actualizados de la ubicación de tu mixer. Por favor, comunícate con:\n\n📞 [nombre de CHOM Líder] · CHOM Líder · [teléfono de CHOM Líder]\n📞 [nombre de Administrador Zonal de Transporte] · Administrador Zonal de Transporte · [teléfono de Administrador Zonal de Transporte]\n\nEllos podrán ayudarte. 💪",
   mixer_vigente: "De acuerdo, mantendremos el último registro, ya que actualmente se encuentra vigente.",
   mixer_no_vigente: "De acuerdo, eliminaremos el último registro, ya que actualmente no se encuentra vigente.",
   // Consulta Rutas y acceso a obra
@@ -8263,7 +8266,7 @@ const BOT_DYNAMIC_TEXTS = {
   unikin_buena_senal_paso1: "Intenta lo siguiente:\n\n1. Cierra sesión en UNIKIN.",
   unikin_buena_senal_paso2: "2. Reinicia tu celular.\n3. Vuelve a ingresar a UNIKIN.\n\nEs importante hacer los 3 pasos completos y en orden. Si solo reinicias el celular sin cerrar sesión antes, es probable que el problema continúe.\n\n¿Se solucionó tu problema?",
   unikin_senal_debil: "Intenta conectarte a una red Wi-Fi disponible si tienes acceso a una, o ubícate en una zona con mejor señal. Cuando tengas mejor conexión, vuelve a intentar en UNIKIN.\n\nSi tras ello no se soluciona vuelve a contactarte conmigo para ver intentar otra alternativa haciendo clic [[AQUI_BUENA_SENAL]] 😊",
-  unikin_escalamiento: "📞 [Nombre y Apellidos] · AZT turno mañana · [Teléfono]\n📞 [Nombre y Apellidos] · AZT turno noche · [Teléfono]",
+  unikin_escalamiento: "📞 [nombre de Administrador Zonal de Transporte (turno día)] · Administrador Zonal de Transporte (turno día) · [teléfono de Administrador Zonal de Transporte (turno día)]\n📞 [nombre de Administrador Zonal de Transporte (turno noche)] · Administrador Zonal de Transporte (turno noche) · [teléfono de Administrador Zonal de Transporte (turno noche)]",
   // Consultas sobre procedimientos mixer (paso a UNIKIN)
   handoff_unikin_procedimientos_1: "Voy a comunicarte con UNIKIN para ayudarte con tu consulta. Espera un momento, por favor. 😊",
   handoff_unikin_procedimientos_2: "¡Hola! ¡Soy UNIKIN! ¿Cuál es tu consulta? Escribe en este chat qué necesitas saber sobre los procedimientos de mixers",
@@ -9114,7 +9117,7 @@ function ChoferApp({
   const [openNotif, setOpenNotif] = useState(false);
   const [botDeepLink, setBotDeepLink] = useState(null); // ej. "op_unikin" — abre UNIBOT directo en esa opción (ver Bitácora personal)
   const isDesktop = useIsDesktop();
-  const ROLES_ADMIN_PANEL = ["jefe_planta", "despachador", "sgi", "mantenimiento", "admin_zonal_transporte", "trabajadora_social", "admin_transporte_bombas", "supervisor_bombas_jefe_ops", "gerente_transporte_distribucion", "jefe_transporte", "supervisor_transportes"];
+  const ROLES_ADMIN_PANEL = ["jefe_planta", "despachador", "sgi", "supervisor_mantenimiento", "analista_mantenimiento", "admin_zonal_transporte", "trabajadora_social", "admin_transporte_bombas", "supervisor_bombas_jefe_ops", "gerente_transporte_distribucion", "jefe_transporte", "supervisor_transportes", "jefe_capacitacion", "administracion_personal", "mecanico_lider"];
   const ROLES_CHOFER = ["chofer", "chom_lider", "chofer_operador_bomba", "operador_bomba", "ayudante_bomba_multitask", "auxiliar_tuberia"];
   const login = async () => {
     setLoginError("");
@@ -13336,6 +13339,7 @@ function celdaTextoExcel(row, col) {
   if (typeof v === "object") {
     if (Array.isArray(v.richText)) return v.richText.map(r => r.text).join("").trim();
     if (v.result !== undefined) return String(v.result).trim(); // celda con fórmula
+    if (typeof v.text === "string") return v.text.trim(); // celda con hipervínculo (ej. Excel autoconvierte un correo a "mailto:")
   }
   return String(v).trim();
 }
@@ -13651,22 +13655,34 @@ function UniBot({
   const [directorioContactos, setDirectorioContactos] = useState([]);
   const [directorioCargando, setDirectorioCargando] = useState(false);
   useEffect(() => {
-    if (node !== "directorio" || !driver?.planta) return;
+    // Se carga apenas se conoce la planta del chofer (no solo al entrar al nodo "directorio")
+    // porque también se usa para resolver placeholders "[correo de <Cargo>]" dentro de respuestas
+    // del bot en cualquier parte del menú (ej. a quién enviar la solicitud de préstamo).
+    if (!driver?.planta) return;
     let vigente = true;
     setDirectorioCargando(true);
     (async () => {
-      const rolesDirectorio = ["despachador", "admin_zonal_transporte", "sgi", "trabajadora_social", "administracion_personal", "jefe_planta", "chom_lider", "mantenimiento"];
+      // Todos los cargos administrativos (Object.keys(CARGOS_ADMIN_MAP)) se traen automáticamente
+      // — sin mantener una lista aparte a mano — más "chom_lider" (es de CARGOS_CHOFER_MAP pero
+      // funciona como contacto de soporte). Así, cualquier cargo administrativo nuevo que se cree
+      // (transversal o de una planta puntual) aparece solo en el directorio de los choferes que
+      // corresponda, sin tener que tocar este código cada vez.
+      const rolesDirectorio = [...Object.keys(CARGOS_ADMIN_MAP), "chom_lider"];
+      // Respaldo: cualquier persona activa cuya planta incluya "Transversal", aunque su rol no esté
+      // en la lista de arriba (por si algún día se marca Transversal un rol no administrativo).
       const {
-        data
-      } = await sbClient.from("perfiles").select("nombre, rol, turno, telefono, planta").in("rol", rolesDirectorio).eq("activo", true);
+        data,
+        error
+      } = await sbClient.from("perfiles").select("nombre, rol, turno, telefono, planta, email_personal").or(`rol.in.(${rolesDirectorio.join(",")}),planta.ilike.*Transversal*`).eq("activo", true);
       if (!vigente) return;
+      if (error) console.error("Error cargando directorio de contactos:", error.message);
       setDirectorioContactos(data || []);
       setDirectorioCargando(false);
     })();
     return () => {
       vigente = false;
     };
-  }, [node, driver?.planta]);
+  }, [driver?.planta]);
   // modes: menu | sub | chatProc | chatAccidente | form | ask | alerta | alertaForm |
   //        askVigencia | askBoleta | askConfirmacionSimple |
   //        askUnikinSenal | askUnikinResuelto | mixerInput | rutaObraPublicar | confirmMatch
@@ -13986,7 +14002,7 @@ function UniBot({
     if (ans && typeof ans === "object" && ans.tipo === "simple_con_confirmacion") {
       // Renderizamos respuesta, insertando placeholders de imagen/PDF (se procesan visualmente al render)
       push("bot_rico", {
-        texto: ans.respuesta,
+        texto: resolverPlaceholdersContacto(ans.respuesta),
         pdfs: ans.pdfs || [],
         imgs: ans.imgs || []
       });
@@ -14000,7 +14016,7 @@ function UniBot({
     // "¡Espero haberte ayudado!" va DENTRO del mismo globo que la respuesta (no como mensaje
     // aparte) para que no tape visualmente la respuesta real con un segundo globo encima.
     if (typeof ans === "string") {
-      push("bot", `${ans}\n\n\n¡Espero haberte ayudado! 🙌\nPor favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
+      push("bot", `${resolverPlaceholdersContacto(ans)}\n\n\n¡Espero haberte ayudado! 🙌\nPor favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
       setTimeout(goHome, 100);
       return;
     }
@@ -14089,7 +14105,7 @@ function UniBot({
     const num = numStr.replace(/[^\d]/g, "").slice(0, 5);
     const key = num;
     if (!num) {
-      push("bot", BOT_DYNAMIC_TEXTS.mixer_no_encontrado);
+      push("bot", resolverPlaceholdersContacto(BOT_DYNAMIC_TEXTS.mixer_no_encontrado));
       push("bot", "¿Resolví tu consulta?");
       setPendingAsk("un_mixer");
       setMode("askConfirmacionSimple");
@@ -14124,7 +14140,7 @@ function UniBot({
         });
         setMode("askVigencia");
       } else {
-        push("bot", BOT_DYNAMIC_TEXTS.mixer_no_encontrado);
+        push("bot", resolverPlaceholdersContacto(BOT_DYNAMIC_TEXTS.mixer_no_encontrado));
         push("bot", "¿Resolví tu consulta?");
         setPendingAsk("un_mixer");
         setMode("askConfirmacionSimple");
@@ -14182,7 +14198,7 @@ function UniBot({
           p_mixer: ctx.key
         });
         push("bot", BOT_DYNAMIC_TEXTS.mixer_no_vigente);
-        push("bot", BOT_DYNAMIC_TEXTS.mixer_no_encontrado);
+        push("bot", resolverPlaceholdersContacto(BOT_DYNAMIC_TEXTS.mixer_no_encontrado));
       }
     } else if (ctx.tipo === "ruta") {
       if (vigente) {
@@ -14243,7 +14259,7 @@ function UniBot({
       // Buscar escalamiento en BOT_ANSWERS
       const ans = BOT_ANSWERS[pendingAsk];
       const escalamiento = ans && typeof ans === "object" && ans.escalamiento ? ans.escalamiento : responsableDe(pendingAsk);
-      push("bot", `Entendido. Comunícate directamente con:\n\n${escalamiento}\n\nEllos podrán ayudarte. 💪\n\nPor favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
+      push("bot", `Entendido. Comunícate directamente con:\n\n${resolverPlaceholdersContacto(escalamiento)}\n\nEllos podrán ayudarte. 💪\n\nPor favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
       goHome();
     }
     setPendingAsk(null);
@@ -14292,7 +14308,7 @@ function UniBot({
     if (ok) {
       push("bot", "¡Genial! 🙌 ¿Tienes otra consulta?\n\nPor favor selecciona \"Ver menú\" para ver todas las opciones disponibles.");
     } else {
-      push("bot", `Entendido. Comunícate directamente con:\n\n${BOT_DYNAMIC_TEXTS.unikin_escalamiento}\n\nEllos podrán ayudarte. 💪`);
+      push("bot", `Entendido. Comunícate directamente con:\n\n${resolverPlaceholdersContacto(BOT_DYNAMIC_TEXTS.unikin_escalamiento)}\n\nEllos podrán ayudarte. 💪`);
     }
     goHome();
   };
@@ -14893,29 +14909,41 @@ Por favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
       publicarPerdido(ctx);
     }
   };
-  const submitAlerta = () => {
+  const submitAlerta = async () => {
     const tipo = alertaTipo === "grifo" ? "Grifo cerrado o inoperativo" : "Zona de tráfico";
     const detalle = alertaTipo === "grifo" ? `📍 ${alertaData.ubicacion || "—"} · ⛽ ${alertaData.grifo || "—"}` : `📍 ${alertaData.ubicacion || "—"}`;
     push("user", `${tipo}: ${detalle}`);
-    push("bot", "Gracias 🙌 Publiqué tu alerta en el Canal de Avisos. Todos los choferes de tu planta la verán.");
-    setAvisos(prev => [...prev, {
-      id: uid(),
+    const contenido = alertaTipo === "grifo" ? `⚠️ #AlertaPreventiva\n\n🚫 Grifo cerrado o inoperativo\n📍 ${alertaData.ubicacion || "—"}\n⛽ Grifo: ${alertaData.grifo || "—"}` : `⚠️ #AlertaPreventiva\n\n🚦 Tráfico en la zona\n📍 ${alertaData.ubicacion || "—"}`;
+    // Publicación real en el Canal de Avisos de la planta (antes solo quedaba en un estado local
+    // de mock, así que nadie más la veía). Al insertarla con autor_id = el propio chofer, el badge
+    // de no leídos de los demás usuarios de la planta la cuenta automáticamente (misma lógica que
+    // cualquier otro aviso — ver avisos-badge-${planta} y avisos-panel-${planta}).
+    const {
+      error
+    } = await sbClient.from("avisos").insert({
+      titulo: "Alerta preventiva",
+      contenido,
       planta: driver.planta,
-      autor: "UNIBOT",
-      rol: "Bot",
-      texto: `⚠️ #AlertaPreventiva (${driver.unidad})\n${tipo}\n${detalle}`,
-      hora: hhmm(),
-      reacts: {},
-      mine: null
-    }]);
+      autor_id: driver.id,
+      autor_nombre: driver.nombre
+    });
+    if (!error) {
+      push("bot", "Gracias 🙌 Publiqué tu alerta en el Canal de Avisos. Todos los choferes de tu planta la verán.");
+    } else {
+      push("bot", "No se pudo publicar la alerta en el Canal de Avisos: " + error.message);
+    }
     goHome();
     setAlertaTipo(null);
     setAlertaData({});
   };
   const current = BOT_MENU[node];
 
-  // Directorio de contactos: 11 categorías fijas (orden pedido), cada una resuelta con la
-  // persona real de perfiles que le corresponde por planta (o transversal / mantenimiento).
+  // Directorio de contactos: 10 categorías fijas (orden pedido), cada una resuelta con la
+  // persona real de perfiles que le corresponde por planta (o transversal). Mantenimiento se
+  // excluye a propósito de este directorio (pedido explícito). Debajo
+  // de estas, se agrega automáticamente cualquier otro cargo cuya planta incluya "Transversal" y
+  // que no tenga ya una categoría propia aquí arriba — así una posición nueva marcada Transversal
+  // aparece en el directorio sin tener que tocar este código.
   const DIRECTORIO_CATEGORIAS = [{
     label: "Ejecutivo de Despacho (turno día)",
     rol: "despachador",
@@ -14948,19 +14976,49 @@ Por favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
     label: "Chom Líder",
     rol: "chom_lider"
   }, {
-    label: "Taller de Mantenimiento",
-    rol: "mantenimiento"
+    label: "Mecánico Líder",
+    rol: "mecanico_lider"
   }];
   const perteneceAMiPlanta = p => {
-    if (p.rol === "mantenimiento") return true; // transversal por convención ya usada en el resto del sistema
     const plantas = (p.planta || "").split(",").map(s => s.trim());
     return plantas.includes(driver.planta) || plantas.includes("Transversal");
   };
-  const directorioFilas = DIRECTORIO_CATEGORIAS.flatMap(cat => directorioContactos.filter(p => p.rol === cat.rol && (!cat.turno || p.turno === cat.turno) && perteneceAMiPlanta(p)).map(p => ({
+  // Resuelve una etiqueta tipo "Administrador Zonal de Transporte (turno día)" o simplemente
+  // "Trabajadora Social" (sin turno) al contacto real: separa el cargo del turno opcional entre
+  // paréntesis, traduce el cargo a su código con CARGO_LABEL, y busca en directorioContactos a
+  // quien lo tenga asignado (a la planta del chofer, o transversal), filtrando por turno solo si
+  // la etiqueta lo pide.
+  const resolverEtiquetaContacto = etiqueta => {
+    const m = etiqueta.match(/^(.*?)\s*\(turno (día|noche)\)\s*$/i);
+    const cargoLabel = (m ? m[1] : etiqueta).trim();
+    const turnoCode = m ? m[2].toLowerCase() === "día" ? "dia" : "noche" : null;
+    // Match directo primero; si el texto del placeholder no calza exacto con una key de
+    // CARGO_LABEL (mayúscula/tilde distinta), reintenta normalizado — mismo criterio tolerante
+    // que ya usa la carga masiva de Excel, para no dejar un contacto roto por un detalle de tipeo.
+    const normalizar = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+    const rolCode = CARGO_CODE[cargoLabel] || Object.entries(CARGO_LABEL).find(([, label]) => normalizar(label) === normalizar(cargoLabel))?.[0];
+    if (!rolCode) return null;
+    return directorioContactos.find(p => p.rol === rolCode && (!turnoCode || p.turno === turnoCode) && perteneceAMiPlanta(p)) || null;
+  };
+  // Sustituye "[nombre de <Cargo>]", "[teléfono de <Cargo>]" y "[correo de <Cargo>]" (con o sin
+  // "(turno día/noche)") en el texto de una respuesta del bot por el dato real de quien tenga ese
+  // cargo — mismos datos que usa el Directorio de contactos. Si no hay nadie asignado todavía,
+  // evita dejar un corchete roto en pantalla.
+  const resolverPlaceholdersContacto = texto => (texto || "").replace(/\[nombre de ([^\]]+)\]/g, (match, etiqueta) => resolverEtiquetaContacto(etiqueta)?.nombre || "Sin asignar").replace(/\[teléfono de ([^\]]+)\]/g, (match, etiqueta) => resolverEtiquetaContacto(etiqueta)?.telefono || "sin registrar").replace(/\[correo de ([^\]]+)\]/g, (match, etiqueta) => resolverEtiquetaContacto(etiqueta)?.email_personal || "aún no registrado — consulta a tu AZT");
+  const rolesConCategoriaPropia = new Set(DIRECTORIO_CATEGORIAS.map(cat => cat.rol));
+  // Mantenimiento queda excluido a propósito del Directorio de contactos (pedido explícito): a
+  // varios se les puso "Transversal" en Planta desde el panel (no vía Excel, que sí lo normaliza),
+  // así que sin esta exclusión el catch-all de "cualquier cargo Transversal" los seguiría agarrando.
+  const ROLES_OCULTOS_DIRECTORIO = new Set(["supervisor_mantenimiento", "analista_mantenimiento"]);
+  const directorioFilas = [...DIRECTORIO_CATEGORIAS.flatMap(cat => directorioContactos.filter(p => p.rol === cat.rol && (!cat.turno || p.turno === cat.turno) && perteneceAMiPlanta(p)).map(p => ({
     label: cat.label,
     nombre: p.nombre,
     telefono: p.telefono
-  })));
+  }))), ...directorioContactos.filter(p => !rolesConCategoriaPropia.has(p.rol) && !ROLES_OCULTOS_DIRECTORIO.has(p.rol) && perteneceAMiPlanta(p)).map(p => ({
+    label: CARGO_LABEL[p.rol] || p.rol,
+    nombre: p.nombre,
+    telefono: p.telefono
+  })).sort((a, b) => a.label.localeCompare(b.label) || a.nombre.localeCompare(b.nombre))];
 
   // Formateador de líneas: convierte **bold**, listas (- •), encabezados (📖 *titulo*)
   const formatLine = line => {
@@ -15220,7 +15278,7 @@ Por favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
             cursor: "zoom-in",
             maxWidth: 260
           },
-          onClick: () => window.open(url, "_blank")
+          onClick: () => setLightboxUrl(url)
         }, /*#__PURE__*/React.createElement("img", {
           src: url,
           alt: "Citaci\xF3n",
@@ -15269,7 +15327,10 @@ Por favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
       if (line.startsWith("[PDF:") || line.includes("[PDF:")) {
         const pdfName = (line.match(/\[PDF:\s*([^\]]+)\]/)?.[1] || "").trim();
         const prefix = line.split("[PDF:")[0].trim();
-        const pdfDataUrl = PDF_MAP[pdfName];
+        // Match directo primero; si falla, comparar normalizando Unicode (NFC) — un
+        // nombre con tilde puede llegar compuesto o descompuesto según cómo se haya
+        // escrito el string en el código, y ambos se ven idénticos pero no son === iguales.
+        const pdfDataUrl = PDF_MAP[pdfName] ?? Object.entries(PDF_MAP).find(([k]) => k.normalize("NFC") === pdfName.normalize("NFC"))?.[1];
         const handlePdfClick = () => {
           if (!pdfDataUrl) return;
           try {
@@ -17858,7 +17919,8 @@ const CARGOS_ADMIN_MAP = {
   jefe_planta: "Jefe de Planta",
   despachador: "Ejecutivo de Despacho",
   sgi: "SGI",
-  mantenimiento: "Mantenimiento",
+  supervisor_mantenimiento: "Supervisor de Mantenimiento",
+  analista_mantenimiento: "Analista de Mantenimiento",
   admin_zonal_transporte: "Administrador Zonal de Transporte",
   trabajadora_social: "Trabajadora Social",
   administracion_personal: "Administración de Personal",
@@ -17866,7 +17928,9 @@ const CARGOS_ADMIN_MAP = {
   supervisor_bombas_jefe_ops: "Supervisor de Bombas y Jefe de Operaciones - Bombas",
   gerente_transporte_distribucion: "Gerente de Transporte y Distribución",
   jefe_transporte: "Jefe de Transporte",
-  supervisor_transportes: "Supervisor de Transportes"
+  supervisor_transportes: "Supervisor de Transportes",
+  jefe_capacitacion: "Jefe de Capacitación",
+  mecanico_lider: "Mecánico Líder"
 };
 const CARGO_LABEL = {
   ...CARGOS_CHOFER_MAP,
@@ -17874,6 +17938,12 @@ const CARGO_LABEL = {
   gestion_humana: "Gestión Humana"
 };
 const CARGO_CODE = Object.fromEntries(Object.entries(CARGO_LABEL).map(([k, v]) => [v, k]));
+const TURNO_LABEL = {
+  dia: "Día",
+  noche: "Noche"
+};
+const TURNO_CODE = Object.fromEntries(Object.entries(TURNO_LABEL).map(([k, v]) => [v, k]));
+const ROLES_CON_TURNO = new Set(["despachador", "admin_zonal_transporte"]);
 const PLANTAS_TODAS = ["San Isidro", "Collique", "San Juan", "Villa Concremax", "Materiales", "Meiggs", "Ancieta", "Oquendo", "Chilca", "Lurín", "San Antonio de Huarochirí", "Maravillas", "Huachipa", "Villa el Salvador", "Transversal"];
 
 // Quita cualquier "(cargo)" pegado al nombre del autor, sin importar si el dato viene
@@ -18118,7 +18188,7 @@ function PerfilModal({
     }
     setGuardando(false);
   };
-  const plantaDisplay = perfil?.rol === "mantenimiento" ? "Todas (excepto Maravillas)" : (perfil?.planta || "").split(",").filter(Boolean).join(", ");
+  const plantaDisplay = perfil?.rol === "supervisor_mantenimiento" || perfil?.rol === "analista_mantenimiento" ? "Todas (excepto Maravillas)" : (perfil?.planta || "").split(",").filter(Boolean).join(", ");
   return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 z-[998]",
     style: {
@@ -18566,6 +18636,8 @@ function GestionHumanaPanel({
     cargosChoferNormalArr.forEach((c, i) => wsListas.getCell(2, i + 1).value = c);
     cargosMaravillasArr.forEach((c, i) => wsListas.getCell(3, i + 1).value = c);
     PLANTAS_TODAS.forEach((p, i) => wsListas.getCell(4, i + 1).value = p);
+    const turnosArr = Object.values(TURNO_LABEL);
+    turnosArr.forEach((t, i) => wsListas.getCell(5, i + 1).value = t);
     const colLetter = n => {
       let s = "";
       while (n > 0) {
@@ -18579,6 +18651,7 @@ function GestionHumanaPanel({
     wb.definedNames.add(`_Listas!$A$2:$${colLetter(cargosChoferNormalArr.length)}$2`, "ListaCargosChoferNormal");
     wb.definedNames.add(`_Listas!$A$3:$${colLetter(cargosMaravillasArr.length)}$3`, "ListaCargosMaravillas");
     wb.definedNames.add(`_Listas!$A$4:$${colLetter(PLANTAS_TODAS.length)}$4`, "ListaPlantasAdmin");
+    wb.definedNames.add(`_Listas!$A$5:$${colLetter(turnosArr.length)}$5`, "ListaTurnos");
 
     // Pestaña 1: Personal Administrativo
     const wsAdmin = wb.addWorksheet("Personal Administrativo", {
@@ -18588,7 +18661,7 @@ function GestionHumanaPanel({
         }
       }
     });
-    wsAdmin.mergeCells("A1:F1");
+    wsAdmin.mergeCells("A1:G1");
     wsAdmin.getCell("A1").value = "Personal Administrativo";
     wsAdmin.getCell("A1").font = {
       bold: true,
@@ -18598,8 +18671,8 @@ function GestionHumanaPanel({
       },
       name: "Arial"
     };
-    wsAdmin.mergeCells("A2:F2");
-    wsAdmin.getCell("A2").value = "Llenar desde la fila 4. No incluir choferes ni CHOM Líder aquí. Si la persona tiene varias plantas, sepáralas con coma (ej: San Isidro,San Juan).";
+    wsAdmin.mergeCells("A2:G2");
+    wsAdmin.getCell("A2").value = "Llenar desde la fila 4. No incluir choferes ni CHOM Líder aquí. Si la persona tiene varias plantas, sepáralas con coma (ej: San Isidro,San Juan). Turno: solo aplica a Administrador Zonal de Transporte y Ejecutivo de Despacho, déjalo vacío para los demás cargos.";
     wsAdmin.getCell("A2").font = {
       size: 10,
       color: {
@@ -18608,7 +18681,7 @@ function GestionHumanaPanel({
       name: "Arial"
     };
     wsAdmin.getCell("A2").fill = legendFill;
-    ["DNI", "Nombres y Apellidos", "Cargo", "Planta(s)", "Teléfono", "Correo"].forEach((h, i) => {
+    ["DNI", "Nombres y Apellidos", "Cargo", "Planta(s)", "Teléfono", "Correo", "Turno"].forEach((h, i) => {
       const cell = wsAdmin.getCell(3, i + 1);
       cell.value = h;
       cell.font = headerFont;
@@ -18631,13 +18704,15 @@ function GestionHumanaPanel({
       width: 18
     }, {
       width: 28
+    }, {
+      width: 14
     }];
     // Datos reales
     const adminPersonas = personal.filter(p => CARGOS_ADMIN_MAP[p.rol] && p.activo);
     adminPersonas.forEach((p, idx) => {
       const row = 4 + idx;
-      const plantaDisplay = p.rol === "mantenimiento" ? "Todas excepto Maravillas" : p.planta ? p.planta.split(",").join(", ") : "";
-      const vals = [p.dni, p.nombre, CARGO_LABEL[p.rol] || p.rol, plantaDisplay, p.telefono || "", p.email_personal || ""];
+      const plantaDisplay = p.rol === "supervisor_mantenimiento" || p.rol === "analista_mantenimiento" ? "Todas excepto Maravillas" : p.planta ? p.planta.split(",").join(", ") : "";
+      const vals = [p.dni, p.nombre, CARGO_LABEL[p.rol] || p.rol, plantaDisplay, p.telefono || "", p.email_personal || "", TURNO_LABEL[p.turno] || ""];
       vals.forEach((v, i) => {
         const cell = wsAdmin.getCell(row, i + 1);
         cell.value = v;
@@ -18650,7 +18725,7 @@ function GestionHumanaPanel({
     });
     const lastAdminRow = Math.max(64, 4 + adminPersonas.length + 10);
     for (let row = 4; row <= lastAdminRow; row++) {
-      for (let col = 1; col <= 6; col++) {
+      for (let col = 1; col <= 7; col++) {
         const cell = wsAdmin.getCell(row, col);
         if (!cell.value) cell.border = thinBorder;
       }
@@ -18659,6 +18734,11 @@ function GestionHumanaPanel({
         type: "list",
         allowBlank: true,
         formulae: ["ListaCargosAdmin"]
+      };
+      wsAdmin.getCell(`G${row}`).dataValidation = {
+        type: "list",
+        allowBlank: true,
+        formulae: ["ListaTurnos"]
       };
     }
     wsAdmin.views = [{
@@ -18777,6 +18857,13 @@ function GestionHumanaPanel({
       await wb.xlsx.load(buf);
       const registrosNuevos = [];
       const errores = [];
+      const turnosIgnorados = [];
+      // Match tolerante a mayúsculas/tildes/espacios raros (ej. un espacio no separable pegado al
+      // copiar y pegar desde Word/PDF): si el texto exacto de la celda no calza con una key de
+      // CARGO_LABEL/TURNO_LABEL, se reintenta comparando ambos lados normalizados.
+      const normalizarEtiqueta = s => (s || "").toString().normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+      const cargoCodePorNormalizado = new Map(Object.entries(CARGO_LABEL).map(([code, label]) => [normalizarEtiqueta(label), code]));
+      const turnoCodePorNormalizado = new Map(Object.entries(TURNO_LABEL).map(([code, label]) => [normalizarEtiqueta(label), code]));
       wb.eachSheet(sheet => {
         const sheetName = sheet.name;
         if (sheetName === "_Listas") return;
@@ -18790,26 +18877,43 @@ function GestionHumanaPanel({
         const lastRow = sheet.rowCount;
         for (let i = headerRowNum + 1; i <= lastRow; i++) {
           const row = sheet.getRow(i);
-          const dni = String(row.getCell(1).value || "").trim();
-          const nombre = String(row.getCell(2).value || "").trim();
-          const cargoLabel = String(row.getCell(3).value || "").trim();
-          const plantaLabelRaw = esAdmin ? String(row.getCell(4).value || "").trim() : sheetName;
-          const unidadLabel = esAdmin ? "" : String(row.getCell(4).value || "").trim();
-          const telefonoLabel = String(row.getCell(5).value || "").trim();
-          const emailLabel = String(row.getCell(6).value || "").trim();
+          const dni = celdaTextoExcel(row, 1);
+          const nombre = celdaTextoExcel(row, 2);
+          const cargoLabel = celdaTextoExcel(row, 3);
+          const plantaLabelRaw = esAdmin ? celdaTextoExcel(row, 4) : sheetName;
+          const unidadLabel = esAdmin ? "" : celdaTextoExcel(row, 4);
+          const telefonoLabel = celdaTextoExcel(row, 5);
+          const emailLabel = celdaTextoExcel(row, 6);
+          const turnoLabelRaw = esAdmin ? celdaTextoExcel(row, 7) : "";
           if (!dni || !nombre || !cargoLabel) continue; // fila vacía o incompleta, se ignora
           if (!/^\d{8}$/.test(dni)) {
             errores.push(`${sheetName}: DNI inválido "${dni}"`);
             continue;
           }
-          const cargoCode = CARGO_CODE[cargoLabel];
+          const cargoCode = CARGO_CODE[cargoLabel] || cargoCodePorNormalizado.get(normalizarEtiqueta(cargoLabel));
           if (!cargoCode) {
             errores.push(`${sheetName}: cargo desconocido "${cargoLabel}" para DNI ${dni}`);
             continue;
           }
+          // Turno: solo aplica a AZT/Ejecutivo de Despacho. Si el texto no calza con una opción
+          // válida es un error (typo); si calza pero el cargo no usa turno, se ignora sin bloquear
+          // la carga (no tiene sentido frenar el Excel completo por un campo que no aplica).
+          let turnoFinal = null;
+          if (turnoLabelRaw) {
+            const turnoCode = TURNO_CODE[turnoLabelRaw] || turnoCodePorNormalizado.get(normalizarEtiqueta(turnoLabelRaw));
+            if (!turnoCode) {
+              errores.push(`${sheetName}: turno desconocido "${turnoLabelRaw}" para DNI ${dni} (usa Día, Noche o déjalo vacío)`);
+              continue;
+            }
+            if (ROLES_CON_TURNO.has(cargoCode)) {
+              turnoFinal = turnoCode;
+            } else {
+              turnosIgnorados.push(`DNI ${dni} (${cargoLabel})`);
+            }
+          }
           // Normalizar plantas: separar por coma, validar contra la lista conocida, y manejar caso especial Mantenimiento
           let plantaFinal;
-          if (cargoCode === "mantenimiento") {
+          if (cargoCode === "supervisor_mantenimiento" || cargoCode === "analista_mantenimiento") {
             plantaFinal = PLANTAS_TODAS.filter(p => p !== "Maravillas" && p !== "Transversal").join(",");
           } else if (esAdmin) {
             const plantasArr = plantaLabelRaw.split(",").map(s => s.trim()).filter(Boolean);
@@ -18829,7 +18933,8 @@ function GestionHumanaPanel({
             planta: plantaFinal,
             unidad: unidadLabel || null,
             telefono: telefonoLabel || null,
-            email_personal: emailLabel || null
+            email_personal: emailLabel || null,
+            turno: turnoFinal
           });
         }
       });
@@ -18869,7 +18974,8 @@ function GestionHumanaPanel({
           planta: r.planta,
           unidad: r.unidad,
           telefono: r.telefono,
-          email_personal: r.email_personal
+          email_personal: r.email_personal,
+          turno: r.turno
         }).eq("dni", r.dni);
         if (!error) okCount++;else erroresGuardado.push(`DNI ${r.dni}: no se pudo guardar (${error.message})`);
       }
@@ -18884,10 +18990,11 @@ function GestionHumanaPanel({
           p_unidad: r.unidad
         });
         if (!error) {
-          if (r.telefono || r.email_personal) {
+          if (r.telefono || r.email_personal || r.turno) {
             await sbClient.from("perfiles").update({
               telefono: r.telefono,
-              email_personal: r.email_personal
+              email_personal: r.email_personal,
+              turno: r.turno
             }).eq("dni", r.dni);
           }
           okCount++;
@@ -18897,8 +19004,8 @@ function GestionHumanaPanel({
       }
       setMensaje({
         tipo: erroresGuardado.length ? "error" : "ok",
-        texto: `Carga completa: ${okCount}/${registrosNuevos.length} registros guardados (${aCrear.length} nuevos, ${aActualizar.length} actualizados).` + (erroresGuardado.length ? ` ${erroresGuardado.length} no se pudieron guardar:` : ""),
-        detalles: erroresGuardado.length ? erroresGuardado : null
+        texto: `Carga completa: ${okCount}/${registrosNuevos.length} registros guardados (${aCrear.length} nuevos, ${aActualizar.length} actualizados).` + (erroresGuardado.length ? ` ${erroresGuardado.length} no se pudieron guardar:` : "") + (turnosIgnorados.length ? ` Se ignoró el Turno en ${turnosIgnorados.length} fila(s) porque ese cargo no lo usa:` : ""),
+        detalles: erroresGuardado.length || turnosIgnorados.length ? [...erroresGuardado, ...turnosIgnorados] : null
       });
       cargarPersonal();
     } catch (err) {
@@ -19063,7 +19170,7 @@ function GestionHumanaPanel({
     }
   }, /*#__PURE__*/React.createElement("option", {
     value: "Todas"
-  }, "Todas las plantas"), PLANTAS_TODAS.map(p =>
+  }, "Todas las plantas"), PLANTAS_TODAS.filter(p => p !== "Transversal").map(p =>
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("option", {
@@ -19350,7 +19457,7 @@ function GestionHumanaPanel({
         });
       }
     }), p);
-  }))), (editando.rol === "despachador" || editando.rol === "admin_zonal_transporte") &&
+  }))), ROLES_CON_TURNO.has(editando.rol) &&
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("label", {
@@ -19905,7 +20012,7 @@ function AztPanel({
         data
       } = await sbClient.from("perfiles").select("*").eq("dni", initialDni).maybeSingle();
       if (data) {
-        const plantasArr = data.rol === "mantenimiento" ? PLANTAS_TODAS.filter(p => p !== "Maravillas" && p !== "Transversal") : data.planta ? data.planta.split(",") : [];
+        const plantasArr = data.rol === "supervisor_mantenimiento" || data.rol === "analista_mantenimiento" ? PLANTAS_TODAS.filter(p => p !== "Maravillas" && p !== "Transversal") : data.planta ? data.planta.split(",") : [];
         setAdmin({
           id: data.id,
           nombre: data.nombre,
@@ -19962,7 +20069,7 @@ function AztPanel({
   // Total de auxilios mecánicos no leídos, para el badge del ítem "Auxilio mecánico" del menú
   // lateral (antes quedaba en 0 fijo: el conteo real solo se calculaba adentro del buzón, así que
   // nadie se enteraba de un auxilio nuevo si no había entrado ya a esa sección).
-  const ROLES_CON_AUXILIO_MECANICO_BADGE = new Set(["admin_zonal_transporte", "sgi", "mantenimiento"]);
+  const ROLES_CON_AUXILIO_MECANICO_BADGE = new Set(["admin_zonal_transporte", "sgi", "supervisor_mantenimiento", "analista_mantenimiento"]);
   const cargarAuxPreview = async () => {
     if (!admin?.id || !admin?.plantas?.length || !ROLES_CON_AUXILIO_MECANICO_BADGE.has(admin?.rol)) return;
     const plantasReales = admin.plantas.filter(p => p !== "Transversal");
@@ -20074,7 +20181,7 @@ function AztPanel({
         data
       }) => {
         if (data) {
-          const plantasArr = data.rol === "mantenimiento" ? PLANTAS_TODAS.filter(p => p !== "Maravillas" && p !== "Transversal") : data.planta ? data.planta.split(",") : [];
+          const plantasArr = data.rol === "supervisor_mantenimiento" || data.rol === "analista_mantenimiento" ? PLANTAS_TODAS.filter(p => p !== "Maravillas" && p !== "Transversal") : data.planta ? data.planta.split(",") : [];
           setAdmin(prev => ({
             ...prev,
             plantas: plantasArr,
@@ -20163,11 +20270,16 @@ function AztPanel({
   // Social, Mantenimiento, etc.) solo publican avisos y gestionan incidencias de su planta.
   const ROLES_CON_GESTION_CHOFERES = new Set(["admin_zonal_transporte", "jefe_transporte", "supervisor_transportes", "gerente_transporte_distribucion"]);
   const ROLES_CON_REPORTES_MIXERS = new Set([...ROLES_CON_GESTION_CHOFERES, "despachador"]);
-  const ROLES_CON_AUXILIO_MECANICO = new Set(["admin_zonal_transporte", "sgi", "mantenimiento"]);
+  const ROLES_CON_AUXILIO_MECANICO = new Set(["admin_zonal_transporte", "sgi", "supervisor_mantenimiento", "analista_mantenimiento"]);
+  const ROLES_MANTENIMIENTO = new Set(["supervisor_mantenimiento", "analista_mantenimiento"]);
+  // Cargos que solo existen para figurar en el Directorio de contactos de los choferes — no operan
+  // el panel para nada, así que no ven ninguna sección al entrar (ni avisos, ni incidencias, ni
+  // ninguna de las opt-in de abajo).
+  const ROLES_SIN_CANAL = new Set(["jefe_capacitacion", "administracion_personal", "mecanico_lider"]);
   // Mantenimiento solo gestiona auxilios mecánicos: no publica avisos ni atiende incidencias de
   // planta, así que esas dos secciones (antes visibles para todos los cargos administrativos)
   // se ocultan específicamente para ese rol.
-  const SECTIONS = [...(admin?.rol !== "mantenimiento" ? [{
+  const SECTIONS = [...(!ROLES_MANTENIMIENTO.has(admin?.rol) && !ROLES_SIN_CANAL.has(admin?.rol) ? [{
     id: "avisos",
     label: "Canal de Avisos",
     icon: Bell,
@@ -20179,7 +20291,7 @@ function AztPanel({
     icon: Truck,
     sub: "Fin de vuelta que reportan los choferes",
     badge: 0
-  }] : []), ...(admin?.rol !== "mantenimiento" ? [{
+  }] : []), ...(!ROLES_MANTENIMIENTO.has(admin?.rol) && !ROLES_SIN_CANAL.has(admin?.rol) ? [{
     id: "incidencias",
     label: "Incidencias",
     icon: Inbox,
@@ -20364,7 +20476,7 @@ function AztPanel({
     color: AZUL
   })), /*#__PURE__*/React.createElement("p", {
     className: "text-sm font-semibold text-gray-600"
-  }, "Elige una opci\xF3n del men\xFA para comenzar"))), section === "estado" &&
+  }, SECTIONS.length === 0 ? "Tu cargo no tiene secciones operativas en este panel." : "Elige una opción del menú para comenzar"))), section === "estado" &&
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement(EstadoMixers, {
@@ -22336,7 +22448,7 @@ function AuxilioMecanicoBuzon({
   /*#__PURE__*/
   React.createElement("div", {
     className: "max-w-2xl mx-auto space-y-2"
-  }, admin?.rol === "mantenimiento" &&
+  }, (admin?.rol === "supervisor_mantenimiento" || admin?.rol === "analista_mantenimiento") &&
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
