@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-09-30T14:00:09.501Z */
+/* UniconApp — Bundle generado el 2026-09-30T14:45:16.256Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 17009 — CERO simplificaciones */
+/* Líneas originales del JSX: 17155 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -10036,6 +10036,181 @@ function LoginScreen({
 }
 
 /* ============  CANAL DE AVISOS (chat WhatsApp, solo reacciones)  ============ */
+// Visor de imagen a pantalla completa con zoom y desplazamiento real: rueda del mouse o
+// pellizco (pinch) en celular para acercar/alejar, arrastrar para mover una vez ampliada, doble
+// clic/doble toque para alternar zoom. Los listeners táctiles se agregan a mano (en vez de
+// props onTouch* de React) porque React los marca "passive" por defecto y e.preventDefault()
+// no bloquearía el pinch-zoom/scroll nativo de la página, que es justamente lo que hay que
+// evitar mientras se hace zoom sobre la imagen.
+function VisorImagenZoom({
+  url,
+  onClose
+}) {
+  const [scale, setScale] = useState(1);
+  const [pos, setPos] = useState({
+    x: 0,
+    y: 0
+  });
+  const contRef = useRef(null);
+  const arrastreRef = useRef(null);
+  const pinchRef = useRef(null);
+  const huboArrastreRef = useRef(false); // evita cerrar el visor al soltar un arrastre/pellizco sobre la imagen
+  const scaleRef = useRef(1);
+  const posRef = useRef({
+    x: 0,
+    y: 0
+  });
+  useEffect(() => {
+    scaleRef.current = scale;
+  }, [scale]);
+  useEffect(() => {
+    posRef.current = pos;
+  }, [pos]);
+  const clamp = s => Math.min(5, Math.max(1, s));
+  const distancia = (t1, t2) => Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+  useEffect(() => {
+    const cont = contRef.current;
+    if (!cont) return;
+    const onWheel = e => {
+      e.preventDefault();
+      setScale(s => clamp(s - e.deltaY * 0.0015 * s));
+    };
+    const onTouchStart = e => {
+      huboArrastreRef.current = false;
+      if (e.touches.length === 2) {
+        pinchRef.current = {
+          dist: distancia(e.touches[0], e.touches[1]),
+          scale: scaleRef.current
+        };
+      } else if (e.touches.length === 1 && scaleRef.current > 1) {
+        arrastreRef.current = {
+          startX: e.touches[0].clientX,
+          startY: e.touches[0].clientY,
+          origX: posRef.current.x,
+          origY: posRef.current.y
+        };
+      }
+    };
+    const onTouchMove = e => {
+      if (e.touches.length === 2 && pinchRef.current) {
+        e.preventDefault();
+        const d = distancia(e.touches[0], e.touches[1]);
+        setScale(clamp(pinchRef.current.scale * (d / pinchRef.current.dist)));
+      } else if (e.touches.length === 1 && arrastreRef.current) {
+        e.preventDefault();
+        huboArrastreRef.current = true;
+        const dx = e.touches[0].clientX - arrastreRef.current.startX;
+        const dy = e.touches[0].clientY - arrastreRef.current.startY;
+        setPos({
+          x: arrastreRef.current.origX + dx,
+          y: arrastreRef.current.origY + dy
+        });
+      }
+    };
+    const onTouchEnd = e => {
+      if (e.touches.length < 2) pinchRef.current = null;
+      if (e.touches.length === 0) arrastreRef.current = null;
+    };
+    cont.addEventListener("wheel", onWheel, {
+      passive: false
+    });
+    cont.addEventListener("touchstart", onTouchStart, {
+      passive: false
+    });
+    cont.addEventListener("touchmove", onTouchMove, {
+      passive: false
+    });
+    cont.addEventListener("touchend", onTouchEnd, {
+      passive: false
+    });
+    return () => {
+      cont.removeEventListener("wheel", onWheel);
+      cont.removeEventListener("touchstart", onTouchStart);
+      cont.removeEventListener("touchmove", onTouchMove);
+      cont.removeEventListener("touchend", onTouchEnd);
+    };
+  }, []);
+  const onMouseDown = e => {
+    if (scale <= 1) return;
+    huboArrastreRef.current = false;
+    arrastreRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      origX: pos.x,
+      origY: pos.y
+    };
+  };
+  const onMouseMove = e => {
+    if (!arrastreRef.current) return;
+    huboArrastreRef.current = true;
+    const dx = e.clientX - arrastreRef.current.startX;
+    const dy = e.clientY - arrastreRef.current.startY;
+    setPos({
+      x: arrastreRef.current.origX + dx,
+      y: arrastreRef.current.origY + dy
+    });
+  };
+  const onMouseUp = () => {
+    arrastreRef.current = null;
+  };
+  const onDoubleClick = () => {
+    if (scale > 1) {
+      setScale(1);
+      setPos({
+        x: 0,
+        y: 0
+      });
+    } else setScale(2.5);
+  };
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    ref: contRef,
+    onClick: () => {
+      if (!huboArrastreRef.current && scale <= 1) onClose();
+    },
+    className: "fixed inset-0 flex items-center justify-center",
+    style: {
+      background: "rgba(0,0,0,.85)",
+      zIndex: 60,
+      touchAction: "none",
+      overflow: "hidden"
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: e => {
+      e.stopPropagation();
+      onClose();
+    },
+    className: "absolute rounded-full flex items-center justify-center",
+    style: {
+      top: 14,
+      right: 14,
+      width: 36,
+      height: 36,
+      background: "rgba(255,255,255,.15)",
+      color: "white",
+      zIndex: 61
+    }
+  }, /*#__PURE__*/React.createElement(X, {
+    size: 20
+  })), /*#__PURE__*/React.createElement("img", {
+    src: url,
+    onMouseDown: onMouseDown,
+    onMouseMove: onMouseMove,
+    onMouseUp: onMouseUp,
+    onMouseLeave: onMouseUp,
+    onDoubleClick: onDoubleClick,
+    onClick: e => e.stopPropagation(),
+    draggable: false,
+    style: {
+      maxWidth: "90%",
+      maxHeight: "90%",
+      borderRadius: 8,
+      transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})`,
+      cursor: scale > 1 ? "grab" : "zoom-in",
+      userSelect: "none"
+    }
+  }));
+}
+
 // Componente unificado del canal de avisos: sirve tanto para choferes (solo leer/reaccionar)
 // como para cualquier rol administrativo que publique (AZT, Despachador, SGI, etc.)
 // "yo" = { id, dni, nombre, cargo } de quien está viendo — así todos los roles ven y reaccionan igual.
@@ -11939,22 +12114,11 @@ function PanelAvisos({
   })))), lightboxUrl &&
   /*#__PURE__*/
   /*#__PURE__*/
-  React.createElement("div", {
-    onClick: () => setLightboxUrl(null),
-    className: "fixed inset-0 flex items-center justify-center",
-    style: {
-      background: "rgba(0,0,0,.85)",
-      zIndex: 60,
-      cursor: "zoom-out"
-    }
-  }, /*#__PURE__*/React.createElement("img", {
-    src: lightboxUrl,
-    style: {
-      maxWidth: "90%",
-      maxHeight: "90%",
-      borderRadius: 8
-    }
-  })));
+  React.createElement(VisorImagenZoom, {
+    key: lightboxUrl,
+    url: lightboxUrl,
+    onClose: () => setLightboxUrl(null)
+  }));
 }
 
 /* ============  ENCUESTAS (tipo WhatsApp)  ============ */
