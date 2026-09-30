@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-09-30T19:22:31.096Z */
+/* UniconApp — Bundle generado el 2026-09-30T19:37:07.142Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 17247 — CERO simplificaciones */
+/* Líneas originales del JSX: 17254 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -19392,8 +19392,12 @@ function GestionHumanaPanel({
       color: AZUL
     }
   }, "Gesti\xF3n del Personal"))), /*#__PURE__*/React.createElement("button", {
-    onClick: () => {
-      sbClient.auth.signOut();
+    onClick: async () => {
+      // Hay que esperar a que signOut() termine de limpiar la sesión ANTES de volver a
+      // "chofer": si no, ChoferApp se monta de inmediato y su restauración automática de
+      // sesión (ver ChoferApp) alcanza a encontrar la sesión todavía viva y vuelve a entrar
+      // solo — el cierre de sesión parecía no funcionar hasta el segundo clic.
+      await sbClient.auth.signOut();
       setRole("chofer");
     },
     className: "flex items-center gap-2 px-4 py-3 text-sm font-semibold border-t hover:bg-red-50",
@@ -20768,8 +20772,11 @@ function AztPanel({
   }, /*#__PURE__*/React.createElement("span", {
     className: "text-[11px] text-gray-400"
   }, "Panel de gesti\xF3n \xB7 UNICON")), /*#__PURE__*/React.createElement("button", {
-    onClick: () => {
-      sbClient.auth.signOut();
+    onClick: async () => {
+      // Mismo motivo que en GestionHumanaPanel: esperar a que signOut() termine de limpiar la
+      // sesión antes de volver a "chofer", para que la restauración automática de ChoferApp no
+      // encuentre la sesión todavía viva y deshaga el cierre de sesión.
+      await sbClient.auth.signOut();
       setAdmin(null);
       setRole("chofer");
     },
