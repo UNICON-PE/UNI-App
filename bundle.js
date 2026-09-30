@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-09-30T19:37:07.142Z */
+/* UniconApp — Bundle generado el 2026-09-30T19:55:59.652Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 17254 — CERO simplificaciones */
+/* Líneas originales del JSX: 17267 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -9248,6 +9248,18 @@ function ChoferApp({
     })();
   }, []);
 
+  // Espejo de "driver" en un ref para el listener de abajo: el canal se suscribe una sola vez
+  // por sesión (no se re-crea en cada reasignación) así que su callback, si leyera "driver"
+  // directo, quedaría con un closure obsoleto — comparando cualquier reasignación futura contra
+  // la planta/unidad del momento del login en vez de la actual. Esto pasaba desapercibido antes
+  // porque la sesión se reiniciaba seguido (sessionStorage); con la sesión ahora persistente
+  // (localStorage) se nota: una reasignación DE VUELTA a la planta original del login (p.ej.
+  // "San Isidro" si ahí empezó la sesión) no disparaba el aviso, porque para el closure viejo
+  // nunca había "cambiado".
+  const driverRef = useRef(driver);
+  useEffect(() => {
+    driverRef.current = driver;
+  }, [driver]);
   // Escuchar cambios en tiempo real sobre el propio perfil (ej. reasignación de planta por AZT/Gestión Humana)
   useEffect(() => {
     if (!driver || !driver.id) return;
@@ -9258,7 +9270,8 @@ function ChoferApp({
       filter: `id=eq.${driver.id}`
     }, payload => {
       const nuevo = payload.new;
-      if (nuevo.planta !== driver.planta) {
+      const actual = driverRef.current;
+      if (nuevo.planta !== actual.planta) {
         setReasignado({
           plantaNueva: nuevo.planta
         });
@@ -9266,7 +9279,7 @@ function ChoferApp({
         setReasignado({
           desactivado: true
         });
-      } else if (nuevo.unidad !== driver.unidad) {
+      } else if (nuevo.unidad !== actual.unidad) {
         if (misUnidadesPropias.current.has(nuevo.unidad)) {
           // El propio chofer editó su mixer desde su perfil hace un instante — no es una
           // reasignación del AZT, así que no le mostramos el aviso de "fuiste reasignado".
