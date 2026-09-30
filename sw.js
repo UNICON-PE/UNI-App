@@ -32,7 +32,7 @@ self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET" || e.request.url.includes("supabase.co")) return;
 
   e.respondWith(
-    fetch(e.request)
+    fetch(e.request, { cache: "no-store" })
       .then((res) => {
         // Cache successful responses
         if (res.ok) {
