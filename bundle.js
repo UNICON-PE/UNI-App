@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-09-30T14:45:16.256Z */
+/* UniconApp — Bundle generado el 2026-09-30T19:22:31.096Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 17155 — CERO simplificaciones */
+/* Líneas originales del JSX: 17247 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -8365,7 +8365,13 @@ const GEMINI_PROXY_URL = `${SUPABASE_URL}/functions/v1/gemini-proxy`;
 const AUXILIO_MECANICO_SHEET_URL = "https://docs.google.com/spreadsheets/d/1vScU6cJmErMZq0RN8U4E_QCRTR4AF14zJfvJy6dsoGg/edit";
 const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
-    storage: window.sessionStorage,
+    // localStorage (no sessionStorage): la sesión debe sobrevivir a que el chofer salga de la PWA
+    // con el botón home del celular y vuelva a abrirla — Android suele destruir el WebView por
+    // presión de memoria mientras está en segundo plano, y sessionStorage se pierde con él,
+    // obligando a reingresar el DNI cada vez. El cierre de sesión al reasignar de planta o
+    // desactivar la cuenta ya se maneja aparte (ver pantalla "reasignado" en ChoferApp), no
+    // depende de este storage.
+    storage: window.localStorage,
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: false
@@ -8950,11 +8956,15 @@ function NotifPanel({
   // abierto se alcancen a ver resaltadas cuáles eran nuevas.
   const marcarTodasLeidas = () => {
     if (notifs.some(n => !n.leida)) {
+      const idsVisibles = new Set(notifs.map(n => n.id));
       notifs.filter(n => !n.leida).forEach(n => onLeida?.(n.id));
-      setNotifs(n => n.map(x => ({
+      // Solo se marcan como leídas las que de verdad se mostraron en este panel (notifs es ya el
+      // subconjunto visible para la planta actual del chofer) — las ocultas por ser de otra
+      // planta quedan intactas hasta que vuelvan a ser visibles.
+      setNotifs(n => n.map(x => idsVisibles.has(x.id) ? {
         ...x,
         leida: true
-      })));
+      } : x));
     }
   };
   const cerrarYMarcarTodas = () => {
@@ -9124,6 +9134,40 @@ function ChoferApp({
   const isDesktop = useIsDesktop();
   const ROLES_ADMIN_PANEL = ["jefe_planta", "despachador", "sgi", "supervisor_mantenimiento", "analista_mantenimiento", "admin_zonal_transporte", "trabajadora_social", "admin_transporte_bombas", "supervisor_bombas_jefe_ops", "gerente_transporte_distribucion", "jefe_transporte", "supervisor_transportes", "jefe_capacitacion", "administracion_personal", "mecanico_lider"];
   const ROLES_CHOFER = ["chofer", "chom_lider", "chofer_operador_bomba", "operador_bomba", "ayudante_bomba_multitask", "auxiliar_tuberia"];
+  // Aplica el perfil ya resuelto (por DNI o por una sesión restaurada) y decide a qué panel
+  // entra: gestión humana / AZT-administrativo / chofer. Separado de login() para que la
+  // restauración automática de sesión (más abajo) pueda reutilizar exactamente la misma lógica
+  // de ruteo por rol sin duplicarla.
+  const aplicarPerfil = (perfil, dniValor) => {
+    if (perfil.rol === "gestion_humana") {
+      setAztDni(dniValor);
+      setRole("gestion_humana");
+      return;
+    }
+    if (ROLES_ADMIN_PANEL.includes(perfil.rol)) {
+      setAztDni(dniValor);
+      setRole("azt");
+      return;
+    }
+
+    // Rol de chofer (incluye chom_lider y roles de Bombas)
+    const d = {
+      id: perfil.id,
+      nombre: perfil.nombre,
+      unidad: perfil.unidad || "",
+      planta: perfil.planta || "San Isidro",
+      chom: "CHOM Líder",
+      rol: perfil.rol,
+      foto_url: perfil.foto_url || null
+    };
+    setDriver({
+      ...d,
+      dni: dniValor
+    });
+    setChannel("avisos");
+    setEntered(false);
+    setAvisosLeidos(avisos.filter(a => a.planta === (d.planta || "San Isidro")).length);
+  };
   const login = async () => {
     setLoginError("");
     setLoginLoading(true);
@@ -9159,42 +9203,50 @@ function ChoferApp({
         setLoginLoading(false);
         return;
       }
-      if (perfil.rol === "gestion_humana") {
-        setAztDni(dni);
-        setRole("gestion_humana");
-        setLoginLoading(false);
-        return;
-      }
-      if (ROLES_ADMIN_PANEL.includes(perfil.rol)) {
-        setAztDni(dni);
-        setRole("azt");
-        setLoginLoading(false);
-        return;
-      }
-
-      // Rol de chofer (incluye chom_lider y roles de Bombas)
-      const d = {
-        id: perfil.id,
-        nombre: perfil.nombre,
-        unidad: perfil.unidad || "",
-        planta: perfil.planta || "San Isidro",
-        chom: "CHOM Líder",
-        rol: perfil.rol,
-        foto_url: perfil.foto_url || null
-      };
-      setDriver({
-        ...d,
-        dni
-      });
-      setChannel("avisos");
-      setEntered(false);
-      setAvisosLeidos(avisos.filter(a => a.planta === (d.planta || "San Isidro")).length);
+      aplicarPerfil(perfil, dni);
     } catch (err) {
       console.error("Error de login:", err);
       setLoginError("Error de conexión. Intenta de nuevo en unos segundos.");
     }
     setLoginLoading(false);
   };
+
+  // Restaura la sesión automáticamente si ya existe (localStorage la persiste entre aperturas de
+  // la PWA): sin esto, aunque Supabase Auth mantuviera la sesión viva, la app igual mostraría la
+  // pantalla de DNI en cada apertura porque nada volvía a poblar "driver"/"role" a partir de ella.
+  // Solo corre una vez al montar; login() y la pantalla de "reasignado" manejan el resto de casos.
+  const [restaurandoSesion, setRestaurandoSesion] = useState(true);
+  useEffect(() => {
+    (async () => {
+      const {
+        data: {
+          session
+        }
+      } = await sbClient.auth.getSession();
+      const dniSesion = session?.user?.email?.split("@")[0];
+      if (!dniSesion) {
+        setRestaurandoSesion(false);
+        return;
+      }
+      const {
+        data,
+        error
+      } = await sbClient.rpc("login_por_dni", {
+        p_dni: dniSesion
+      });
+      const perfil = Array.isArray(data) ? data[0] : data;
+      if (error || !perfil) {
+        // Cuenta desactivada o eliminada desde la última vez que se abrió la app: no se puede
+        // restaurar, se cierra la sesión vieja y se deja ver la pantalla de DNI normal.
+        await sbClient.auth.signOut();
+        setRestaurandoSesion(false);
+        return;
+      }
+      setDni(dniSesion);
+      aplicarPerfil(perfil, dniSesion);
+      setRestaurandoSesion(false);
+    })();
+  }, []);
 
   // Escuchar cambios en tiempo real sobre el propio perfil (ej. reasignación de planta por AZT/Gestión Humana)
   useEffect(() => {
@@ -9274,12 +9326,17 @@ function ChoferApp({
   // Notificaciones personales reales (ej. "alguien reportó que encontró lo que perdiste"),
   // guardadas en Supabase para que sobrevivan a un cierre de sesión o cambio de dispositivo.
   // Se cargan al entrar y se reciben en vivo mientras la sesión está abierta.
+  // planta: de qué planta es el aviso al que apunta la notificación (vía el join con avisos) — se
+  // usa para ocultar, mientras el chofer esté en otra planta, las notificaciones de una planta
+  // anterior (ya no tiene sentido ni acceso a ese canal). null cuando la notificación no apunta a
+  // ningún aviso puntual (nunca fueron clickeables para navegar, así que siempre se muestran).
   const mapNotifDB = n => ({
     id: n.id,
     tipo: n.tipo,
     texto: n.texto,
     detalle: n.detalle,
     avisoId: n.aviso_id,
+    planta: n.avisos?.planta ?? null,
     hora: new Date(n.created_at).toLocaleTimeString("es-PE", {
       hour: "2-digit",
       minute: "2-digit"
@@ -9292,25 +9349,56 @@ function ChoferApp({
     (async () => {
       const {
         data
-      } = await sbClient.from("notificaciones_personales").select("*").eq("chofer_id", driver.id).order("created_at", {
+      } = await sbClient.from("notificaciones_personales").select("*, avisos(planta)").eq("chofer_id", driver.id).order("created_at", {
         ascending: false
       });
       if (!vigente || !data) return;
-      setNotifs(prev => [...data.map(mapNotifDB), ...prev]);
+      // Re-fetch (no solo al montar, sino también cada vez que cambia driver.planta más abajo):
+      // el join con avisos depende de RLS, que a su vez depende de la planta ACTUAL del chofer —
+      // si se recargara solo una vez, el resultado del join quedaría "congelado" con la planta de
+      // ese momento y nunca reflejaría una reasignación posterior. Se reemplaza cada notificación
+      // ya conocida por su versión fresca (en vez de solo anteponer) para no duplicarlas.
+      setNotifs(prev => {
+        const frescas = data.map(mapNotifDB);
+        const idsFrescos = new Set(frescas.map(n => n.id));
+        return [...frescas, ...prev.filter(n => !idsFrescos.has(n.id))];
+      });
     })();
     const canal = sbClient.channel(`notif-personal-${driver.id}`).on("postgres_changes", {
       event: "INSERT",
       schema: "public",
       table: "notificaciones_personales",
       filter: `chofer_id=eq.${driver.id}`
-    }, payload => {
-      setNotifs(prev => [mapNotifDB(payload.new), ...prev]);
+    }, async payload => {
+      const nueva = payload.new;
+      let plantaAviso = null;
+      if (nueva.aviso_id) {
+        const {
+          data: avisoFila
+        } = await sbClient.from("avisos").select("planta").eq("id", nueva.aviso_id).maybeSingle();
+        plantaAviso = avisoFila?.planta ?? null;
+      }
+      setNotifs(prev => [mapNotifDB({
+        ...nueva,
+        avisos: {
+          planta: plantaAviso
+        }
+      }), ...prev]);
     }).subscribe();
     return () => {
       vigente = false;
       sbClient.removeChannel(canal);
     };
-  }, [driver?.id]);
+  }, [driver?.id, driver?.planta]);
+  // Notificaciones visibles ahora mismo: las que no apuntan a un aviso puntual (nunca navegan a
+  // ningún canal, se muestran siempre) más las que sí apuntan a un aviso de la planta ACTUAL del
+  // chofer. OJO: como avisos tiene RLS restringido a la planta actual, el join n.avisos viene
+  // null tanto si no hay aviso_id como si el aviso es de una planta a la que ya no tiene acceso
+  // (la RLS lo bloquea) — por eso el criterio se arma sobre avisoId, no sobre planta: solo se
+  // confía en "null = se puede mostrar" cuando ni siquiera hay a qué aviso apuntar. Si el AZT
+  // reasigna de vuelta a la planta anterior, estas mismas notificaciones reaparecen solas (no se
+  // pierden, solo se ocultan mientras no correspondan).
+  const notifsVisibles = notifs.filter(n => !n.avisoId || n.planta === driver?.planta);
   const marcarNotifLeidaDB = async id => {
     // Sin await, el query builder de supabase-js nunca llegaba a dispararse de verdad: el estado
     // local se veía "leído" en pantalla, pero el UPDATE real nunca salía — por eso reaparecían
@@ -9390,7 +9478,8 @@ function ChoferApp({
     setDni: setDni,
     onLogin: login,
     loginError: loginError,
-    loginLoading: loginLoading
+    loginLoading: loginLoading,
+    restaurandoSesion: restaurandoSesion
   });
 
   // La sesión de Supabase Auth sigue siendo válida tras una reasignación de planta (solo cambió
@@ -9526,7 +9615,7 @@ function ChoferApp({
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement(NotifPanel, {
-    notifs: notifs,
+    notifs: notifsVisibles,
     setNotifs: setNotifs,
     onClose: () => setOpenNotif(false),
     onLeida: marcarNotifLeidaDB,
@@ -9555,7 +9644,7 @@ function ChoferApp({
     }
   }, /*#__PURE__*/React.createElement(Bell, {
     size: 16
-  }), (notifs || []).filter(n => !n.leida).length > 0 &&
+  }), notifsVisibles.filter(n => !n.leida).length > 0 &&
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("span", {
@@ -9564,7 +9653,7 @@ function ChoferApp({
       background: "#e11d48",
       color: "white"
     }
-  }, notifs.filter(n => !n.leida).length))), /*#__PURE__*/React.createElement(NombreClickeable, {
+  }, notifsVisibles.filter(n => !n.leida).length))), /*#__PURE__*/React.createElement(NombreClickeable, {
     id: driver.id,
     dniViewer: driver.dni,
     className: "w-full text-left",
@@ -9872,7 +9961,8 @@ function LoginScreen({
   setDni,
   onLogin,
   loginError,
-  loginLoading
+  loginLoading,
+  restaurandoSesion
 }) {
   const isDesktop = useIsDesktop();
   const [splashVisible, setSplashVisible] = useState(true);
@@ -9880,6 +9970,9 @@ function LoginScreen({
     const t = setTimeout(() => setSplashVisible(false), 2000);
     return () => clearTimeout(t);
   }, []);
+  // Mientras se intenta restaurar una sesión ya guardada (ver ChoferApp), el splash se queda
+  // puesto en vez de pasar al formulario de DNI — si hay sesión, nunca llega a mostrarse; si no
+  // la hay, el formulario aparece igual apenas termine de comprobarlo.
   const formulario =
   /*#__PURE__*/
   /*#__PURE__*/
@@ -9909,7 +10002,7 @@ function LoginScreen({
       color: AZUL
     }
   }, loginLoading ? "Verificando..." : "Ingresar"));
-  if (splashVisible) {
+  if (splashVisible || restaurandoSesion) {
     // Splash inicial: pantalla azul completa, camión quieto con las ruedas girando
     return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
       className: "w-full h-full flex items-center justify-center overflow-hidden",
