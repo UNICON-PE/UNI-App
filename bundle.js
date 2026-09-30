@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-09-30T02:59:34.586Z */
+/* UniconApp — Bundle generado el 2026-09-30T14:00:09.501Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 16936 — CERO simplificaciones */
+/* Líneas originales del JSX: 17009 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -8941,30 +8941,40 @@ function NotifPanel({
   notifs,
   setNotifs,
   onClose,
-  onLeida
+  onLeida,
+  onIrAMensaje
 }) {
-  const marcarLeida = id => {
-    setNotifs(n => n.map(x => x.id === id ? {
-      ...x,
-      leida: true
-    } : x));
-    onLeida?.(id);
+  // Ver las notificaciones (abrir la campanita) ya cuenta como "leerlas" — no hace falta que el
+  // chofer haga clic en cada una ni en un botón aparte. Se marcan todas al cerrar (clic afuera,
+  // en la X, o al abrir una para ir a leerla), no al abrir el panel, para que mientras sigue
+  // abierto se alcancen a ver resaltadas cuáles eran nuevas.
+  const marcarTodasLeidas = () => {
+    if (notifs.some(n => !n.leida)) {
+      notifs.filter(n => !n.leida).forEach(n => onLeida?.(n.id));
+      setNotifs(n => n.map(x => ({
+        ...x,
+        leida: true
+      })));
+    }
   };
-  const marcarTodas = () => {
-    notifs.filter(n => !n.leida).forEach(n => onLeida?.(n.id));
-    setNotifs(n => n.map(x => ({
-      ...x,
-      leida: true
-    })));
+  const cerrarYMarcarTodas = () => {
+    marcarTodasLeidas();
+    onClose();
   };
-  const iconOf = t => t === "incidencia" ? CheckCircle2 : t === "encontrado" ? Package : t === "sede" ? RefreshCw : Bell;
-  const colorOf = t => t === "incidencia" ? "#16a34a" : t === "encontrado" ? "#ca8a04" : t === "sede" ? "#0891b2" : AZUL;
+  // Clic en una notificación puntual: además de marcar todo como leído, navega directo al mensaje
+  // original (Canal de Avisos, centrado y resaltado) — ver irANotificacion en ChoferApp.
+  const abrirNotificacion = n => {
+    marcarTodasLeidas();
+    onIrAMensaje?.(n.avisoId);
+  };
+  const iconOf = t => t === "incidencia" ? CheckCircle2 : t === "encontrado" ? Package : t === "sede" ? RefreshCw : t === "ruta_respondida" ? MapPin : t === "citacion" ? FileText : Bell;
+  const colorOf = t => t === "incidencia" ? "#16a34a" : t === "encontrado" ? "#ca8a04" : t === "sede" ? "#0891b2" : t === "ruta_respondida" ? "#7c3aed" : t === "citacion" ? "#0028AA" : AZUL;
   return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 z-50 flex items-start justify-end p-3 pt-14",
     style: {
       background: "rgba(0,0,0,.4)"
     },
-    onClick: onClose
+    onClick: cerrarYMarcarTodas
   }, /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-2xl w-full shadow-2xl overflow-hidden flex flex-col",
     style: {
@@ -8984,27 +8994,21 @@ function NotifPanel({
   }), /*#__PURE__*/React.createElement("span", {
     className: "font-bold text-sm"
   }, "Notificaciones")), /*#__PURE__*/React.createElement("button", {
-    onClick: onClose
+    onClick: cerrarYMarcarTodas
   }, /*#__PURE__*/React.createElement(X, {
     size: 18
   }))), notifs.filter(n => !n.leida).length > 0 &&
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
-    className: "px-4 py-2 border-b flex items-center justify-between",
+    className: "px-4 py-2 border-b",
     style: {
       borderColor: "#e6e8ee",
       background: "#f8fafc"
     }
   }, /*#__PURE__*/React.createElement("span", {
     className: "text-[11px] text-gray-500"
-  }, notifs.filter(n => !n.leida).length, " sin leer"), /*#__PURE__*/React.createElement("button", {
-    onClick: marcarTodas,
-    className: "text-xs font-semibold",
-    style: {
-      color: AZUL
-    }
-  }, "Marcar todas como le\xEDdas")), /*#__PURE__*/React.createElement("div", {
+  }, notifs.filter(n => !n.leida).length, " sin leer")), /*#__PURE__*/React.createElement("div", {
     className: "flex-1 overflow-y-auto"
   }, notifs.length === 0 &&
   /*#__PURE__*/
@@ -9018,12 +9022,12 @@ function NotifPanel({
     className: "text-sm"
   }, "No tienes notificaciones a\xFAn."), /*#__PURE__*/React.createElement("p", {
     className: "text-[11px] mt-1"
-  }, "Aqu\xED ver\xE1s avisos cuando resuelvan tu incidencia, cambien tu planta o encuentren algo que perdiste.")), notifs.map(n => {
+  }, "Aqu\xED ver\xE1s avisos cuando resuelvan tu incidencia, cambien tu planta, encuentren algo que perdiste, te respondan una consulta de ruta o compartan la citaci\xF3n de tu planta.")), notifs.map(n => {
     const I = iconOf(n.tipo);
     const c = colorOf(n.tipo);
     return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
       key: n.id,
-      onClick: () => marcarLeida(n.id),
+      onClick: () => abrirNotificacion(n),
       className: "w-full flex items-start gap-3 px-4 py-3 text-left border-b hover:bg-gray-50 transition-colors",
       style: {
         borderColor: "#f0f2f6",
@@ -9107,6 +9111,7 @@ function ChoferApp({
   const [channel, setChannel] = useState(null); // avisos|finvuelta|bot|incidencias — null = sin canal elegido aún, para evitar montar el chat automáticamente al iniciar sesión
   const [entered, setEntered] = useState(true); // directo al canal, sin intro
   const [mobileList, setMobileList] = useState(true);
+  const [irAMensajeAvisoId, setIrAMensajeAvisoId] = useState(null); // aviso a resaltar/centrar en PanelAvisos, pedido desde la campanita de notificaciones
   const [avisosLeidos, setAvisosLeidos] = useState(0);
   const [incVistas, setIncVistas] = useState(new Set());
   const [loginError, setLoginError] = useState("");
@@ -9274,6 +9279,7 @@ function ChoferApp({
     tipo: n.tipo,
     texto: n.texto,
     detalle: n.detalle,
+    avisoId: n.aviso_id,
     hora: new Date(n.created_at).toLocaleTimeString("es-PE", {
       hour: "2-digit",
       minute: "2-digit"
@@ -9305,10 +9311,26 @@ function ChoferApp({
       sbClient.removeChannel(canal);
     };
   }, [driver?.id]);
-  const marcarNotifLeidaDB = id => {
-    sbClient.from("notificaciones_personales").update({
+  const marcarNotifLeidaDB = async id => {
+    // Sin await, el query builder de supabase-js nunca llegaba a dispararse de verdad: el estado
+    // local se veía "leído" en pantalla, pero el UPDATE real nunca salía — por eso reaparecían
+    // como no leídas al volver a entrar.
+    const {
+      error
+    } = await sbClient.from("notificaciones_personales").update({
       leida: true
     }).eq("id", id);
+    if (error) console.error("No se pudo marcar la notificación como leída:", error.message);
+  };
+  // Clic en una notificación puntual de la campanita: cierra el panel, entra al Canal de Avisos
+  // (todas las notificaciones de hoy apuntan ahí — objeto encontrado, respuesta de ruta, citación)
+  // y le pide a PanelAvisos que centre y resalte ese mensaje exacto.
+  const irANotificacion = avisoId => {
+    setOpenNotif(false);
+    if (!avisoId) return;
+    setChannel("avisos");
+    setMobileList(false);
+    setIrAMensajeAvisoId(avisoId);
   };
   const openChannel = id => {
     setChannel(id);
@@ -9326,11 +9348,17 @@ function ChoferApp({
     if (!driver?.id || !driver?.planta) return;
     let vigente = true;
     (async () => {
+      // Mismo motivo que en cargarTodo (PanelAvisos): sin límite ni orden explícitos, PostgREST
+      // corta en 1000 filas de forma no garantizada — en una planta con mucho historial eso puede
+      // dejar fuera avisos recientes y subcontar el badge. Se piden los últimos 500 (los únicos
+      // relevantes para "no leídos") ordenados por fecha.
       const [{
         data: mensajes
       }, {
         data: lectura
-      }] = await Promise.all([sbClient.from("avisos").select("id, autor_id, created_at").eq("planta", driver.planta), sbClient.from("avisos_lectura").select("ultimo_leido_at").eq("usuario_id", driver.id).eq("planta", driver.planta).maybeSingle()]);
+      }] = await Promise.all([sbClient.from("avisos").select("id, autor_id, created_at").eq("planta", driver.planta).order("created_at", {
+        ascending: false
+      }).limit(500), sbClient.from("avisos_lectura").select("ultimo_leido_at").eq("usuario_id", driver.id).eq("planta", driver.planta).maybeSingle()]);
       if (!vigente || !mensajes) return;
       const ultimoLeido = lectura?.ultimo_leido_at;
       const noLeidos = ultimoLeido ? mensajes.filter(a => a.autor_id !== driver.id && new Date(a.created_at) > new Date(ultimoLeido)).length : mensajes.filter(a => a.autor_id !== driver.id).length;
@@ -9501,7 +9529,8 @@ function ChoferApp({
     notifs: notifs,
     setNotifs: setNotifs,
     onClose: () => setOpenNotif(false),
-    onLeida: marcarNotifLeidaDB
+    onLeida: marcarNotifLeidaDB,
+    onIrAMensaje: irANotificacion
   }), showSidebar &&
   /*#__PURE__*/
   /*#__PURE__*/
@@ -9654,7 +9683,9 @@ function ChoferApp({
       nombre: driver.nombre
     },
     planta: driver.planta,
-    puedePublicar: false
+    puedePublicar: false,
+    irAMensajeId: irAMensajeAvisoId,
+    onLlegoAMensaje: () => setIrAMensajeAvisoId(null)
   }), channel === "finvuelta" &&
   /*#__PURE__*/
   /*#__PURE__*/
@@ -10023,8 +10054,11 @@ function PanelAvisos({
   puedePublicar,
   plantasAdmin,
   esAZT,
-  isDesktop = true
+  isDesktop = true,
+  irAMensajeId,
+  onLlegoAMensaje
 }) {
+  const [mensajeResaltadoId, setMensajeResaltadoId] = useState(null);
   const [avisosData, setAvisosData] = useState(() => cacheAvisosPorPlanta[planta] || []);
   const [loading, setLoading] = useState(!cacheAvisosPorPlanta[planta]);
   const datosFrescosRef = useRef(false); // true una vez que cargarTodo trajo la respuesta real del servidor para esta instancia (avisosData puede arrancar con caché vieja de una visita anterior)
@@ -10050,6 +10084,12 @@ function PanelAvisos({
   const [subirCitacionAbierta, setSubirCitacionAbierta] = useState(false);
   const [adjuntos, setAdjuntos] = useState([]); // [{ id, file, tipo: "imagen"|"archivo", previewUrl, ext }]
   const [lecturaLista, setLecturaLista] = useState(false);
+  // Captura, solo en el primer render de esta apertura del canal, si se vino de un clic en la
+  // campanita — a diferencia de la prop irAMensajeId (que se limpia apenas se usa), esta bandera
+  // se queda en true el resto del tiempo que el canal siga montado, para que el salto normal al
+  // primer no leído no se "reactive" un instante después y pise el scroll ya puesto en el mensaje
+  // pedido (el doble salto que se veía antes).
+  const vinoDeNotificacionRef = useRef(!!irAMensajeId);
   const [listoParaMostrar, setListoParaMostrar] = useState(false); // el chat permanece oculto (pero montado) hasta que el scroll ya quedó posicionado, para no mostrar el salto visual "aparece arriba, luego baja"
   const [primerNoLeidoId, setPrimerNoLeidoId] = useState(null);
   const [countNoLeidos, setCountNoLeidos] = useState(0);
@@ -10097,12 +10137,18 @@ function PanelAvisos({
       return;
     }
     if (mostrarLoading) setLoading(true);
+    // Sin este límite, PostgREST aplica su tope por defecto de 1000 filas — y como se ordena por
+    // created_at, en un canal que ya superó los 1000 avisos históricos eso corta silenciosamente
+    // los mensajes MÁS RECIENTES (quedan fuera, como si nunca se hubieran publicado, hasta que
+    // llegan en vivo por Realtime con el canal ya abierto). Se pide en orden descendente para
+    // quedarnos siempre con los últimos 500, y se revierte a ascendente para mostrarlos.
     const {
-      data: avisos,
+      data: avisosDesc,
       error: errorAvisos
     } = await sbClient.from("avisos").select("*").eq("planta", plantaEfectiva).order("created_at", {
-      ascending: true
-    });
+      ascending: false
+    }).limit(500);
+    const avisos = avisosDesc ? [...avisosDesc].reverse() : avisosDesc;
     if (errorAvisos || !avisos) {
       setAvisosData([]);
       setLoading(false);
@@ -10393,6 +10439,20 @@ function PanelAvisos({
     }
   };
 
+  // Pedido desde la campanita de notificaciones (irAMensajeId, ver irANotificacion en ChoferApp):
+  // centra el mensaje exacto y lo resalta un momento, mismo posicionarScroll que ya usa el
+  // buscador. Espera a que el mensaje objetivo ya esté en avisosData (puede que la carga inicial
+  // del canal todavía no haya terminado) antes de intentarlo.
+  useEffect(() => {
+    if (!irAMensajeId) return;
+    if (!avisosData.some(a => a.id === irAMensajeId)) return;
+    posicionarScroll(irAMensajeId, true);
+    setMensajeResaltadoId(irAMensajeId);
+    onLlegoAMensaje?.();
+    const t = setTimeout(() => setMensajeResaltadoId(null), 2500);
+    return () => clearTimeout(t);
+  }, [irAMensajeId, avisosData]);
+
   // Quita tildes/diacríticos y pasa a minúsculas, para que la búsqueda encuentre "citacion"
   // aunque el mensaje diga "Citación" (comportamiento esperado tipo WhatsApp).
   const normalizarBusqueda = s => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -10509,8 +10569,12 @@ function PanelAvisos({
         if (noLeidos.length > 0) {
           setPrimerNoLeidoId(noLeidos[0].id);
           setCountNoLeidos(noLeidos.length);
-          scrollPendienteRef.current = noLeidos[0].id;
-          setScrollTrigger(n => n + 1);
+          // Si se vino de un clic en la campanita, el destino es ese mensaje puntual — no el
+          // salto normal al primer no leído (evita el "doble salto" que se veía antes).
+          if (!vinoDeNotificacionRef.current) {
+            scrollPendienteRef.current = noLeidos[0].id;
+            setScrollTrigger(n => n + 1);
+          }
         }
         marcarLeidoHasta(avisosData[avisosData.length - 1].created_at);
       }
@@ -10526,7 +10590,10 @@ function PanelAvisos({
     } else {
       scrollPendienteRef.current = "__final__";
     }
-    setScrollTrigger(n => n + 1); // fuerza el efecto de scroll de abajo aunque primerNoLeidoId no cambie (caso "ir al final")
+    // Mismo caso que arriba: si se viene de la campanita, que decida solo el efecto de
+    // irAMensajeId más abajo (que revela el chat una vez que centra el mensaje objetivo — o el
+    // salvavidas de 2.5s si por algo no llega a encontrarlo), no este salto al primer no leído.
+    if (!vinoDeNotificacionRef.current) setScrollTrigger(n => n + 1); // fuerza el efecto de scroll de abajo aunque primerNoLeidoId no cambie (caso "ir al final")
     // Se marca leído hasta el último mensaje que existía en este momento — pero SOLO si avisosData
     // ya refleja la respuesta real del servidor (datosFrescosRef), no la caché con la que se pudo
     // haber arrancado la visualización. Si se marcara leído usando una caché vieja que no incluye
@@ -11123,7 +11190,8 @@ function PanelAvisos({
     }, /*#__PURE__*/React.createElement("div", {
       className: `rounded-xl px-3 py-2 shadow-sm relative ${esPropio ? "rounded-tr-none" : "rounded-tl-none"}`,
       style: {
-        background: esPropio ? WA_SENT : "white",
+        background: a.id === mensajeResaltadoId ? "#FEF3C7" : esPropio ? WA_SENT : "white",
+        transition: "background 0.6s ease",
         display: "inline-block",
         maxWidth: "min(460px, 85vw)"
       }
@@ -14696,7 +14764,7 @@ function UniBot({
   // Grupos de sinónimos para objetos que los choferes suelen reportar: palabras que significan
   // lo mismo pero no comparten ninguna raíz en común (ej. "celular"/"telefono"), así que la
   // comparación por raíz de abajo nunca las conectaría por sí sola.
-  const SINONIMOS_OBJETO_GRUPOS = [["celular", "telefono", "movil", "smartphone"], ["foto", "fotografia", "imagen"], ["billetera", "cartera", "monedero"], ["lente", "gafa", "anteojo"], ["gorro", "gorra"], ["mochila", "bolso", "maletin"], ["llave", "llavero"], ["audifono", "auricular"], ["documento", "papel", "carnet"], ["medicamento", "pastilla", "remedio"], ["chompa", "casaca", "chaqueta"], ["cargador", "cable"]];
+  const SINONIMOS_OBJETO_GRUPOS = [["celular", "telefono", "movil", "smartphone", "cel"], ["foto", "fotografia", "imagen"], ["billetera", "cartera", "monedero"], ["lente", "gafa", "anteojo"], ["gorro", "gorra"], ["mochila", "bolso", "maletin", "bulto"], ["llave", "llavero"], ["audifono", "auricular"], ["documento", "papel", "carnet", "brevete", "dni", "licencia", "tarjeta"], ["medicamento", "pastilla", "remedio"], ["chompa", "casaca", "chaqueta", "abrigo"], ["cargador", "cable"], ["radio", "handy"], ["zapatilla", "zapato", "bota"], ["correa", "cinturon"], ["polo", "camisa", "camiseta"]];
   const RAIZ_LEN_OBJETO = 4;
   const raizPalabraObjeto = w => w.length <= RAIZ_LEN_OBJETO ? w : w.slice(0, RAIZ_LEN_OBJETO);
   const GRUPO_DE_RAIZ_OBJETO = (() => {
@@ -20124,11 +20192,15 @@ function AztPanel({
     (async () => {
       for (const p of plantasReales) {
         if (cacheAvisosPorPlanta[p]) continue; // ya está en caché, no repetir
+        // Mismo motivo que en cargarTodo (PanelAvisos): sin límite explícito, PostgREST corta en
+        // 1000 filas y, ordenado ascendente, eso descarta los avisos MÁS RECIENTES en cualquier
+        // planta que ya supere ese historial.
         const {
-          data: avisosP
+          data: avisosPDesc
         } = await sbClient.from("avisos").select("*").eq("planta", p).order("created_at", {
-          ascending: true
-        });
+          ascending: false
+        }).limit(500);
+        const avisosP = avisosPDesc ? [...avisosPDesc].reverse() : avisosPDesc;
         if (!avisosP) continue;
         const avisoIds = avisosP.map(a => a.id);
         const [reaccionesP, respuestasP, respuestasObjetoP] = await Promise.all([avisoIds.length ? consultarPorLotes("aviso_reacciones", avisoIds) : Promise.resolve([]), avisoIds.length ? consultarPorLotes("aviso_respuestas_ruta", avisoIds) : Promise.resolve([]), avisoIds.length ? consultarPorLotes("aviso_respuestas_objeto", avisoIds) : Promise.resolve([])]);
