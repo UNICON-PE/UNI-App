@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-01T17:04:51.290Z */
+/* UniconApp — Bundle generado el 2026-10-01T17:12:41.234Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 17369 — CERO simplificaciones */
+/* Líneas originales del JSX: 17376 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -20679,6 +20679,13 @@ function AztPanel({
     setSol("");
   };
   const openSection = id => {
+    // Al salir del Canal de Avisos hacia otra sección del menú (ej. UNI BOT, Reportes de Mixers),
+    // el badge de la lista lateral (previewAvisos) puede haber quedado desactualizado: solo se
+    // refresca al hacer clic en una planta (abrirChatPlanta, más abajo) o al cargar la página —
+    // si solo se respondió un mensaje y se salió directo a otra sección sin pasar por el selector
+    // de plantas, el número se quedaba pegado en lo que mostraba antes de responder. Se recalcula
+    // contra el estado real (avisos_lectura) justo antes de salir.
+    if (section === "avisos" && id !== "avisos") cargarPreviews();
     setSection(id);
     setMobileList(false);
     setPlantaElegidaMobile(false);
