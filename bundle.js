@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-01T16:20:46.907Z */
+/* UniconApp — Bundle generado el 2026-10-01T01:56:39.820Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 17403 — CERO simplificaciones */
+/* Líneas originales del JSX: 17377 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -8363,31 +8363,25 @@ const GEMINI_PROXY_URL = `${SUPABASE_URL}/functions/v1/gemini-proxy`;
 // desde el RPC registrar_auxilio_mecanico (ver migración de Supabase); este enlace solo abre
 // la hoja para verla/editarla manualmente.
 const AUXILIO_MECANICO_SHEET_URL = "https://docs.google.com/spreadsheets/d/1vScU6cJmErMZq0RN8U4E_QCRTR4AF14zJfvJy6dsoGg/edit";
-// sessionStorage para todos los dispositivos (celular incluido): cada pestaña/ventana tiene su
-// propia sesión, aislada de las demás. Se probó localStorage (persistente, primero para todos y
-// luego solo en celular) para que el chofer no reingrese el DNI si Android mata la PWA en segundo
-// plano, pero se descartó por decisión explícita — no se quiso asumir el riesgo de que dos
-// pestañas del mismo celular con cuentas distintas se pisen la sesión entre sí. El botón Atrás
-// tampoco se puede atajar (ver TRASPASO_CLAUDE_CODE.md o el historial de git para el detalle):
-// probado en Android real, el sistema le gana a la técnica de "atrapar" el historial tras un par
-// de intentos. "No cerrar sesión en el celular" queda pendiente para otro enfoque el día que se
-// retome.
 const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
+    // sessionStorage (no localStorage): cada pestaña/ventana tiene su propia sesión, aislada de
+    // las demás. Se probó localStorage (sesión persistente, compartida entre pestañas) para que
+    // el chofer no reingrese el DNI si Android mata la PWA en segundo plano, pero generó más
+    // problemas de los que resolvió: todas las pestañas del mismo navegador terminan compartiendo
+    // una sola sesión de Supabase Auth, así que iniciar sesión en una pestaña nueva (con otra
+    // cuenta) le pisaba la sesión a cualquier otra pestaña que siguiera abierta de antes, y cerrar
+    // sesión no limpiaba a tiempo si la pestaña se cerraba antes de que terminara el signOut()
+    // async — todo eso se vio como fallas de RLS intermitentes, avisos/notificaciones que no
+    // llegaban, y contadores de no-leídos incorrectos, sin relación aparente con la causa real.
+    // Revertido a sessionStorage hasta encontrar una forma de implementar "no cerrar sesión en el
+    // celular" sin ese efecto cruzado entre pestañas.
     storage: window.sessionStorage,
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: false
   }
 });
-
-// Se probó e intentó atrapar el botón Atrás (empujar estados al historial en cada "popstate")
-// para que no cerrara sesión al retroceder desde el celular, pero se descartó: probado en Android
-// real, a la segunda pulsada el sistema igual sacaba de la app — el mismo patrón que se veía en
-// Edge de escritorio. Parece que el propio sistema/navegador le gana a esta técnica tras un par de
-// intentos (posible protección anti-abuso, ya que "atrapar" el botón Atrás es un patrón que usan
-// sitios maliciosos para no dejar salir al usuario). Queda pendiente retomar "no cerrar sesión en
-// el celular" con otro enfoque el día que se necesite.
 
 // Consulta una tabla filtrando por aviso_id en lotes: con cientos de mensajes acumulados en un
 // canal, mandar todos los IDs de una sola vez en el filtro .in() genera una URL demasiado larga
@@ -9474,14 +9468,10 @@ function ChoferApp({
 
   // Carga inicial real del badge de no-leídos (avisos_lectura es la misma fuente de verdad que
   // usa PanelAvisos para calcular el separador dentro del chat, y el badge por planta en AztPanel).
-  // Además de la carga inicial, se repite cada 20s como respaldo: el canal de Realtime de abajo
-  // (avisos-badge) a veces queda "SUBSCRIBED" sin entregar el evento — confirmado por el chofer en
-  // celular (conexión móvil, más propensa a esto que una conexión de escritorio estable); mismo
-  // respaldo que ya tienen la campanita y el badge de Auxilio mecánico.
   useEffect(() => {
     if (!driver?.id || !driver?.planta) return;
     let vigente = true;
-    const recalcular = async () => {
+    (async () => {
       // Mismo motivo que en cargarTodo (PanelAvisos): sin límite ni orden explícitos, PostgREST
       // corta en 1000 filas de forma no garantizada — en una planta con mucho historial eso puede
       // dejar fuera avisos recientes y subcontar el badge. Se piden los últimos 500 (los únicos
@@ -9497,20 +9487,27 @@ function ChoferApp({
       const ultimoLeido = lectura?.ultimo_leido_at;
       const noLeidos = ultimoLeido ? mensajes.filter(a => a.autor_id !== driver.id && new Date(a.created_at) > new Date(ultimoLeido)).length : mensajes.filter(a => a.autor_id !== driver.id).length;
       setAvisosNoLeidosReal(noLeidos);
-    };
-    recalcular();
-    const intervalo = setInterval(recalcular, 20000);
+    })();
     return () => {
       vigente = false;
-      clearInterval(intervalo);
     };
   }, [driver?.id, driver?.planta]);
 
-  // Contador real de avisos nuevos (para el badge), independiente de si el chofer tiene el canal
-  // abierto. Canal propio, sin mezclar con ninguna otra tabla — este es el que ya funcionaba
-  // instantáneo en el celular; se deja intacto a propósito.
+  // Contador real de avisos nuevos (para el badge), independiente de si el chofer tiene el canal abierto
   useEffect(() => {
     if (!driver?.planta) return;
+    // Una respuesta a una consulta de ruta/objeto perdido no inserta un aviso nuevo — se guarda en
+    // aviso_respuestas_ruta/aviso_respuestas_objeto, aparte, enganchada al aviso original (ver
+    // PanelAvisos). Sin esto, aunque la respuesta sí se vea en vivo dentro del chat para quien lo
+    // tenga abierto, el badge de "no leídos" nunca se enteraba de que había algo nuevo para ver.
+    const contarSiEsDeMiPlanta = async (nueva, tabla) => {
+      if (nueva.chofer_id === driver.id) return; // mi propia respuesta no cuenta como no leída
+      const {
+        data: aviso
+      } = await sbClient.from("avisos").select("planta").eq("id", nueva.aviso_id).maybeSingle();
+      if (aviso?.planta !== driver.planta) return;
+      if (channel !== "avisos") setAvisosNoLeidosReal(n => n + 1);
+    };
     const canal = sbClient.channel(`avisos-badge-${driver.planta}`).on("postgres_changes", {
       event: "INSERT",
       schema: "public",
@@ -9519,38 +9516,15 @@ function ChoferApp({
       if (payload.new.planta !== driver.planta) return;
       if (payload.new.autor_id === driver.id) return; // los mensajes propios nunca cuentan como no leídos
       if (channel !== "avisos") setAvisosNoLeidosReal(n => n + 1);
-    }).subscribe();
-    return () => {
-      sbClient.removeChannel(canal);
-    };
-  }, [driver?.planta, channel]);
-
-  // Una respuesta a una consulta de ruta/objeto perdido no inserta un aviso nuevo — se guarda en
-  // aviso_respuestas_ruta/aviso_respuestas_objeto, aparte, enganchada al aviso original (ver
-  // PanelAvisos). Sin esto, aunque la respuesta sí se vea en vivo dentro del chat para quien lo
-  // tenga abierto, el badge de "no leídos" nunca se enteraba de que había algo nuevo para ver. En
-  // un canal de Realtime APARTE del de arriba (no mezclado): meter varias tablas en el mismo canal
-  // de avisos-badge parecía hacer que todo el canal (incluida la parte de mensajes nuevos, que
-  // antes era instantánea) se volviera menos confiable en celular.
-  useEffect(() => {
-    if (!driver?.planta) return;
-    const contarSiEsDeMiPlanta = async nueva => {
-      if (nueva.chofer_id === driver.id) return; // mi propia respuesta no cuenta como no leída
-      const {
-        data: aviso
-      } = await sbClient.from("avisos").select("planta").eq("id", nueva.aviso_id).maybeSingle();
-      if (aviso?.planta !== driver.planta) return;
-      if (channel !== "avisos") setAvisosNoLeidosReal(n => n + 1);
-    };
-    const canal = sbClient.channel(`avisos-respuestas-badge-${driver.planta}`).on("postgres_changes", {
+    }).on("postgres_changes", {
       event: "INSERT",
       schema: "public",
       table: "aviso_respuestas_ruta"
-    }, payload => contarSiEsDeMiPlanta(payload.new)).on("postgres_changes", {
+    }, payload => contarSiEsDeMiPlanta(payload.new, "ruta")).on("postgres_changes", {
       event: "INSERT",
       schema: "public",
       table: "aviso_respuestas_objeto"
-    }, payload => contarSiEsDeMiPlanta(payload.new)).subscribe();
+    }, payload => contarSiEsDeMiPlanta(payload.new, "objeto")).subscribe();
     return () => {
       sbClient.removeChannel(canal);
     };
