@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-01T16:14:34.796Z */
+/* UniconApp — Bundle generado el 2026-10-01T16:20:46.907Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 17390 — CERO simplificaciones */
+/* Líneas originales del JSX: 17403 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -9506,21 +9506,11 @@ function ChoferApp({
     };
   }, [driver?.id, driver?.planta]);
 
-  // Contador real de avisos nuevos (para el badge), independiente de si el chofer tiene el canal abierto
+  // Contador real de avisos nuevos (para el badge), independiente de si el chofer tiene el canal
+  // abierto. Canal propio, sin mezclar con ninguna otra tabla — este es el que ya funcionaba
+  // instantáneo en el celular; se deja intacto a propósito.
   useEffect(() => {
     if (!driver?.planta) return;
-    // Una respuesta a una consulta de ruta/objeto perdido no inserta un aviso nuevo — se guarda en
-    // aviso_respuestas_ruta/aviso_respuestas_objeto, aparte, enganchada al aviso original (ver
-    // PanelAvisos). Sin esto, aunque la respuesta sí se vea en vivo dentro del chat para quien lo
-    // tenga abierto, el badge de "no leídos" nunca se enteraba de que había algo nuevo para ver.
-    const contarSiEsDeMiPlanta = async (nueva, tabla) => {
-      if (nueva.chofer_id === driver.id) return; // mi propia respuesta no cuenta como no leída
-      const {
-        data: aviso
-      } = await sbClient.from("avisos").select("planta").eq("id", nueva.aviso_id).maybeSingle();
-      if (aviso?.planta !== driver.planta) return;
-      if (channel !== "avisos") setAvisosNoLeidosReal(n => n + 1);
-    };
     const canal = sbClient.channel(`avisos-badge-${driver.planta}`).on("postgres_changes", {
       event: "INSERT",
       schema: "public",
@@ -9529,15 +9519,38 @@ function ChoferApp({
       if (payload.new.planta !== driver.planta) return;
       if (payload.new.autor_id === driver.id) return; // los mensajes propios nunca cuentan como no leídos
       if (channel !== "avisos") setAvisosNoLeidosReal(n => n + 1);
-    }).on("postgres_changes", {
+    }).subscribe();
+    return () => {
+      sbClient.removeChannel(canal);
+    };
+  }, [driver?.planta, channel]);
+
+  // Una respuesta a una consulta de ruta/objeto perdido no inserta un aviso nuevo — se guarda en
+  // aviso_respuestas_ruta/aviso_respuestas_objeto, aparte, enganchada al aviso original (ver
+  // PanelAvisos). Sin esto, aunque la respuesta sí se vea en vivo dentro del chat para quien lo
+  // tenga abierto, el badge de "no leídos" nunca se enteraba de que había algo nuevo para ver. En
+  // un canal de Realtime APARTE del de arriba (no mezclado): meter varias tablas en el mismo canal
+  // de avisos-badge parecía hacer que todo el canal (incluida la parte de mensajes nuevos, que
+  // antes era instantánea) se volviera menos confiable en celular.
+  useEffect(() => {
+    if (!driver?.planta) return;
+    const contarSiEsDeMiPlanta = async nueva => {
+      if (nueva.chofer_id === driver.id) return; // mi propia respuesta no cuenta como no leída
+      const {
+        data: aviso
+      } = await sbClient.from("avisos").select("planta").eq("id", nueva.aviso_id).maybeSingle();
+      if (aviso?.planta !== driver.planta) return;
+      if (channel !== "avisos") setAvisosNoLeidosReal(n => n + 1);
+    };
+    const canal = sbClient.channel(`avisos-respuestas-badge-${driver.planta}`).on("postgres_changes", {
       event: "INSERT",
       schema: "public",
       table: "aviso_respuestas_ruta"
-    }, payload => contarSiEsDeMiPlanta(payload.new, "ruta")).on("postgres_changes", {
+    }, payload => contarSiEsDeMiPlanta(payload.new)).on("postgres_changes", {
       event: "INSERT",
       schema: "public",
       table: "aviso_respuestas_objeto"
-    }, payload => contarSiEsDeMiPlanta(payload.new, "objeto")).subscribe();
+    }, payload => contarSiEsDeMiPlanta(payload.new)).subscribe();
     return () => {
       sbClient.removeChannel(canal);
     };
