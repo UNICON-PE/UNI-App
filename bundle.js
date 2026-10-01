@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-01T18:04:39.037Z */
+/* UniconApp — Bundle generado el 2026-10-01T18:32:33.430Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 17394 — CERO simplificaciones */
+/* Líneas originales del JSX: 17397 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -9421,8 +9421,11 @@ function ChoferApp({
     // Respaldo por sondeo: confirmado en este mismo proyecto (ver auxilios_lectura) que el canal
     // de Realtime a veces queda "SUBSCRIBED" sin entregar el evento — sin esto, una notificación
     // creada mientras la campanita no estaba mirando en ese instante exacto podía quedar sin
-    // aparecer hasta el próximo cierre/apertura de sesión completo.
-    const intervalo = setInterval(cargarNotifs, 20000);
+    // aparecer hasta el próximo cierre/apertura de sesión completo. Antes cada 20s; se acorta a 7s
+    // porque en celular (red más propensa a que Realtime falle en vivo) esos 20s de peor caso se
+    // sentían como notificaciones "lentas" — no es un canal caro de consultar, así que bajar el
+    // intervalo no tiene contras reales.
+    const intervalo = setInterval(cargarNotifs, 7000);
     return () => {
       vigente = false;
       sbClient.removeChannel(canal);
@@ -9504,7 +9507,7 @@ function ChoferApp({
       setAvisosNoLeidosReal(noLeidos);
     };
     recalcular();
-    const intervalo = setInterval(recalcular, 20000);
+    const intervalo = setInterval(recalcular, 7000); // antes 20s, acortado por el mismo motivo que el de la campanita (ver más abajo)
     return () => {
       vigente = false;
       clearInterval(intervalo);
