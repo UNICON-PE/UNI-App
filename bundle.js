@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-01T01:56:39.820Z */
+/* UniconApp — Bundle generado el 2026-10-01T02:17:41.055Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 17377 — CERO simplificaciones */
+/* Líneas originales del JSX: 17405 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -8374,13 +8374,41 @@ const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     // sesión no limpiaba a tiempo si la pestaña se cerraba antes de que terminara el signOut()
     // async — todo eso se vio como fallas de RLS intermitentes, avisos/notificaciones que no
     // llegaban, y contadores de no-leídos incorrectos, sin relación aparente con la causa real.
-    // Revertido a sessionStorage hasta encontrar una forma de implementar "no cerrar sesión en el
-    // celular" sin ese efecto cruzado entre pestañas.
+    // Revertido a sessionStorage. Para que el chofer no pierda la sesión al retroceder desde el
+    // celular, en vez de tocar cómo se guarda la sesión (lo que causó los problemas de arriba), se
+    // ataja el botón Atrás directamente (ver el bloque "atrapar el botón Atrás" más abajo): en
+    // Android, Atrás en la pantalla raíz de la PWA SALE de la app y destruye el WebView (con él,
+    // sessionStorage); en cambio Home solo la manda a segundo plano sin destruirla. Atrapando
+    // Atrás, el chofer solo puede salir con Home — la sesión sigue viva mientras Android no mate
+    // el proceso por memoria (que pasa menos seguido que un Atrás accidental).
     storage: window.sessionStorage,
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: false
   }
+});
+
+// Atrapar el botón Atrás: cada vez que se presiona, el navegador dispara "popstate" ANTES de
+// terminar de salir — en vez de dejarlo seguir, se vuelve a empujar el mismo estado al historial,
+// así nunca hay un "atrás" real al que ir y el navegador nunca llega a salir de la app.
+//
+// Un solo estado "de más" no alcanza: detrás de él sigue estando la entrada REAL de cuando cargó
+// la página, y como el servidor manda Cache-Control: no-store (a propósito, para no servir nunca
+// un bundle.js viejo en caché), llegar a esa entrada real fuerza una recarga completa en vez de
+// quedarse atrapado del lado del cliente — eso resetea la vista de la app (aunque la sesión
+// sobrevive, al ser solo una recarga y no un cierre de pestaña). Por eso se arranca con un colchón
+// grande de estados de margen.
+//
+// OJO: Chrome (y otros navegadores) limitan cuántas veces se puede llamar pushState/replaceState
+// en pocos segundos (anti-abuso) — si cada "Atrás" reempujara TODO el colchón de nuevo, varias
+// pulsadas seguidas agotarían ese límite y algunos empujones se ignorarían en silencio justo
+// cuando más margen hace falta. Por eso cada "Atrás" solo repone lo que de verdad se gastó (un
+// estado), no el colchón entero — sostenible indefinidamente en una sesión larga, sin acercarse
+// nunca a ese límite.
+const COLCHON_INICIAL = 30;
+for (let i = 0; i < COLCHON_INICIAL; i++) history.pushState(null, "", location.href);
+window.addEventListener("popstate", () => {
+  history.pushState(null, "", location.href);
 });
 
 // Consulta una tabla filtrando por aviso_id en lotes: con cientos de mensajes acumulados en un
