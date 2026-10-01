@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-01T18:32:33.430Z */
+/* UniconApp — Bundle generado el 2026-10-01T21:33:37.250Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 17397 — CERO simplificaciones */
+/* Líneas originales del JSX: 17392 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -9481,11 +9481,20 @@ function ChoferApp({
 
   // Carga inicial real del badge de no-leídos (avisos_lectura es la misma fuente de verdad que
   // usa PanelAvisos para calcular el separador dentro del chat, y el badge por planta en AztPanel).
-  // Se repite cada 20s como respaldo — mismo patrón ya probado en la campanita y en Auxilio
-  // mecánico: el canal de Realtime de abajo a veces queda "SUBSCRIBED" sin entregar el evento
-  // (confirmado: hasta la versión más simple posible de ese canal, sin nada más agregado, falla en
-  // celular), y sin este sondeo el badge se queda atascado hasta que el chofer entra y sale del
-  // canal.
+  // Se recalcula desde cero (nunca con un simple "+1") en tres momentos: al montar, cada 7s de
+  // respaldo, y cuando el canal de Realtime de abajo avisa de un mensaje nuevo — un "+1" a ciegas
+  // podía mostrar como no leído un mensaje que la persona ya había leído por otro camino (p.ej. si
+  // llegó a él directo desde una notificación push, más rápido de lo que este aviso en vivo tarda
+  // en llegar); recalcular siempre contra avisos_lectura evita esa carrera sin importar qué tan
+  // rápido reaccione la persona.
+  //
+  // OJO: las dependencias de abajo NO incluyen "channel" a propósito — este canal de Realtime debe
+  // quedarse conectado de forma estable durante toda la sesión, igual que el equivalente del AZT
+  // (avisos-previews-azt, que nunca se reconecta por navegación). Antes sí dependía de "channel",
+  // así que se destruía y se volvía a crear cada vez que el chofer cambiaba de pantalla — si un
+  // mensaje llegaba justo en la ventana en que el canal todavía se estaba reconectando (más lento
+  // en una red móvil que en una de escritorio), se perdía en vivo y solo lo agarraba el sondeo de
+  // respaldo. channelRef lee el valor actual de "channel" sin forzar esta reconexión.
   useEffect(() => {
     if (!driver?.id || !driver?.planta) return;
     let vigente = true;
@@ -9507,23 +9516,7 @@ function ChoferApp({
       setAvisosNoLeidosReal(noLeidos);
     };
     recalcular();
-    const intervalo = setInterval(recalcular, 7000); // antes 20s, acortado por el mismo motivo que el de la campanita (ver más abajo)
-    return () => {
-      vigente = false;
-      clearInterval(intervalo);
-    };
-  }, [driver?.id, driver?.planta]);
-
-  // Contador real de avisos nuevos (para el badge), independiente de si el chofer tiene el canal
-  // abierto. OJO: las dependencias NO incluyen "channel" a propósito — este canal de Realtime debe
-  // quedarse conectado de forma estable durante toda la sesión, igual que el equivalente del AZT
-  // (avisos-previews-azt, que nunca se reconecta por navegación). Antes sí dependía de "channel",
-  // así que se destruía y se volvía a crear cada vez que el chofer cambiaba de pantalla — si un
-  // mensaje llegaba justo en la ventana en que el canal todavía se estaba reconectando (más lento
-  // en una red móvil que en una de escritorio), se perdía en vivo y solo lo agarraba el sondeo de
-  // 20s de respaldo. channelRef lee el valor actual de "channel" sin forzar esta reconexión.
-  useEffect(() => {
-    if (!driver?.planta) return;
+    const intervalo = setInterval(recalcular, 2000); // antes 7s — se acorta más porque en perfiles de una sola planta el aviso en vivo depende de un único canal de Realtime, sin el volumen de tráfico que en AZT disimula sus fallas ocasionales
     const canal = sbClient.channel(`avisos-badge-${driver.planta}`).on("postgres_changes", {
       event: "INSERT",
       schema: "public",
@@ -9531,12 +9524,14 @@ function ChoferApp({
     }, payload => {
       if (payload.new.planta !== driver.planta) return;
       if (payload.new.autor_id === driver.id) return; // los mensajes propios nunca cuentan como no leídos
-      if (channelRef.current !== "avisos") setAvisosNoLeidosReal(n => n + 1);
+      if (channelRef.current !== "avisos") recalcular();
     }).subscribe();
     return () => {
+      vigente = false;
+      clearInterval(intervalo);
       sbClient.removeChannel(canal);
     };
-  }, [driver?.planta]);
+  }, [driver?.id, driver?.planta]);
   if (!driver) return /*#__PURE__*/ /*#__PURE__*/React.createElement(LoginScreen, {
     dni: dni,
     setDni: setDni,
