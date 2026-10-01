@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-01T17:39:45.833Z */
+/* UniconApp — Bundle generado el 2026-10-01T18:04:39.037Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 17387 — CERO simplificaciones */
+/* Líneas originales del JSX: 17394 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -10539,6 +10539,13 @@ function PanelAvisos({
         // de intentar el scroll (actualizarAvisos es asíncrono respecto al render).
         requestAnimationFrame(() => posicionarScroll(null));
       }
+      // Si ya se estaba viendo el final del chat, este mensaje se da por leído de inmediato — antes
+      // esto dependía de que el scroll automático de arriba disparara a su vez el evento "scroll"
+      // nativo del navegador (que es lo que de verdad marca como leído, ver handleScrollChat), pero
+      // si el mensaje llegaba mientras la pestaña estaba en segundo plano o el navegador no
+      // disparaba ese evento por alguna razón, el punto de lectura se quedaba atascado en el
+      // mensaje anterior — se veía el mensaje nuevo en pantalla pero nunca contaba como leído.
+      if (yaEstabaAlFinal && nuevo.autor_id !== miId) marcarLeidoHasta(nuevo.created_at);
     };
     const onCambioReaccion = async payload => {
       const avisoId = (payload.new || payload.old)?.aviso_id;
