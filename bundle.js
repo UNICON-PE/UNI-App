@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-01T22:38:08.579Z */
+/* UniconApp — Bundle generado el 2026-10-01T22:40:26.641Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 17464 — CERO simplificaciones */
+/* Líneas originales del JSX: 17469 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -9586,7 +9586,9 @@ function ChoferApp({
         endpoint,
         keys
       } = sub.toJSON();
-      await sbClient.from("push_subscriptions").upsert({
+      const {
+        error
+      } = await sbClient.from("push_subscriptions").upsert({
         chofer_id: driver.id,
         endpoint,
         p256dh: keys.p256dh,
@@ -9595,8 +9597,13 @@ function ChoferApp({
       }, {
         onConflict: "endpoint"
       });
+      if (error) throw error;
+      // Sin esta confirmación visible, no hay forma de distinguir "se activó bien" de "falló
+      // silenciosamente" — ni para el chofer ni para poder diagnosticar un reporte a distancia.
+      alert("✅ Notificaciones activadas. Te avisaremos con sonido cuando llegue un aviso nuevo.");
     } catch (err) {
       console.error("No se pudo activar las notificaciones push:", err.message);
+      alert("No se pudieron activar las notificaciones: " + err.message);
     } finally {
       setPushBannerVisible(false);
     }
