@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-01T17:12:41.234Z */
+/* UniconApp — Bundle generado el 2026-10-01T17:39:45.833Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 17376 — CERO simplificaciones */
+/* Líneas originales del JSX: 17387 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -9130,6 +9130,10 @@ function ChoferApp({
   const [driver, setDriver] = useState(null);
   const misUnidadesPropias = useRef(new Set()); // mixers que el propio chofer acaba de editar desde su perfil, para no mostrarle "fuiste reasignado" por su propio cambio
   const [channel, setChannel] = useState(null); // avisos|finvuelta|bot|incidencias — null = sin canal elegido aún, para evitar montar el chat automáticamente al iniciar sesión
+  const channelRef = useRef(channel); // espejo de "channel" para el canal de Realtime del badge (ver más abajo), que debe quedarse conectado toda la sesión sin reconectarse en cada cambio de pantalla
+  useEffect(() => {
+    channelRef.current = channel;
+  }, [channel]);
   const [entered, setEntered] = useState(true); // directo al canal, sin intro
   const [mobileList, setMobileList] = useState(true);
   const [irAMensajeAvisoId, setIrAMensajeAvisoId] = useState(null); // aviso a resaltar/centrar en PanelAvisos, pedido desde la campanita de notificaciones
@@ -9507,7 +9511,14 @@ function ChoferApp({
     };
   }, [driver?.id, driver?.planta]);
 
-  // Contador real de avisos nuevos (para el badge), independiente de si el chofer tiene el canal abierto
+  // Contador real de avisos nuevos (para el badge), independiente de si el chofer tiene el canal
+  // abierto. OJO: las dependencias NO incluyen "channel" a propósito — este canal de Realtime debe
+  // quedarse conectado de forma estable durante toda la sesión, igual que el equivalente del AZT
+  // (avisos-previews-azt, que nunca se reconecta por navegación). Antes sí dependía de "channel",
+  // así que se destruía y se volvía a crear cada vez que el chofer cambiaba de pantalla — si un
+  // mensaje llegaba justo en la ventana en que el canal todavía se estaba reconectando (más lento
+  // en una red móvil que en una de escritorio), se perdía en vivo y solo lo agarraba el sondeo de
+  // 20s de respaldo. channelRef lee el valor actual de "channel" sin forzar esta reconexión.
   useEffect(() => {
     if (!driver?.planta) return;
     const canal = sbClient.channel(`avisos-badge-${driver.planta}`).on("postgres_changes", {
@@ -9517,12 +9528,12 @@ function ChoferApp({
     }, payload => {
       if (payload.new.planta !== driver.planta) return;
       if (payload.new.autor_id === driver.id) return; // los mensajes propios nunca cuentan como no leídos
-      if (channel !== "avisos") setAvisosNoLeidosReal(n => n + 1);
+      if (channelRef.current !== "avisos") setAvisosNoLeidosReal(n => n + 1);
     }).subscribe();
     return () => {
       sbClient.removeChannel(canal);
     };
-  }, [driver?.planta, channel]);
+  }, [driver?.planta]);
   if (!driver) return /*#__PURE__*/ /*#__PURE__*/React.createElement(LoginScreen, {
     dni: dni,
     setDni: setDni,
