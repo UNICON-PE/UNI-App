@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-01T01:56:39.820Z */
+/* UniconApp — Bundle generado el 2026-10-01T16:14:34.796Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 17377 — CERO simplificaciones */
+/* Líneas originales del JSX: 17390 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -8363,25 +8363,31 @@ const GEMINI_PROXY_URL = `${SUPABASE_URL}/functions/v1/gemini-proxy`;
 // desde el RPC registrar_auxilio_mecanico (ver migración de Supabase); este enlace solo abre
 // la hoja para verla/editarla manualmente.
 const AUXILIO_MECANICO_SHEET_URL = "https://docs.google.com/spreadsheets/d/1vScU6cJmErMZq0RN8U4E_QCRTR4AF14zJfvJy6dsoGg/edit";
+// sessionStorage para todos los dispositivos (celular incluido): cada pestaña/ventana tiene su
+// propia sesión, aislada de las demás. Se probó localStorage (persistente, primero para todos y
+// luego solo en celular) para que el chofer no reingrese el DNI si Android mata la PWA en segundo
+// plano, pero se descartó por decisión explícita — no se quiso asumir el riesgo de que dos
+// pestañas del mismo celular con cuentas distintas se pisen la sesión entre sí. El botón Atrás
+// tampoco se puede atajar (ver TRASPASO_CLAUDE_CODE.md o el historial de git para el detalle):
+// probado en Android real, el sistema le gana a la técnica de "atrapar" el historial tras un par
+// de intentos. "No cerrar sesión en el celular" queda pendiente para otro enfoque el día que se
+// retome.
 const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
-    // sessionStorage (no localStorage): cada pestaña/ventana tiene su propia sesión, aislada de
-    // las demás. Se probó localStorage (sesión persistente, compartida entre pestañas) para que
-    // el chofer no reingrese el DNI si Android mata la PWA en segundo plano, pero generó más
-    // problemas de los que resolvió: todas las pestañas del mismo navegador terminan compartiendo
-    // una sola sesión de Supabase Auth, así que iniciar sesión en una pestaña nueva (con otra
-    // cuenta) le pisaba la sesión a cualquier otra pestaña que siguiera abierta de antes, y cerrar
-    // sesión no limpiaba a tiempo si la pestaña se cerraba antes de que terminara el signOut()
-    // async — todo eso se vio como fallas de RLS intermitentes, avisos/notificaciones que no
-    // llegaban, y contadores de no-leídos incorrectos, sin relación aparente con la causa real.
-    // Revertido a sessionStorage hasta encontrar una forma de implementar "no cerrar sesión en el
-    // celular" sin ese efecto cruzado entre pestañas.
     storage: window.sessionStorage,
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: false
   }
 });
+
+// Se probó e intentó atrapar el botón Atrás (empujar estados al historial en cada "popstate")
+// para que no cerrara sesión al retroceder desde el celular, pero se descartó: probado en Android
+// real, a la segunda pulsada el sistema igual sacaba de la app — el mismo patrón que se veía en
+// Edge de escritorio. Parece que el propio sistema/navegador le gana a esta técnica tras un par de
+// intentos (posible protección anti-abuso, ya que "atrapar" el botón Atrás es un patrón que usan
+// sitios maliciosos para no dejar salir al usuario). Queda pendiente retomar "no cerrar sesión en
+// el celular" con otro enfoque el día que se necesite.
 
 // Consulta una tabla filtrando por aviso_id en lotes: con cientos de mensajes acumulados en un
 // canal, mandar todos los IDs de una sola vez en el filtro .in() genera una URL demasiado larga
@@ -9468,10 +9474,14 @@ function ChoferApp({
 
   // Carga inicial real del badge de no-leídos (avisos_lectura es la misma fuente de verdad que
   // usa PanelAvisos para calcular el separador dentro del chat, y el badge por planta en AztPanel).
+  // Además de la carga inicial, se repite cada 20s como respaldo: el canal de Realtime de abajo
+  // (avisos-badge) a veces queda "SUBSCRIBED" sin entregar el evento — confirmado por el chofer en
+  // celular (conexión móvil, más propensa a esto que una conexión de escritorio estable); mismo
+  // respaldo que ya tienen la campanita y el badge de Auxilio mecánico.
   useEffect(() => {
     if (!driver?.id || !driver?.planta) return;
     let vigente = true;
-    (async () => {
+    const recalcular = async () => {
       // Mismo motivo que en cargarTodo (PanelAvisos): sin límite ni orden explícitos, PostgREST
       // corta en 1000 filas de forma no garantizada — en una planta con mucho historial eso puede
       // dejar fuera avisos recientes y subcontar el badge. Se piden los últimos 500 (los únicos
@@ -9487,9 +9497,12 @@ function ChoferApp({
       const ultimoLeido = lectura?.ultimo_leido_at;
       const noLeidos = ultimoLeido ? mensajes.filter(a => a.autor_id !== driver.id && new Date(a.created_at) > new Date(ultimoLeido)).length : mensajes.filter(a => a.autor_id !== driver.id).length;
       setAvisosNoLeidosReal(noLeidos);
-    })();
+    };
+    recalcular();
+    const intervalo = setInterval(recalcular, 20000);
     return () => {
       vigente = false;
+      clearInterval(intervalo);
     };
   }, [driver?.id, driver?.planta]);
 
