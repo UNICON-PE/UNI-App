@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-01T21:33:37.250Z */
+/* UniconApp — Bundle generado el 2026-10-01T21:47:27.674Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 17392 — CERO simplificaciones */
+/* Líneas originales del JSX: 17451 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -8349,6 +8349,19 @@ const uid = () => ++idc;
 const SUPABASE_URL = "https://dxnkyyikrieoifwmlukw.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_RpMMxjvjhWQlVUhCfKTwxQ_Gft3Zv5E";
 
+/* ===================== WEB PUSH (burbuja + sonido en el celular) ===================== */
+// Llave pública VAPID — segura de exponer en el cliente (es la contraparte de la privada, que
+// vive solo en el secreto de la Edge Function "enviar-push-aviso", nunca aquí).
+const VAPID_PUBLIC_KEY = "BLbFyLB5BS06so2olyz2LNTRXEbK4ZLZ1Xlb1XGR78lAj8nZTkDTXBG3DGBOhvFxNkjZ7xUOEfDlCHANn8lUVT8";
+
+// Conversión estándar de la llave VAPID (base64url) al formato Uint8Array que pide pushManager.subscribe.
+function urlBase64ToUint8Array(base64String) {
+  const padding = "=".repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+}
+
 /* ===================== GEMINI (lectura de citación en imagen) ===================== */
 // La llamada real a Gemini vive en la Edge Function "gemini-proxy" de Supabase, con la API key
 // guardada como secreto del proyecto (nunca en este archivo ni en el bundle.js público). Antes la
@@ -9144,6 +9157,7 @@ function ChoferApp({
   const [reasignado, setReasignado] = useState(null); // { plantaNueva } cuando detecta cambio en su perfil
   const [avisosNoLeidosReal, setAvisosNoLeidosReal] = useState(0); // conteo real desde Supabase para el badge
   const [notifs, setNotifs] = useState([]); // notificaciones personales del chofer
+  const [pushBannerVisible, setPushBannerVisible] = useState(false); // banner para activar notificaciones push
   const [openNotif, setOpenNotif] = useState(false);
   const [botDeepLink, setBotDeepLink] = useState(null); // ej. "op_unikin" — abre UNIBOT directo en esa opción (ver Bitácora personal)
   const isDesktop = useIsDesktop();
@@ -9532,6 +9546,48 @@ function ChoferApp({
       sbClient.removeChannel(canal);
     };
   }, [driver?.id, driver?.planta]);
+
+  // Muestra el banner para activar notificaciones push solo si el navegador las soporta y el
+  // chofer todavía no decidió nada (ni aceptó ni rechazó) — si ya decidió, se respeta su elección.
+  useEffect(() => {
+    if (!driver?.id) return;
+    if (typeof Notification === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window)) return;
+    setPushBannerVisible(Notification.permission === "default");
+  }, [driver?.id]);
+  const activarNotificacionesPush = async () => {
+    try {
+      const permiso = await Notification.requestPermission();
+      if (permiso !== "granted") {
+        setPushBannerVisible(false);
+        return;
+      }
+      const registro = await navigator.serviceWorker.ready;
+      let sub = await registro.pushManager.getSubscription();
+      if (!sub) {
+        sub = await registro.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        });
+      }
+      const {
+        endpoint,
+        keys
+      } = sub.toJSON();
+      await sbClient.from("push_subscriptions").upsert({
+        chofer_id: driver.id,
+        endpoint,
+        p256dh: keys.p256dh,
+        auth: keys.auth,
+        user_agent: navigator.userAgent
+      }, {
+        onConflict: "endpoint"
+      });
+    } catch (err) {
+      console.error("No se pudo activar las notificaciones push:", err.message);
+    } finally {
+      setPushBannerVisible(false);
+    }
+  };
   if (!driver) return /*#__PURE__*/ /*#__PURE__*/React.createElement(LoginScreen, {
     dni: dni,
     setDni: setDni,
@@ -9757,7 +9813,28 @@ function ChoferApp({
     className: "inline-flex items-center gap-1"
   }, /*#__PURE__*/React.createElement(MapPin, {
     size: 14
-  }), driver.planta)))))), /*#__PURE__*/React.createElement("div", {
+  }), driver.planta)))))), pushBannerVisible &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "px-3 py-2 text-xs flex items-center justify-between gap-2",
+    style: {
+      background: "#fff7e6",
+      borderBottom: "1px solid #f0e2bd",
+      color: "#6b5219"
+    }
+  }, /*#__PURE__*/React.createElement("span", null, "\uD83D\uDD14 Activa las notificaciones para enterarte al instante de avisos nuevos."), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2 shrink-0"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: activarNotificacionesPush,
+    className: "font-semibold px-2 py-1 rounded text-white",
+    style: {
+      background: AZUL
+    }
+  }, "Activar"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setPushBannerVisible(false),
+    className: "px-2 py-1 font-semibold"
+  }, "Ahora no"))), /*#__PURE__*/React.createElement("div", {
     className: "flex-1 overflow-y-auto py-2"
   }, CHANNELS.map(c => {
     const active = channel === c.id;

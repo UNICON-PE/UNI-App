@@ -44,3 +44,39 @@ self.addEventListener("fetch", (e) => {
       .catch(() => caches.match(e.request))
   );
 });
+
+// Push: notificación de un aviso nuevo en el Canal de Avisos (burbuja +
+// sonido/vibración por defecto del sistema — la Web Notification API no deja
+// elegir un sonido personalizado, solo la app nativa podría hacerlo).
+self.addEventListener("push", (e) => {
+  let data = {};
+  try {
+    data = e.data.json();
+  } catch {
+    data = { title: "UNI App", body: e.data ? e.data.text() : "Tienes un aviso nuevo" };
+  }
+  e.waitUntil(
+    self.registration.showNotification(data.title || "UNI App", {
+      body: data.body || "Tienes un aviso nuevo",
+      icon: "icon-192.png",
+      badge: "icon-192.png",
+      vibrate: [200, 100, 200],
+      data: { avisoId: data.avisoId || null }
+    })
+  );
+});
+
+// Clic en la notificación: enfoca la pestaña de la app si ya está abierta, o
+// abre una nueva si no. (Llevar directo al aviso exacto queda para una
+// siguiente iteración — por ahora solo abre/enfoca la app.)
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  e.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if ("focus" in client) return client.focus();
+      }
+      if (self.clients.openWindow) return self.clients.openWindow("./");
+    })
+  );
+});
