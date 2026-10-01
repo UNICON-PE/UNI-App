@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-01T16:34:25.430Z */
+/* UniconApp — Bundle generado el 2026-10-01T17:04:51.290Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 17371 — CERO simplificaciones */
+/* Líneas originales del JSX: 17369 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -11267,12 +11267,10 @@ function PanelAvisos({
         onConflict: "obra_normalizada"
       });
     }
-    // Sube el aviso al final del chat para que todos noten que ya fue respondido (RPC security
-    // definer: un chofer respondiendo la consulta de OTRO no pasaría una escritura directa a
-    // avisos.created_at bajo las políticas RLS, mismo caso que el bump al reasignar unidad/planta).
-    await sbClient.rpc("bump_aviso", {
-      p_aviso_id: aviso.id
-    });
+    // Antes esto llamaba a bump_aviso para subir el mensaje al final del chat — se quitó: adelantar
+    // avisos.created_at hacía que el badge de "no leídos" del AZT (que compara esa fecha contra
+    // hasta cuándo leyó) contara el aviso como nuevo otra vez, aunque ya lo hubiera leído e incluso
+    // respondido él mismo. Mismo criterio que se aplicó para objeto perdido (responder_objeto_perdido).
     setResponderFor(null);
     setRespRuta("");
     setRespUbic("");
