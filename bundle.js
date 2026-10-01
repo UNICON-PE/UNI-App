@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-01T02:33:43.054Z */
+/* UniconApp — Bundle generado el 2026-10-01T01:56:39.820Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 17383 — CERO simplificaciones */
+/* Líneas originales del JSX: 17377 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -8363,31 +8363,25 @@ const GEMINI_PROXY_URL = `${SUPABASE_URL}/functions/v1/gemini-proxy`;
 // desde el RPC registrar_auxilio_mecanico (ver migración de Supabase); este enlace solo abre
 // la hoja para verla/editarla manualmente.
 const AUXILIO_MECANICO_SHEET_URL = "https://docs.google.com/spreadsheets/d/1vScU6cJmErMZq0RN8U4E_QCRTR4AF14zJfvJy6dsoGg/edit";
-// localStorage (sesión persistente, sobrevive a que Android mate la PWA en segundo plano) solo
-// para celular — en escritorio se quedó en sessionStorage (cada pestaña aislada). El problema de
-// hoy con localStorage no fue la persistencia en sí: fue que TODAS las pestañas de un mismo
-// navegador terminan compartiendo una sola sesión de Supabase Auth, y nosotros probamos abriendo
-// varias pestañas a la vez con cuentas distintas (AZT, chofer, Gestión Humana) — algo que un
-// chofer real, en su propio celular con una sola cuenta, casi nunca hace. Si alguien sí llega a
-// abrir el PWA en dos pestañas del celular con cuentas distintas a la vez, el mismo riesgo de hoy
-// podría reaparecer ahí — pero es un caso mucho menos probable que en escritorio.
-const esMovil = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
-    storage: esMovil ? window.localStorage : window.sessionStorage,
+    // sessionStorage (no localStorage): cada pestaña/ventana tiene su propia sesión, aislada de
+    // las demás. Se probó localStorage (sesión persistente, compartida entre pestañas) para que
+    // el chofer no reingrese el DNI si Android mata la PWA en segundo plano, pero generó más
+    // problemas de los que resolvió: todas las pestañas del mismo navegador terminan compartiendo
+    // una sola sesión de Supabase Auth, así que iniciar sesión en una pestaña nueva (con otra
+    // cuenta) le pisaba la sesión a cualquier otra pestaña que siguiera abierta de antes, y cerrar
+    // sesión no limpiaba a tiempo si la pestaña se cerraba antes de que terminara el signOut()
+    // async — todo eso se vio como fallas de RLS intermitentes, avisos/notificaciones que no
+    // llegaban, y contadores de no-leídos incorrectos, sin relación aparente con la causa real.
+    // Revertido a sessionStorage hasta encontrar una forma de implementar "no cerrar sesión en el
+    // celular" sin ese efecto cruzado entre pestañas.
+    storage: window.sessionStorage,
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: false
   }
 });
-
-// Se probó e intentó atrapar el botón Atrás (empujar estados al historial en cada "popstate")
-// para que no cerrara sesión al retroceder desde el celular, pero se descartó: probado en Android
-// real, a la segunda pulsada el sistema igual sacaba de la app — el mismo patrón que se veía en
-// Edge de escritorio. Parece que el propio sistema/navegador le gana a esta técnica tras un par de
-// intentos (posible protección anti-abuso, ya que "atrapar" el botón Atrás es un patrón que usan
-// sitios maliciosos para no dejar salir al usuario). Queda pendiente retomar "no cerrar sesión en
-// el celular" con otro enfoque el día que se necesite.
 
 // Consulta una tabla filtrando por aviso_id en lotes: con cientos de mensajes acumulados en un
 // canal, mandar todos los IDs de una sola vez en el filtro .in() genera una URL demasiado larga
