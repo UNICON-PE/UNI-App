@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-09-30T19:55:59.652Z */
+/* UniconApp — Bundle generado el 2026-10-01T01:56:39.820Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 17267 — CERO simplificaciones */
+/* Líneas originales del JSX: 17377 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -8365,13 +8365,18 @@ const GEMINI_PROXY_URL = `${SUPABASE_URL}/functions/v1/gemini-proxy`;
 const AUXILIO_MECANICO_SHEET_URL = "https://docs.google.com/spreadsheets/d/1vScU6cJmErMZq0RN8U4E_QCRTR4AF14zJfvJy6dsoGg/edit";
 const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
-    // localStorage (no sessionStorage): la sesión debe sobrevivir a que el chofer salga de la PWA
-    // con el botón home del celular y vuelva a abrirla — Android suele destruir el WebView por
-    // presión de memoria mientras está en segundo plano, y sessionStorage se pierde con él,
-    // obligando a reingresar el DNI cada vez. El cierre de sesión al reasignar de planta o
-    // desactivar la cuenta ya se maneja aparte (ver pantalla "reasignado" en ChoferApp), no
-    // depende de este storage.
-    storage: window.localStorage,
+    // sessionStorage (no localStorage): cada pestaña/ventana tiene su propia sesión, aislada de
+    // las demás. Se probó localStorage (sesión persistente, compartida entre pestañas) para que
+    // el chofer no reingrese el DNI si Android mata la PWA en segundo plano, pero generó más
+    // problemas de los que resolvió: todas las pestañas del mismo navegador terminan compartiendo
+    // una sola sesión de Supabase Auth, así que iniciar sesión en una pestaña nueva (con otra
+    // cuenta) le pisaba la sesión a cualquier otra pestaña que siguiera abierta de antes, y cerrar
+    // sesión no limpiaba a tiempo si la pestaña se cerraba antes de que terminara el signOut()
+    // async — todo eso se vio como fallas de RLS intermitentes, avisos/notificaciones que no
+    // llegaban, y contadores de no-leídos incorrectos, sin relación aparente con la causa real.
+    // Revertido a sessionStorage hasta encontrar una forma de implementar "no cerrar sesión en el
+    // celular" sin ese efecto cruzado entre pestañas.
+    storage: window.sessionStorage,
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: false
@@ -9211,10 +9216,11 @@ function ChoferApp({
     setLoginLoading(false);
   };
 
-  // Restaura la sesión automáticamente si ya existe (localStorage la persiste entre aperturas de
-  // la PWA): sin esto, aunque Supabase Auth mantuviera la sesión viva, la app igual mostraría la
-  // pantalla de DNI en cada apertura porque nada volvía a poblar "driver"/"role" a partir de ella.
-  // Solo corre una vez al montar; login() y la pantalla de "reasignado" manejan el resto de casos.
+  // Restaura la sesión automáticamente si ya existe (sessionStorage la mantiene mientras la
+  // pestaña/ventana siga abierta, p.ej. tras recargar la página): sin esto, aunque Supabase Auth
+  // mantuviera la sesión viva, la app igual mostraría la pantalla de DNI en cada recarga porque
+  // nada volvía a poblar "driver"/"role" a partir de ella. Solo corre una vez al montar; login() y
+  // la pantalla de "reasignado" manejan el resto de casos.
   const [restaurandoSesion, setRestaurandoSesion] = useState(true);
   useEffect(() => {
     (async () => {
@@ -9356,27 +9362,31 @@ function ChoferApp({
     }),
     leida: n.leida
   });
+  const cargarNotifsRef = useRef(null);
   useEffect(() => {
     if (!driver?.id) return;
     let vigente = true;
-    (async () => {
+    const cargarNotifs = async () => {
       const {
         data
       } = await sbClient.from("notificaciones_personales").select("*, avisos(planta)").eq("chofer_id", driver.id).order("created_at", {
         ascending: false
       });
       if (!vigente || !data) return;
-      // Re-fetch (no solo al montar, sino también cada vez que cambia driver.planta más abajo):
-      // el join con avisos depende de RLS, que a su vez depende de la planta ACTUAL del chofer —
-      // si se recargara solo una vez, el resultado del join quedaría "congelado" con la planta de
-      // ese momento y nunca reflejaría una reasignación posterior. Se reemplaza cada notificación
-      // ya conocida por su versión fresca (en vez de solo anteponer) para no duplicarlas.
+      // Re-fetch (no solo al montar, sino también cada vez que cambia driver.planta más abajo, por
+      // el sondeo de respaldo, o al abrir la campanita más abajo): el join con avisos depende de
+      // RLS, que a su vez depende de la planta ACTUAL del chofer — si se recargara solo una vez,
+      // el resultado del join quedaría "congelado" con la planta de ese momento y nunca reflejaría
+      // una reasignación posterior. Se reemplaza cada notificación ya conocida por su versión
+      // fresca (en vez de solo anteponer) para no duplicarlas.
       setNotifs(prev => {
         const frescas = data.map(mapNotifDB);
         const idsFrescos = new Set(frescas.map(n => n.id));
         return [...frescas, ...prev.filter(n => !idsFrescos.has(n.id))];
       });
-    })();
+    };
+    cargarNotifsRef.current = cargarNotifs;
+    cargarNotifs();
     const canal = sbClient.channel(`notif-personal-${driver.id}`).on("postgres_changes", {
       event: "INSERT",
       schema: "public",
@@ -9398,11 +9408,24 @@ function ChoferApp({
         }
       }), ...prev]);
     }).subscribe();
+    // Respaldo por sondeo: confirmado en este mismo proyecto (ver auxilios_lectura) que el canal
+    // de Realtime a veces queda "SUBSCRIBED" sin entregar el evento — sin esto, una notificación
+    // creada mientras la campanita no estaba mirando en ese instante exacto podía quedar sin
+    // aparecer hasta el próximo cierre/apertura de sesión completo.
+    const intervalo = setInterval(cargarNotifs, 20000);
     return () => {
       vigente = false;
       sbClient.removeChannel(canal);
+      clearInterval(intervalo);
     };
   }, [driver?.id, driver?.planta]);
+  // Al ABRIR la campanita, se pregunta de inmediato por notificaciones frescas — no alcanza con
+  // el sondeo de 20s de arriba solo: si la respuesta a una consulta llega justo en esos segundos
+  // y el chofer abre la campanita en ese instante, vería la lista vieja hasta el próximo sondeo.
+  // Así, cada vez que de verdad mira la campanita, ve el estado real, sin depender de esperar.
+  useEffect(() => {
+    if (openNotif) cargarNotifsRef.current?.();
+  }, [openNotif]);
   // Notificaciones visibles ahora mismo: las que no apuntan a un aviso puntual (nunca navegan a
   // ningún canal, se muestran siempre) más las que sí apuntan a un aviso de la planta ACTUAL del
   // chofer. OJO: como avisos tiene RLS restringido a la planta actual, el join n.avisos viene
@@ -9473,6 +9496,18 @@ function ChoferApp({
   // Contador real de avisos nuevos (para el badge), independiente de si el chofer tiene el canal abierto
   useEffect(() => {
     if (!driver?.planta) return;
+    // Una respuesta a una consulta de ruta/objeto perdido no inserta un aviso nuevo — se guarda en
+    // aviso_respuestas_ruta/aviso_respuestas_objeto, aparte, enganchada al aviso original (ver
+    // PanelAvisos). Sin esto, aunque la respuesta sí se vea en vivo dentro del chat para quien lo
+    // tenga abierto, el badge de "no leídos" nunca se enteraba de que había algo nuevo para ver.
+    const contarSiEsDeMiPlanta = async (nueva, tabla) => {
+      if (nueva.chofer_id === driver.id) return; // mi propia respuesta no cuenta como no leída
+      const {
+        data: aviso
+      } = await sbClient.from("avisos").select("planta").eq("id", nueva.aviso_id).maybeSingle();
+      if (aviso?.planta !== driver.planta) return;
+      if (channel !== "avisos") setAvisosNoLeidosReal(n => n + 1);
+    };
     const canal = sbClient.channel(`avisos-badge-${driver.planta}`).on("postgres_changes", {
       event: "INSERT",
       schema: "public",
@@ -9481,7 +9516,15 @@ function ChoferApp({
       if (payload.new.planta !== driver.planta) return;
       if (payload.new.autor_id === driver.id) return; // los mensajes propios nunca cuentan como no leídos
       if (channel !== "avisos") setAvisosNoLeidosReal(n => n + 1);
-    }).subscribe();
+    }).on("postgres_changes", {
+      event: "INSERT",
+      schema: "public",
+      table: "aviso_respuestas_ruta"
+    }, payload => contarSiEsDeMiPlanta(payload.new, "ruta")).on("postgres_changes", {
+      event: "INSERT",
+      schema: "public",
+      table: "aviso_respuestas_objeto"
+    }, payload => contarSiEsDeMiPlanta(payload.new, "objeto")).subscribe();
     return () => {
       sbClient.removeChannel(canal);
     };
@@ -10570,8 +10613,12 @@ function PanelAvisos({
   }, [plantaEfectiva, miId]);
 
   // Carga (o inicializa) el punto de lectura de este usuario para esta planta. Si es la primera
-  // vez que se registra (no hay fila todavía), no se trata todo el historial como no leído: se
-  // marca "leído hasta ahora" y de ahí en adelante sí se hace seguimiento real.
+  // vez que se registra (no hay fila todavía), se trata TODO el historial existente como no
+  // leído (mismo criterio que ya usa el badge de la lista de canales al no encontrar fila — ver
+  // cargarPreviews en AztPanel y la carga inicial del badge en ChoferApp): antes esto marcaba
+  // "leído hasta ahora" y arrancaba el seguimiento recién desde ese momento, lo que hacía que el
+  // badge dijera "145 no leídos" pero el chat, al abrir, no mostrara la línea verde con ninguno
+  // de ellos — las dos partes no se ponían de acuerdo sobre qué significa "no hay fila todavía".
   useEffect(() => {
     if (!miId || !plantaEfectiva) return;
     let vigente = true; // se invalida en el cleanup si plantaEfectiva/miId cambian antes de que la consulta responda
@@ -10602,7 +10649,10 @@ function PanelAvisos({
       if (data) {
         valorReal = data.ultimo_leido_at;
       } else {
-        valorReal = new Date().toISOString();
+        // Fecha centinela (antes que cualquier aviso real pueda existir): hace que el filtro de
+        // "no leídos" de más abajo (created_at > valorReal) cuente todo el historial existente,
+        // igual que ya hace el badge en este mismo caso.
+        valorReal = new Date(0).toISOString();
         await sbClient.from("avisos_lectura").upsert({
           usuario_id: miId,
           planta: plantaEfectiva,
@@ -11007,6 +11057,11 @@ function PanelAvisos({
       // "avisos" todavía le faltan las columnas archivo_* — ver TRASPASO_CLAUDE_CODE.md / migración
       // pendiente).
       agregarLocal("No se pudo guardar el aviso con adjunto en Supabase (faltan columnas archivo_*): " + error.message);
+    } else {
+      // Mensaje de solo texto: antes este caso no avisaba nada — el mensaje simplemente no
+      // aparecía, sin pista de por qué (p.ej. RLS rechazando el insert). Se avisa igual que ya se
+      // hace en guardarEdicion, para no quedarse a ciegas la próxima vez que esto falle.
+      alert("No se pudo publicar el mensaje: " + error.message);
     }
   };
   const guardarEdicion = async () => {
@@ -19938,6 +19993,36 @@ function generarCapturaTablaPNG(titulo, encabezados, filas) {
 // Herramienta del Canal de Avisos (junto con "Nueva encuesta") para roles administrativos: sube
 // el Excel maestro de citación (todas las plantas mezcladas) y lo separa automáticamente por
 // planta — ver el resto de la lógica de citación (leerTablaCitacionDesdeExcel, etc.) más arriba.
+// Sube un archivo al bucket "avisos" reintentando ante un fallo transitorio (p.ej. "new row
+// violates row-level security policy" intermitente, ya visto en producción sin una causa de
+// código identificable — el mismo archivo, misma ruta única por timestamp, mismo usuario, fallaba
+// solo a veces). En vez de depender de encontrar la causa exacta del lado de Supabase, la subida
+// se reintenta sola un par de veces con una pequeña espera antes de darse por vencida.
+async function subirArchivoConReintento(generarRuta, blob, opciones, intentos = 3) {
+  let ultimoError = null;
+  for (let i = 0; i < intentos; i++) {
+    // Cada intento sube a una ruta nueva (nunca la misma que un intento anterior): el bucket
+    // "avisos" solo tiene política de RLS para INSERT, no para UPDATE — si un intento anterior en
+    // realidad sí se guardó en el servidor pero la respuesta no llegó a tiempo (típico con
+    // archivos grandes), reintentar sobre la MISMA ruta con upsert:true se convierte en un UPDATE
+    // disfrazado, que RLS rechaza con "new row violates row-level security policy" aunque el
+    // usuario tenga todo el permiso para subir archivos nuevos.
+    const ruta = generarRuta(i);
+    const {
+      error
+    } = await sbClient.storage.from("avisos").upload(ruta, blob, opciones);
+    if (!error) return {
+      error: null,
+      ruta
+    };
+    ultimoError = error;
+    if (i < intentos - 1) await new Promise(r => setTimeout(r, 800 * (i + 1)));
+  }
+  return {
+    error: ultimoError,
+    ruta: null
+  };
+}
 function ModalSubirCitacionGeneral({
   plantasAdmin,
   yo,
@@ -20068,10 +20153,10 @@ function ModalSubirCitacionGeneral({
 
         // --- 3. Subir a Storage y publicar en el Canal de Avisos de esa planta: el Excel completo
         // + una imagen por cada bloque de la captura ---
-        const rutaExcel = `${planta}/${Date.now()}_${nombreExcel}`;
         const {
-          error: errExcel
-        } = await sbClient.storage.from("avisos").upload(rutaExcel, blobExcel, {
+          error: errExcel,
+          ruta: rutaExcel
+        } = await subirArchivoConReintento(intento => `${planta}/${Date.now()}_${intento}_${nombreExcel}`, blobExcel, {
           upsert: true,
           contentType: blobExcel.type
         });
@@ -20097,10 +20182,10 @@ function ModalSubirCitacionGeneral({
           const titulo = `Citación — ${planta}${sufijo}`;
           const nombreImagen = `Citacion_${slug}_${fecha}${bloquesCaptura.length > 1 ? `_${b + 1}` : ""}.png`;
           const blobImagen = await generarCapturaTablaPNG(titulo, encabezadosCaptura, bloquesCaptura[b]);
-          const rutaImagen = `${planta}/${Date.now()}_${b}_${nombreImagen}`;
           const {
-            error: errImg
-          } = await sbClient.storage.from("avisos").upload(rutaImagen, blobImagen, {
+            error: errImg,
+            ruta: rutaImagen
+          } = await subirArchivoConReintento(intento => `${planta}/${Date.now()}_${b}_${intento}_${nombreImagen}`, blobImagen, {
             upsert: true,
             contentType: "image/png"
           });
@@ -20378,13 +20463,17 @@ function AztPanel({
   const cargarPreviews = async () => {
     if (!admin?.plantas?.length) return;
     const plantasReales = admin.plantas.filter(p => p !== "Transversal");
+    // Límite explícito (mismo motivo que en cargarTodo/PanelAvisos): sin él, PostgREST corta en
+    // 1000 filas COMBINADAS entre todas las plantas a cargo — con varias plantas de mucho
+    // historial, eso puede dejar fuera avisos no leídos de la planta menos activa y subcontar su
+    // badge. 500 por planta es el mismo margen que ya se usa en el resto de la app.
     const [{
       data
     }, {
       data: lecturas
     }] = await Promise.all([sbClient.from("avisos").select("planta, contenido, autor_nombre, autor_id, created_at").in("planta", plantasReales).order("created_at", {
       ascending: false
-    }), admin.id ? sbClient.from("avisos_lectura").select("planta, ultimo_leido_at").eq("usuario_id", admin.id).in("planta", plantasReales) : Promise.resolve({
+    }).limit(500 * plantasReales.length), admin.id ? sbClient.from("avisos_lectura").select("planta, ultimo_leido_at").eq("usuario_id", admin.id).in("planta", plantasReales) : Promise.resolve({
       data: []
     })]);
     if (!data) return;
@@ -20407,6 +20496,27 @@ function AztPanel({
   useEffect(() => {
     cargarPreviews();
   }, [admin?.dni, JSON.stringify(admin?.plantas)]);
+  // cargarPreviews solo se ejecuta al montar (o si cambian las plantas a cargo) — sin esto, el
+  // badge de "Canal de Avisos" queda pegado en el conteo de ese momento para el resto de la
+  // sesión: aunque el AZT lea los mensajes de verdad (lo que si actualiza avisos_lectura, vía
+  // PanelAvisos), el badge nunca se entera y solo puede subir con cada mensaje nuevo que llega
+  // por el canal de abajo, nunca bajar. Mismo patrón ya probado que el badge de Auxilio mecánico:
+  // escuchar avisos_lectura en tiempo real + un sondeo de respaldo cada 20s, porque ya se
+  // confirmó antes que el canal de Realtime a veces queda "SUBSCRIBED" sin entregar el evento.
+  useEffect(() => {
+    if (!admin?.id) return;
+    const canal = sbClient.channel(`avisos-lectura-badge-${admin.id}`).on("postgres_changes", {
+      event: "*",
+      schema: "public",
+      table: "avisos_lectura",
+      filter: `usuario_id=eq.${admin.id}`
+    }, () => cargarPreviews()).subscribe();
+    const intervalo = setInterval(() => cargarPreviews(), 20000);
+    return () => {
+      sbClient.removeChannel(canal);
+      clearInterval(intervalo);
+    };
+  }, [admin?.id, JSON.stringify(admin?.plantas)]);
 
   // Total de auxilios mecánicos no leídos, para el badge del ítem "Auxilio mecánico" del menú
   // lateral (antes quedaba en 0 fijo: el conteo real solo se calculaba adentro del buzón, así que
