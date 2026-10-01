@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-01T22:45:31.742Z */
+/* UniconApp — Bundle generado el 2026-10-01T22:47:56.409Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 17472 — CERO simplificaciones */
+/* Líneas originales del JSX: 17461 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -9547,31 +9547,20 @@ function ChoferApp({
     };
   }, [driver?.id, driver?.planta]);
 
-  // Muestra el banner para activar notificaciones push si el navegador las soporta y todavía no
-  // hay una suscripción guardada — OJO: no alcanza con mirar Notification.permission (en Android,
-  // las PWA instaladas quedan con el permiso "granted" solo por estar instaladas, sin que el
-  // chofer haya tocado nada todavía), así que se revisa directamente si pushManager ya tiene una
-  // suscripción activa. Si ya la rechazó explícitamente (denied), no se insiste.
+  // DIAGNÓSTICO TEMPORAL: el banner se mostraba condicionado a que el navegador soportara Push y a
+  // confirmar que no hubiera ya una suscripción — en el celular de prueba no aparecía nunca ni
+  // force-cerrando la app, así que de momento se muestra siempre que haya sesión, sin condiciones,
+  // para confirmar que el render en sí funciona. El botón "Activar" sigue revisando soporte y
+  // avisando con un mensaje claro si falta algo (ver activarNotificacionesPush).
   useEffect(() => {
-    if (!driver?.id) return;
-    if (typeof Notification === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window)) return;
-    if (Notification.permission === "denied") {
-      setPushBannerVisible(false);
-      return;
-    }
-    // Se asume visible de entrada — si la consulta de abajo falla o tarda, igual queda a la vista
-    // en vez de desaparecer en silencio. Solo se oculta cuando se confirma que ya hay suscripción.
-    setPushBannerVisible(true);
-    let vigente = true;
-    navigator.serviceWorker.ready.then(reg => reg.pushManager.getSubscription()).then(sub => {
-      if (vigente && sub) setPushBannerVisible(false);
-    }).catch(() => {});
-    return () => {
-      vigente = false;
-    };
+    if (driver?.id) setPushBannerVisible(true);
   }, [driver?.id]);
   const activarNotificacionesPush = async () => {
     try {
+      if (typeof Notification === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window)) {
+        alert("Este navegador no soporta notificaciones push (falta: " + [typeof Notification === "undefined" && "Notification", !("serviceWorker" in navigator) && "serviceWorker", !("PushManager" in window) && "PushManager"].filter(Boolean).join(", ") + ").");
+        return;
+      }
       const permiso = await Notification.requestPermission();
       if (permiso !== "granted") {
         setPushBannerVisible(false);
