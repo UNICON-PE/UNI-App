@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-01T16:01:20.182Z */
+/* UniconApp — Bundle generado el 2026-10-01T02:33:43.054Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 17391 — CERO simplificaciones */
+/* Líneas originales del JSX: 17383 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -9474,15 +9474,10 @@ function ChoferApp({
 
   // Carga inicial real del badge de no-leídos (avisos_lectura es la misma fuente de verdad que
   // usa PanelAvisos para calcular el separador dentro del chat, y el badge por planta en AztPanel).
-  // Además de la carga inicial, se repite cada 20s como respaldo: el canal de Realtime de abajo
-  // (avisos-badge) a veces queda "SUBSCRIBED" sin entregar el evento (ya confirmado varias veces
-  // en este proyecto — ver notif-personal y auxilio mecánico, que ya tienen este mismo respaldo).
-  // Sin este sondeo, un mensaje nuevo que Realtime no entregue se queda contado de menos hasta que
-  // el chofer entra y sale del canal, que es lo único que fuerza un recálculo.
   useEffect(() => {
     if (!driver?.id || !driver?.planta) return;
     let vigente = true;
-    const recalcular = async () => {
+    (async () => {
       // Mismo motivo que en cargarTodo (PanelAvisos): sin límite ni orden explícitos, PostgREST
       // corta en 1000 filas de forma no garantizada — en una planta con mucho historial eso puede
       // dejar fuera avisos recientes y subcontar el badge. Se piden los últimos 500 (los únicos
@@ -9498,12 +9493,9 @@ function ChoferApp({
       const ultimoLeido = lectura?.ultimo_leido_at;
       const noLeidos = ultimoLeido ? mensajes.filter(a => a.autor_id !== driver.id && new Date(a.created_at) > new Date(ultimoLeido)).length : mensajes.filter(a => a.autor_id !== driver.id).length;
       setAvisosNoLeidosReal(noLeidos);
-    };
-    recalcular();
-    const intervalo = setInterval(recalcular, 20000);
+    })();
     return () => {
       vigente = false;
-      clearInterval(intervalo);
     };
   }, [driver?.id, driver?.planta]);
 
