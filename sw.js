@@ -6,6 +6,7 @@ const ASSETS = [
   "./manifest.json",
   "./icon-192.png",
   "./icon-512.png",
+  "./icon-badge.png",
 ];
 
 // Install: cache core assets
@@ -59,7 +60,11 @@ self.addEventListener("push", (e) => {
     self.registration.showNotification(data.title || "UNI App", {
       body: data.body || "Tienes un aviso nuevo",
       icon: "icon-192.png",
-      badge: "icon-192.png",
+      // El ícono chico de la barra de estado de Android solo usa el canal alfa de esta imagen (el
+      // color se ignora siempre) — por eso icon-192.png (opaco, con fondo amarillo) salía como un
+      // cuadrito blanco sólido. icon-badge.png es una silueta blanca del camión sobre fondo
+      // transparente, generada a partir del mismo logo, para que se vea el ícono real.
+      badge: "icon-badge.png",
       vibrate: [200, 100, 200],
       data: { avisoId: data.avisoId || null }
     })
