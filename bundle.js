@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-01T22:40:26.641Z */
+/* UniconApp — Bundle generado el 2026-10-01T22:45:31.742Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 17469 — CERO simplificaciones */
+/* Líneas originales del JSX: 17472 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -9559,9 +9559,12 @@ function ChoferApp({
       setPushBannerVisible(false);
       return;
     }
+    // Se asume visible de entrada — si la consulta de abajo falla o tarda, igual queda a la vista
+    // en vez de desaparecer en silencio. Solo se oculta cuando se confirma que ya hay suscripción.
+    setPushBannerVisible(true);
     let vigente = true;
     navigator.serviceWorker.ready.then(reg => reg.pushManager.getSubscription()).then(sub => {
-      if (vigente) setPushBannerVisible(!sub);
+      if (vigente && sub) setPushBannerVisible(false);
     }).catch(() => {});
     return () => {
       vigente = false;
