@@ -1,4 +1,4 @@
-/* UniconApp — Bundle generado el 2026-10-01T22:47:56.409Z */
+/* UniconApp — Bundle generado el 2026-10-01T22:52:15.991Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
 /* Líneas originales del JSX: 17461 — CERO simplificaciones */
 
@@ -9580,14 +9580,12 @@ function ChoferApp({
       } = sub.toJSON();
       const {
         error
-      } = await sbClient.from("push_subscriptions").upsert({
-        chofer_id: driver.id,
-        endpoint,
-        p256dh: keys.p256dh,
-        auth: keys.auth,
-        user_agent: navigator.userAgent
-      }, {
-        onConflict: "endpoint"
+      } = await sbClient.rpc("guardar_suscripcion_push", {
+        p_chofer_id: driver.id,
+        p_endpoint: endpoint,
+        p_p256dh: keys.p256dh,
+        p_auth: keys.auth,
+        p_user_agent: navigator.userAgent
       });
       if (error) throw error;
       // Sin esta confirmación visible, no hay forma de distinguir "se activó bien" de "falló
