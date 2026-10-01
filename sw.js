@@ -71,17 +71,23 @@ self.addEventListener("push", (e) => {
   );
 });
 
-// Clic en la notificación: enfoca la pestaña de la app si ya está abierta, o
-// abre una nueva si no. (Llevar directo al aviso exacto queda para una
-// siguiente iteración — por ahora solo abre/enfoca la app.)
+// Clic en la notificación: si la app ya está abierta en alguna pestaña, la enfoca y le avisa (por
+// postMessage) a qué aviso ir; si estaba cerrada, abre una pestaña nueva con ?avisoId=... en la URL,
+// que la app lee al cargar (ver el efecto correspondiente en ChoferApp).
 self.addEventListener("notificationclick", (e) => {
   e.notification.close();
+  const avisoId = e.notification.data?.avisoId || null;
   e.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
-        if ("focus" in client) return client.focus();
+        if ("focus" in client) {
+          client.postMessage({ type: "ir-a-aviso", avisoId });
+          return client.focus();
+        }
       }
-      if (self.clients.openWindow) return self.clients.openWindow("./");
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(avisoId ? `./?avisoId=${avisoId}` : "./");
+      }
     })
   );
 });

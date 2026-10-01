@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-01T22:52:15.991Z */
+/* UniconApp — Bundle generado el 2026-10-01T23:41:00.862Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 17461 — CERO simplificaciones */
+/* Líneas originales del JSX: 17485 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -9483,6 +9483,29 @@ function ChoferApp({
     setMobileList(false);
     setIrAMensajeAvisoId(avisoId);
   };
+  // Clic en la notificación push (celular bloqueado o app cerrada): el Service Worker, al no poder
+  // tocar el estado de React directamente, avisa por postMessage si la app ya estaba abierta en
+  // alguna pestaña, o agrega ?avisoId=... a la URL si tuvo que abrir una pestaña nueva — este efecto
+  // cubre ambos casos y reutiliza el mismo camino de la campanita (irANotificacion).
+  useEffect(() => {
+    if (!driver?.id) return;
+    const params = new URLSearchParams(window.location.search);
+    const avisoIdUrl = params.get("avisoId");
+    if (avisoIdUrl) {
+      irANotificacion(avisoIdUrl);
+      params.delete("avisoId");
+      const query = params.toString();
+      window.history.replaceState({}, "", window.location.pathname + (query ? "?" + query : ""));
+    }
+  }, [driver?.id]);
+  useEffect(() => {
+    if (!driver?.id || !("serviceWorker" in navigator)) return;
+    const onMensaje = e => {
+      if (e.data?.type === "ir-a-aviso") irANotificacion(e.data.avisoId);
+    };
+    navigator.serviceWorker.addEventListener("message", onMensaje);
+    return () => navigator.serviceWorker.removeEventListener("message", onMensaje);
+  }, [driver?.id]);
   const openChannel = id => {
     setChannel(id);
     setMobileList(false);
