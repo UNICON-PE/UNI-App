@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-01T23:41:00.862Z */
+/* UniconApp — Bundle generado el 2026-10-04T23:19:13.334Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 17485 — CERO simplificaciones */
+/* Líneas originales del JSX: 18064 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -8362,6 +8362,59 @@ function urlBase64ToUint8Array(base64String) {
   return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
 }
 
+// Suscripción a Web Push genérica para CUALQUIER perfil (chofer o admin) — la tabla
+// push_subscriptions y el RPC guardar_suscripcion_push no distinguen rol, solo guardan de qué
+// perfil es cada suscripción, así que el mismo flujo sirve para el botón "Activar notificaciones"
+// del chofer y el nuevo de AztPanel. Lanza si algo falla; quien llama decide cómo avisarlo.
+async function activarPushPara(perfilId) {
+  if (typeof Notification === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window)) {
+    throw new Error("Este navegador no soporta notificaciones push (falta: " + [typeof Notification === "undefined" && "Notification", !("serviceWorker" in navigator) && "serviceWorker", !("PushManager" in window) && "PushManager"].filter(Boolean).join(", ") + ").");
+  }
+  const permiso = await Notification.requestPermission();
+  if (permiso !== "granted") return false;
+  const registro = await navigator.serviceWorker.ready;
+  let sub = await registro.pushManager.getSubscription();
+  if (!sub) {
+    sub = await registro.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    });
+  }
+  const {
+    endpoint,
+    keys
+  } = sub.toJSON();
+  const {
+    error
+  } = await sbClient.rpc("guardar_suscripcion_push", {
+    p_chofer_id: perfilId,
+    p_endpoint: endpoint,
+    p_p256dh: keys.p256dh,
+    p_auth: keys.auth,
+    p_user_agent: navigator.userAgent
+  });
+  if (error) throw error;
+  return true;
+}
+
+/* ===================== SONIDO DE NOTIFICACIÓN (campanita en vivo) ===================== */
+// Tono corto (dos notas, ~0.18s) para cuando llega una notificación EN VIVO mientras la app está
+// abierta — el push nativo (arriba) ya suena solo si el celular está bloqueado o en otra app, pero
+// si la pantalla sigue abierta en este momento (celular o PC) nada avisaba más que el numerito de
+// la campanita subiendo en silencio.
+const SONIDO_NOTIF_B64 = "data:audio/wav;base64,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";
+let _notifSoundEl = null;
+function reproducirSonidoNotif() {
+  try {
+    if (!_notifSoundEl) _notifSoundEl = new Audio(SONIDO_NOTIF_B64);
+    _notifSoundEl.currentTime = 0;
+    // Autoplay bloqueado por el navegador si todavía no hubo ninguna interacción del usuario en
+    // esta pestaña (política estándar) — se ignora en silencio en vez de reventar la app; el
+    // badge/campanita igual se actualiza, el sonido es solo un plus cuando sí se puede.
+    _notifSoundEl.play().catch(() => {});
+  } catch {}
+}
+
 /* ===================== GEMINI (lectura de citación en imagen) ===================== */
 // La llamada real a Gemini vive en la Edge Function "gemini-proxy" de Supabase, con la API key
 // guardada como secreto del proyecto (nunca en este archivo ni en el bundle.js público). Antes la
@@ -8722,79 +8775,91 @@ function UniconApp() {
     fallaTipos: ["Trompo no gira"],
     ubicacion: "En planta, zona de carga"
   }]); // auxilios mecánicos → AZT/Despacho/Mantenimiento
-  const [incidents, setIncidents] = useState([{
-    id: uid(),
-    tipo: "acceso",
-    unidad: "103",
-    planta: "San Isidro",
-    obra: "Obra Los Portales",
-    hora: "08:42",
-    ts: Date.now() - 60000,
-    estado: "nueva",
-    solucion: "",
-    chofer: "Angel Martinez",
-    afectados: [],
-    leidoPor: [],
-    mensajes: [{
-      rol: "Chofer",
-      nombre: "Angel Martinez",
-      texto: "No me dejan entrar, el vigilante dice que no tengo autorización.",
-      hora: "08:42"
-    }]
-  }, {
-    id: uid(),
-    tipo: "sistema",
-    unidad: "101",
-    planta: "San Isidro",
-    obra: "Obra San Borja",
-    hora: "07:15",
-    ts: Date.now() - 120000,
-    estado: "atencion",
-    solucion: "",
-    chofer: "Miguel Flores",
-    afectados: [],
-    leidoPor: ["azt"],
-    mensajes: [{
-      rol: "Chofer",
-      nombre: "Miguel Flores",
-      texto: "La tablet no carga el RTS desde ayer.",
-      hora: "07:15"
+  const [incidents, setIncidents] = useState([]);
+
+  // Carga real desde Supabase (antes era 100% estado en memoria con datos de ejemplo — se perdía
+  // todo al recargar y nunca llegaba a ningún buzón administrativo de verdad). Se recompone el
+  // array completo en cada carga/evento en vez de parchear incrementalmente (mismo patrón que
+  // cargarPreviews/cargarAuxPreview): el volumen de incidencias es bajo, así que no vale la pena
+  // la complejidad de un merge fino.
+  const cargarIncidencias = async () => {
+    const [{
+      data: filas
     }, {
-      rol: "AZT",
-      nombre: "Diego Jara",
-      texto: "Miguel, ¿ya reiniciaste la tablet? Si sigue igual avísame para coordinar con sistemas.",
-      hora: "07:22"
-    }]
-  }, {
-    id: uid(),
-    tipo: "acceso",
-    unidad: "110",
-    planta: "San Isidro",
-    obra: "Obra Miraflores",
-    hora: "09:10",
-    ts: Date.now() - 30000,
-    estado: "nueva",
-    solucion: "",
-    chofer: "Chetu Cherubini",
-    afectados: ["Karl Aguirre", "Miguel Dávila"],
-    leidoPor: [],
-    mensajes: [{
-      rol: "Chofer",
-      nombre: "Chetu Cherubini",
-      texto: "No dejan ingresar a la obra, piden autorización que no nos dieron.",
-      hora: "09:10"
-    }, {
-      rol: "Chofer",
-      nombre: "Karl Aguirre",
-      texto: "Karl Aguirre confirma el mismo problema.",
-      hora: "09:15"
-    }, {
-      rol: "Chofer",
-      nombre: "Miguel Dávila",
-      texto: "Miguel Dávila confirma el mismo problema.",
-      hora: "09:18"
-    }]
-  }]);
+      data: mensajes
+    }] = await Promise.all([sbClient.from("incidencias").select("*").order("created_at", {
+      ascending: true
+    }).limit(2000), sbClient.from("incidencia_mensajes").select("*").order("created_at", {
+      ascending: true
+    }).limit(5000)]);
+    if (!filas) return;
+    const mensajesPorIncidencia = {};
+    (mensajes || []).forEach(m => {
+      (mensajesPorIncidencia[m.incidencia_id] ||= []).push({
+        rol: m.autor_rol,
+        nombre: m.autor_nombre,
+        texto: m.texto,
+        hora: new Date(m.created_at).toLocaleTimeString("es-PE", {
+          hour: "2-digit",
+          minute: "2-digit"
+        }),
+        adjuntoPath: m.adjunto_path
+      });
+    });
+    setIncidents(filas.map(f => ({
+      id: f.id,
+      tipo: f.tipo,
+      unidad: f.unidad,
+      planta: f.planta,
+      obra: f.obra,
+      hora: new Date(f.created_at).toLocaleTimeString("es-PE", {
+        hour: "2-digit",
+        minute: "2-digit"
+      }),
+      ts: new Date(f.created_at).getTime(),
+      estado: f.estado,
+      solucion: f.solucion || "",
+      chofer: f.chofer_nombre,
+      afectados: f.afectados || [],
+      participantes: f.participantes || [],
+      turnoAzt: f.turno_azt,
+      turnoDespachador: f.turno_despachador,
+      mensajes: mensajesPorIncidencia[f.id] || []
+    })));
+  };
+  useEffect(() => {
+    let vigente = true;
+    const {
+      data: listener
+    } = sbClient.auth.onAuthStateChange((event, session) => {
+      if (session && vigente) cargarIncidencias();
+    });
+    sbClient.auth.getSession().then(({
+      data
+    }) => {
+      if (data.session && vigente) cargarIncidencias();
+    });
+    const canal = sbClient.channel("incidencias-global").on("postgres_changes", {
+      event: "*",
+      schema: "public",
+      table: "incidencias"
+    }, () => cargarIncidencias()).on("postgres_changes", {
+      event: "*",
+      schema: "public",
+      table: "incidencia_mensajes"
+    }, () => cargarIncidencias()).on("postgres_changes", {
+      event: "*",
+      schema: "public",
+      table: "incidencia_vistas"
+    }, () => cargarIncidencias()).subscribe();
+    const intervalo = setInterval(cargarIncidencias, 15000); // sondeo de respaldo — mismo motivo que en el resto del proyecto: Realtime a veces no entrega el evento
+    return () => {
+      vigente = false;
+      listener?.subscription?.unsubscribe();
+      sbClient.removeChannel(canal);
+      clearInterval(intervalo);
+    };
+  }, []);
   const [avisos, setAvisos] = useState([{
     id: uid(),
     planta: "San Isidro",
@@ -8967,12 +9032,94 @@ function UniconApp() {
     initialDni: aztDni
   })));
 }
+// Ícono/color por tipo de notificación — funciones puras, compartidas entre NotifPanel (la lista
+// completa) y NotifToast (la burbuja que aparece un momento cuando llega una nueva en vivo).
+const esIncidencia = t => t === "incidencia" || t === "incidencia_atencion" || t === "incidencia_resuelta" || t === "incidencia_nueva";
+// "atención" se ve naranja con un reloj (misma paleta que el badge "EN ATENCIÓN" del buzón de
+// incidencias), "resuelta" en verde con check, y "nueva" (le llega a un admin — una incidencia
+// recién cayó en su buzón) en rojo con una alerta, para que resalte que necesita acción.
+const iconOfNotif = t => t === "incidencia_atencion" ? Clock : t === "incidencia_nueva" ? AlertTriangle : esIncidencia(t) ? CheckCircle2 : t === "encontrado" ? Package : t === "sede" ? RefreshCw : t === "ruta_respondida" ? MapPin : t === "citacion" ? FileText : Bell;
+const colorOfNotif = t => t === "incidencia_atencion" ? "#d97706" : t === "incidencia_nueva" ? "#dc2626" : esIncidencia(t) ? "#16a34a" : t === "encontrado" ? "#ca8a04" : t === "sede" ? "#0891b2" : t === "ruta_respondida" ? "#7c3aed" : t === "citacion" ? "#0028AA" : AZUL;
+// El texto se guarda con un emoji al frente (ej. "✅ Tu incidencia..."), heredado de cuando el
+// ícono de la izquierda no distinguía atención de resuelta — ya no hace falta, el ícono ya lo
+// comunica.
+const limpiarEmojiNotif = t => (t || "").replace(/^(✅|👀)\s*/, "");
+const tituloIncidenciaDe = (incidents, id) => {
+  const inc = (incidents || []).find(x => x.id === id);
+  return inc ? INCIDENT_TYPES.find(t => t.id === inc.tipo)?.label : null;
+};
+// notificaciones_personales → forma que usa el frontend — igual para chofer o admin, la columna
+// "chofer_id" de esa tabla en realidad acepta cualquier perfil (ver migracion_notificaciones_admin_incidencias.sql).
+const mapNotifDB = n => ({
+  id: n.id,
+  tipo: n.tipo,
+  texto: n.texto,
+  detalle: n.detalle,
+  avisoId: n.aviso_id,
+  incidenciaId: n.incidencia_id,
+  planta: n.avisos?.planta ?? null,
+  hora: new Date(n.created_at).toLocaleTimeString("es-PE", {
+    hour: "2-digit",
+    minute: "2-digit"
+  }),
+  leida: n.leida
+});
+// Burbuja efímera que aparece arriba a la derecha cuando llega una notificación EN VIVO (bandeja
+// ya abierta o no) — complementa al push nativo, que solo avisa si el celular/pestaña no está
+// mirando la app en ese momento. Se cierra sola a los 5s o antes si la tocan.
+function NotifToast({
+  notif,
+  onClose,
+  onClick,
+  incidents
+}) {
+  useEffect(() => {
+    const t = setTimeout(onClose, 5000);
+    return () => clearTimeout(t);
+  }, [notif?.id]);
+  if (!notif) return null;
+  const I = iconOfNotif(notif.tipo);
+  const c = colorOfNotif(notif.tipo);
+  const titulo = esIncidencia(notif.tipo) ? tituloIncidenciaDe(incidents, notif.incidenciaId) : null;
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    onClick: () => {
+      onClick?.(notif);
+      onClose();
+    },
+    className: "fixed top-3 right-3 z-[999] flex items-start gap-3 px-4 py-3 rounded-2xl shadow-2xl cursor-pointer",
+    style: {
+      background: "white",
+      border: "1px solid #e6e8ee",
+      maxWidth: 340,
+      animation: "notifToastIn .25s ease-out"
+    }
+  }, /*#__PURE__*/React.createElement("style", null, `@keyframes notifToastIn { 0% { transform: translateY(-12px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }`), /*#__PURE__*/React.createElement("div", {
+    className: "w-9 h-9 rounded-xl flex items-center justify-center shrink-0",
+    style: {
+      background: c + "18",
+      color: c
+    }
+  }, /*#__PURE__*/React.createElement(I, {
+    size: 17
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 min-w-0"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-sm font-semibold text-gray-800"
+  }, limpiarEmojiNotif(notif.texto)), titulo &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "text-xs text-gray-500 mt-0.5 line-clamp-2"
+  }, titulo)));
+}
 function NotifPanel({
   notifs,
   setNotifs,
   onClose,
   onLeida,
-  onIrAMensaje
+  onIrAMensaje,
+  incidents,
+  activarPush
 }) {
   // Ver las notificaciones (abrir la campanita) ya cuenta como "leerlas" — no hace falta que el
   // chofer haga clic en cada una ni en un botón aparte. Se marcan todas al cerrar (clic afuera,
@@ -8999,10 +9146,12 @@ function NotifPanel({
   // original (Canal de Avisos, centrado y resaltado) — ver irANotificacion en ChoferApp.
   const abrirNotificacion = n => {
     marcarTodasLeidas();
-    onIrAMensaje?.(n.avisoId);
+    onIrAMensaje?.(n.avisoId, n.incidenciaId);
   };
-  const iconOf = t => t === "incidencia" ? CheckCircle2 : t === "encontrado" ? Package : t === "sede" ? RefreshCw : t === "ruta_respondida" ? MapPin : t === "citacion" ? FileText : Bell;
-  const colorOf = t => t === "incidencia" ? "#16a34a" : t === "encontrado" ? "#ca8a04" : t === "sede" ? "#0891b2" : t === "ruta_respondida" ? "#7c3aed" : t === "citacion" ? "#0028AA" : AZUL;
+  const iconOf = iconOfNotif;
+  const colorOf = colorOfNotif;
+  const limpiarEmoji = limpiarEmojiNotif;
+  const tituloIncidencia = id => tituloIncidenciaDe(incidents, id);
   return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 z-50 flex items-start justify-end p-3 pt-14",
     style: {
@@ -9031,7 +9180,20 @@ function NotifPanel({
     onClick: cerrarYMarcarTodas
   }, /*#__PURE__*/React.createElement(X, {
     size: 18
-  }))), notifs.filter(n => !n.leida).length > 0 &&
+  }))), activarPush &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
+    onClick: activarPush,
+    className: "w-full flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-left border-b",
+    style: {
+      borderColor: "#e6e8ee",
+      background: "#fffbeb",
+      color: "#92400e"
+    }
+  }, /*#__PURE__*/React.createElement(Bell, {
+    size: 13
+  }), " Activar notificaciones (burbuja + sonido, aunque tengas la app cerrada)"), notifs.filter(n => !n.leida).length > 0 &&
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
@@ -9079,7 +9241,22 @@ function NotifPanel({
       className: "flex-1 min-w-0"
     }, /*#__PURE__*/React.createElement("div", {
       className: "text-sm font-semibold text-gray-800"
-    }, n.texto), n.detalle &&
+    }, limpiarEmoji(n.texto)), esIncidencia(n.tipo) ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
+      className: "text-xs text-gray-500 mt-0.5"
+    }, tituloIncidencia(n.incidenciaId) &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
+      className: "line-clamp-2"
+    }, tituloIncidencia(n.incidenciaId)), n.detalle &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
+      className: "line-clamp-2"
+    }, n.tipo === "incidencia_resuelta" ? "Respuesta: " : "", n.detalle)) : n.detalle &&
     /*#__PURE__*/
     /*#__PURE__*/
     React.createElement("div", {
@@ -9150,6 +9327,7 @@ function ChoferApp({
   const [entered, setEntered] = useState(true); // directo al canal, sin intro
   const [mobileList, setMobileList] = useState(true);
   const [irAMensajeAvisoId, setIrAMensajeAvisoId] = useState(null); // aviso a resaltar/centrar en PanelAvisos, pedido desde la campanita de notificaciones
+  const [irAIncidenciaId, setIrAIncidenciaId] = useState(null); // incidencia a resaltar en Reportes de incidencia, pedido desde la campanita de notificaciones
   const [avisosLeidos, setAvisosLeidos] = useState(0);
   const [incVistas, setIncVistas] = useState(new Set());
   const [loginError, setLoginError] = useState("");
@@ -9159,6 +9337,7 @@ function ChoferApp({
   const [notifs, setNotifs] = useState([]); // notificaciones personales del chofer
   const [pushBannerVisible, setPushBannerVisible] = useState(false); // banner para activar notificaciones push
   const [openNotif, setOpenNotif] = useState(false);
+  const [toastNotif, setToastNotif] = useState(null); // burbuja efímera + sonido cuando llega una EN VIVO
   const [botDeepLink, setBotDeepLink] = useState(null); // ej. "op_unikin" — abre UNIBOT directo en esa opción (ver Bitácora personal)
   const isDesktop = useIsDesktop();
   const ROLES_ADMIN_PANEL = ["jefe_planta", "despachador", "sgi", "supervisor_mantenimiento", "analista_mantenimiento", "admin_zonal_transporte", "trabajadora_social", "admin_transporte_bombas", "supervisor_bombas_jefe_ops", "gerente_transporte_distribucion", "jefe_transporte", "supervisor_transportes", "jefe_capacitacion", "administracion_personal", "mecanico_lider"];
@@ -9373,19 +9552,6 @@ function ChoferApp({
   // usa para ocultar, mientras el chofer esté en otra planta, las notificaciones de una planta
   // anterior (ya no tiene sentido ni acceso a ese canal). null cuando la notificación no apunta a
   // ningún aviso puntual (nunca fueron clickeables para navegar, así que siempre se muestran).
-  const mapNotifDB = n => ({
-    id: n.id,
-    tipo: n.tipo,
-    texto: n.texto,
-    detalle: n.detalle,
-    avisoId: n.aviso_id,
-    planta: n.avisos?.planta ?? null,
-    hora: new Date(n.created_at).toLocaleTimeString("es-PE", {
-      hour: "2-digit",
-      minute: "2-digit"
-    }),
-    leida: n.leida
-  });
   const cargarNotifsRef = useRef(null);
   useEffect(() => {
     if (!driver?.id) return;
@@ -9425,12 +9591,17 @@ function ChoferApp({
         } = await sbClient.from("avisos").select("planta").eq("id", nueva.aviso_id).maybeSingle();
         plantaAviso = avisoFila?.planta ?? null;
       }
-      setNotifs(prev => [mapNotifDB({
+      const mapeada = mapNotifDB({
         ...nueva,
         avisos: {
           planta: plantaAviso
         }
-      }), ...prev]);
+      });
+      setNotifs(prev => [mapeada, ...prev]);
+      // Burbuja + sonido mientras la app está abierta (el push nativo ya suena solo si el celular
+      // está bloqueado o en otra app — ver sw.js).
+      reproducirSonidoNotif();
+      setToastNotif(mapeada);
     }).subscribe();
     // Respaldo por sondeo: confirmado en este mismo proyecto (ver auxilios_lectura) que el canal
     // de Realtime a veces queda "SUBSCRIBED" sin entregar el evento — sin esto, una notificación
@@ -9473,11 +9644,17 @@ function ChoferApp({
     }).eq("id", id);
     if (error) console.error("No se pudo marcar la notificación como leída:", error.message);
   };
-  // Clic en una notificación puntual de la campanita: cierra el panel, entra al Canal de Avisos
-  // (todas las notificaciones de hoy apuntan ahí — objeto encontrado, respuesta de ruta, citación)
-  // y le pide a PanelAvisos que centre y resalte ese mensaje exacto.
-  const irANotificacion = avisoId => {
+  // Clic en una notificación puntual de la campanita: cierra el panel y navega directo al origen
+  // — Canal de Avisos (centrado y resaltado) para la mayoría, o Reportes de incidencia (resaltada
+  // con el mismo parpadeo que usa el buzón admin) cuando es sobre el estado de una incidencia.
+  const irANotificacion = (avisoId, incidenciaId) => {
     setOpenNotif(false);
+    if (incidenciaId) {
+      setChannel("incidencias");
+      setMobileList(false);
+      setIrAIncidenciaId(incidenciaId);
+      return;
+    }
     if (!avisoId) return;
     setChannel("avisos");
     setMobileList(false);
@@ -9578,39 +9755,24 @@ function ChoferApp({
   useEffect(() => {
     if (driver?.id) setPushBannerVisible(true);
   }, [driver?.id]);
+
+  // Re-reclama en silencio la suscripción push de este navegador/dispositivo para la cuenta que
+  // acaba de entrar, si el permiso ya estaba concedido de antes (de esta misma cuenta u otra). El
+  // Push de navegador no sabe qué cuenta está logueada en la pestaña — se queda pegado a quien
+  // último le dio clic a "Activar" hasta que alguien vuelve a activarlo — así que sin esto, un
+  // dispositivo compartido entre pruebas (o alguien que simplemente cambia de cuenta) sigue
+  // recibiendo los avisos de la cuenta anterior en vez de la que está usando ahora.
+  useEffect(() => {
+    if (!driver?.id || typeof Notification === "undefined" || Notification.permission !== "granted") return;
+    activarPushPara(driver.id).catch(err => console.error("No se pudo re-asociar la suscripción push:", err.message));
+  }, [driver?.id]);
   const activarNotificacionesPush = async () => {
     try {
-      if (typeof Notification === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window)) {
-        alert("Este navegador no soporta notificaciones push (falta: " + [typeof Notification === "undefined" && "Notification", !("serviceWorker" in navigator) && "serviceWorker", !("PushManager" in window) && "PushManager"].filter(Boolean).join(", ") + ").");
-        return;
-      }
-      const permiso = await Notification.requestPermission();
-      if (permiso !== "granted") {
+      const activada = await activarPushPara(driver.id);
+      if (!activada) {
         setPushBannerVisible(false);
         return;
       }
-      const registro = await navigator.serviceWorker.ready;
-      let sub = await registro.pushManager.getSubscription();
-      if (!sub) {
-        sub = await registro.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-        });
-      }
-      const {
-        endpoint,
-        keys
-      } = sub.toJSON();
-      const {
-        error
-      } = await sbClient.rpc("guardar_suscripcion_push", {
-        p_chofer_id: driver.id,
-        p_endpoint: endpoint,
-        p_p256dh: keys.p256dh,
-        p_auth: keys.auth,
-        p_user_agent: navigator.userAgent
-      });
-      if (error) throw error;
       // Sin esta confirmación visible, no hay forma de distinguir "se activó bien" de "falló
       // silenciosamente" — ni para el chofer ni para poder diagnosticar un reporte a distancia.
       alert("✅ Notificaciones activadas. Te avisaremos con sonido cuando llegue un aviso nuevo.");
@@ -9767,7 +9929,16 @@ function ChoferApp({
     setNotifs: setNotifs,
     onClose: () => setOpenNotif(false),
     onLeida: marcarNotifLeidaDB,
-    onIrAMensaje: irANotificacion
+    onIrAMensaje: irANotificacion,
+    incidents: incidents
+  }), /*#__PURE__*/React.createElement(NotifToast, {
+    notif: toastNotif,
+    onClose: () => setToastNotif(null),
+    onClick: n => {
+      marcarNotifLeidaDB(n.id);
+      irANotificacion(n.avisoId, n.incidenciaId);
+    },
+    incidents: incidents
   }), showSidebar &&
   /*#__PURE__*/
   /*#__PURE__*/
@@ -9871,7 +10042,10 @@ function ChoferApp({
     className: "flex-1 overflow-y-auto py-2"
   }, CHANNELS.map(c => {
     const active = channel === c.id;
-    const incCambios = misIncidencias.filter(i => !incVistas.has(i.id + i.estado)).length;
+    // "nueva" nunca cuenta para este badge — es la que el propio chofer acaba de enviar, no
+    // tiene sentido que se "notifique" de su propio reporte. Solo cuenta cuando pasa a
+    // atención o resuelta y todavía no ha vuelto a entrar a verla.
+    const incCambios = misIncidencias.filter(i => i.estado !== "nueva" && !incVistas.has(i.id + i.estado)).length;
     const badge = c.id === "incidencias" ? incCambios : c.id === "avisos" ? avisosNoLeidosReal : 0;
     return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
       key: c.id,
@@ -9967,7 +10141,9 @@ function ChoferApp({
     incidents: incidents,
     setIncidents: setIncidents,
     setEmergencias: setEmergencias,
-    setChannel: setChannel
+    setChannel: setChannel,
+    irAIncidenciaId: irAIncidenciaId,
+    setIrAIncidenciaId: setIrAIncidenciaId
   }), channel === "bitacora" &&
   /*#__PURE__*/
   /*#__PURE__*/
@@ -16615,7 +16791,8 @@ Por favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
 
 /* ============  REPORTES DE INCIDENCIA  ============ */
 function ChoferIncidentCard({
-  incident: i
+  incident: i,
+  resaltar
 }) {
   const ROADMAP = ["nueva", "atencion", "resuelta"];
   const roadLabel = {
@@ -16631,11 +16808,13 @@ function ChoferIncidentCard({
   };
   const activeColor = STATE_COLOR[i.estado];
   return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    id: `incidencia-${i.id}`,
     className: "bg-white rounded-xl p-3 shadow-sm",
     style: {
-      border: "1px solid #e6e8ee"
+      border: resaltar ? "1px solid #93c5fd" : "1px solid #e6e8ee",
+      animation: resaltar ? "incidenciaDestacada 1.8s ease-in-out 4" : "none"
     }
-  }, /*#__PURE__*/React.createElement("style", null, `@keyframes pulseStep { 0%,100%{box-shadow:0 0 0 0 rgba(0,0,0,.15)} 50%{box-shadow:0 0 0 10px rgba(0,0,0,0)} }`), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("style", null, `@keyframes pulseStep { 0%,100%{box-shadow:0 0 0 0 rgba(0,0,0,.15)} 50%{box-shadow:0 0 0 10px rgba(0,0,0,0)} } @keyframes incidenciaDestacada { 0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,.5); } 50% { box-shadow: 0 0 0 6px rgba(59,130,246,0); } }`), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between"
   }, /*#__PURE__*/React.createElement("div", {
     className: "font-semibold text-sm text-gray-800"
@@ -16734,12 +16913,23 @@ function ReporteIncidencias({
   incidents,
   setIncidents,
   setEmergencias,
-  setChannel
+  setChannel,
+  irAIncidenciaId,
+  setIrAIncidenciaId
 }) {
   const cfg = PLANT_CONFIG[driver.planta] || PLANT_CONFIG_FALLBACK;
   const [step, setStep] = useState("list"); // list | pick | askCall | contacts | obra | aaa | auxilio | servicio | falla_rop | falla_rop_no | falla_choice | falla | falla_sent | dedupCheck | dedupConfirmed
   const [tipo, setTipo] = useState(null);
   const [obra, setObra] = useState("");
+  // Catálogo real de obras de su planta (el mismo que usa GestionObras/op_ruta en UNIBOT) — antes
+  // esta pantalla mostraba una lista fija de ejemplo ("[Obra 1]", "[Obra 2]") sin relación con las
+  // obras reales configuradas para la planta.
+  const [obrasReales, setObrasReales] = useState([]);
+  useEffect(() => {
+    sbClient.from("obras_planta").select("obra").eq("planta", driver.planta).order("obra").then(({
+      data
+    }) => setObrasReales((data || []).map(o => o.obra)));
+  }, [driver.planta]);
   const [servicio, setServicio] = useState("");
   const [subAlmuerzo, setSubAlmuerzo] = useState("");
   const [comentario, setComentario] = useState("");
@@ -16755,13 +16945,45 @@ function ReporteIncidencias({
   const [dedupConfirmed, setDedupConfirmed] = useState(false); // mostrar mensaje de confirmación
   const [enviandoAuxilio, setEnviandoAuxilio] = useState(false);
   const [mensajeAuxilioError, setMensajeAuxilioError] = useState("");
-  const mis = incidents.filter(i => i.chofer === driver.nombre || (i.afectados || []).includes(driver.nombre));
+  // "falla" es informativa (sin chat, su propio buzón en Fallas mecánicas) — no aparece en el
+  // historial de incidencias del chofer, solo la confirmación de envío de la pantalla "falla_sent".
+  const mis = incidents.filter(i => i.tipo !== "falla" && (i.chofer === driver.nombre || (i.afectados || []).includes(driver.nombre)));
 
-  // Chequeo de duplicado: busca incidencia activa similar (mismo tipo, misma planta, últimas 4 h)
+  // Al llegar desde la campanita (notificación de "en atención" o "resuelta"), asegura estar en
+  // la lista, centra la tarjeta exacta y limpia el pedido después de un rato — así no vuelve a
+  // destacarse si se sale y se regresa a este canal más tarde.
+  useEffect(() => {
+    if (!irAIncidenciaId) return;
+    setStep("list");
+    const el = document.getElementById(`incidencia-${irAIncidenciaId}`);
+    el?.scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
+    const t = setTimeout(() => setIrAIncidenciaId(null), 7500);
+    return () => clearTimeout(t);
+  }, [irAIncidenciaId]);
+
+  // Chequeo de duplicado: busca incidencia activa similar (mismo tipo, misma planta, últimas 4 h).
+  // Para acceso/retiro, además exige que sea la MISMA obra (o una palabra clave en común, ej.
+  // "Museo de la Nación" calza con "Museo") — si no, reportar una obra distinta ("123") no debería
+  // emparejarse con otra activa de una obra totalmente distinta ("Westin") solo por coincidir tipo
+  // y planta. "servicios" no tiene concepto de obra puntual, así que sigue emparejando por planta.
   const DEDUP_VENTANA = 4 * 60 * 60 * 1000;
+  const PALABRAS_GENERICAS_OBRA = new Set(["de", "del", "la", "el", "los", "las", "y", "en", "obra"]);
+  const normalizarObra = s => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
+  const obrasSimilares = (a, b) => {
+    const na = normalizarObra(a),
+      nb = normalizarObra(b);
+    if (!na || !nb) return false;
+    if (na.includes(nb) || nb.includes(na)) return true;
+    const palabrasA = na.split(/\s+/).filter(w => w.length > 2 && !PALABRAS_GENERICAS_OBRA.has(w));
+    const palabrasB = new Set(nb.split(/\s+/).filter(w => w.length > 2 && !PALABRAS_GENERICAS_OBRA.has(w)));
+    return palabrasA.some(w => palabrasB.has(w));
+  };
   const checkAndSubmit = (tipoId, submitFn) => {
     const ahora = Date.now();
-    const candidato = incidents.find(i => i.planta === driver.planta && i.tipo === tipoId && i.estado !== "resuelta" && (i.ts ? ahora - i.ts < DEDUP_VENTANA : true));
+    const candidato = incidents.find(i => i.planta === driver.planta && i.tipo === tipoId && i.estado !== "resuelta" && (i.ts ? ahora - i.ts < DEDUP_VENTANA : true) && (tipoId === "servicios" || obrasSimilares(i.obra, obra)));
     if (candidato) {
       setDedupCandidate(candidato);
       setPendingSubmitFn(() => submitFn);
@@ -16774,6 +16996,14 @@ function ReporteIncidencias({
   // Refuerza una incidencia existente sumando el chofer actual como otro afectado
   const reforzarExistente = () => {
     if (!dedupCandidate) return;
+    sbClient.rpc("reforzar_incidencia", {
+      p_incidencia_id: dedupCandidate.id,
+      p_chofer_id: driver.id
+    }).then(({
+      error
+    }) => {
+      if (error) console.error("No se pudo reforzar la incidencia:", error.message);
+    });
     setIncidents(prev => prev.map(i => {
       if (i.id !== dedupCandidate.id) return i;
       const yaAfectado = (i.afectados || []).includes(driver.nombre);
@@ -16851,8 +17081,38 @@ function ReporteIncidencias({
     }
     setStep("askCall");
   };
-  const _doSubmitFalla = () => {
-    // No se registra como incidencia; solo es un complemento al ROP de UNIKIN
+  // Sube el adjunto (foto/archivo) al bucket dedicado, si viene uno — mismo patrón que
+  // auxilios-mecanicos. Devuelve null si no hay adjunto o si falla la subida (no bloquea el envío
+  // del reporte por un problema solo con la foto).
+  const subirAdjuntoIncidencia = async file => {
+    if (!file) return null;
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+    const path = `${driver.id}/${Date.now()}.${ext}`;
+    const {
+      error
+    } = await sbClient.storage.from("incidencias").upload(path, file);
+    return error ? null : path;
+  };
+  const _doSubmitFalla = async () => {
+    const tiposTexto = fallaTipos.filter(t => t !== "Otro").concat(fallaTipos.includes("Otro") && fallaOtroTexto.trim() ? [fallaOtroTexto.trim()] : []).join(", ");
+    const texto = `🔧 Falla mecánica — Unidad ${fallaMixer}\nTipo: ${tiposTexto}\n${fallaComent.trim()}` + (fallaUbicacion.trim() ? `\nUbicación: ${fallaUbicacion.trim()}` : "");
+    const adjuntoPath = await subirAdjuntoIncidencia(fallaAdjunto);
+    const {
+      error
+    } = await sbClient.rpc("crear_incidencia", {
+      p_chofer_id: driver.id,
+      p_tipo: "falla",
+      p_planta: driver.planta,
+      p_unidad: fallaMixer,
+      p_obra: null,
+      p_mensaje_inicial: texto,
+      p_adjunto_path: adjuntoPath
+    });
+    if (error) {
+      console.error("No se pudo registrar la falla mecánica:", error.message);
+      alert("No se pudo enviar el reporte: " + error.message);
+      return;
+    }
     setStep("falla_sent");
   };
   const resetFallaForm = () => {
@@ -16870,53 +17130,56 @@ function ReporteIncidencias({
   const afterCall = called => {
     if (called) setStep("obra");else setStep("contacts");
   };
-  const _doSubmit = () => {
-    setIncidents(prev => [...prev, {
-      id: uid(),
-      tipo: tipo.id,
-      unidad: driver.unidad,
-      planta: driver.planta,
-      obra: obra || "Obra sin especificar",
-      hora: hhmm(),
-      ts: Date.now(),
-      estado: "nueva",
-      solucion: "",
-      chofer: driver.nombre,
-      afectados: [],
-      leidoPor: [],
-      mensajes: []
-    }]);
+  // Mensaje inicial "de parte del chofer" para que el chat siempre arranque con un primer mensaje
+  // suyo (burbuja azul) — acceso/retiro no piden texto libre (solo la obra), así que se usa un
+  // texto fijo según el tipo en vez de dejar el chat vacío al abrirlo.
+  const MENSAJE_INICIAL_TIPO = {
+    acceso: "No me dejan ingresar a la obra.",
+    retiro: "No me dejan retirarme de la obra."
+  };
+  const _doSubmit = async () => {
+    const {
+      error
+    } = await sbClient.rpc("crear_incidencia", {
+      p_chofer_id: driver.id,
+      p_tipo: tipo.id,
+      p_planta: driver.planta,
+      p_unidad: driver.unidad,
+      p_obra: obra || "Obra sin especificar",
+      p_mensaje_inicial: MENSAJE_INICIAL_TIPO[tipo.id] || null,
+      p_adjunto_path: null
+    });
+    if (error) {
+      console.error("No se pudo registrar la incidencia:", error.message);
+      alert("No se pudo enviar el reporte: " + error.message);
+      return;
+    }
     setStep("list");
     setTipo(null);
     setObra("");
   };
   const submit = () => checkAndSubmit(tipo?.id, _doSubmit);
-  const _doSubmitServicio = () => {
+  const _doSubmitServicio = async () => {
     const servicioLabel = SERVICIOS_PLANTA.find(s => s.id === servicio)?.label || "Servicio no especificado";
     const detalleBase = servicio === "almuerzo" && subAlmuerzo ? `${servicioLabel} · ${subAlmuerzo}` : servicioLabel;
     const detalle = comentario.trim() ? `${detalleBase} — ${comentario.trim()}` : detalleBase;
-    const msg = {
-      rol: "Chofer",
-      nombre: driver.nombre.split(" ").slice(0, 2).join(" "),
-      texto: detalle,
-      hora: hhmm()
-    };
-    if (adjuntoServicio) msg.adjunto = adjuntoServicio;
-    setIncidents(prev => [...prev, {
-      id: uid(),
-      tipo: "servicios",
-      unidad: driver.unidad,
-      planta: driver.planta,
-      obra: `Planta ${driver.planta}`,
-      hora: hhmm(),
-      ts: Date.now(),
-      estado: "nueva",
-      solucion: "",
-      chofer: driver.nombre,
-      afectados: [],
-      leidoPor: [],
-      mensajes: [msg]
-    }]);
+    const adjuntoPath = await subirAdjuntoIncidencia(adjuntoServicio);
+    const {
+      error
+    } = await sbClient.rpc("crear_incidencia", {
+      p_chofer_id: driver.id,
+      p_tipo: "servicios",
+      p_planta: driver.planta,
+      p_unidad: driver.unidad,
+      p_obra: `Planta ${driver.planta}`,
+      p_mensaje_inicial: detalle,
+      p_adjunto_path: adjuntoPath
+    });
+    if (error) {
+      console.error("No se pudo registrar el servicio:", error.message);
+      alert("No se pudo enviar el reporte: " + error.message);
+      return;
+    }
     setStep("list");
     setTipo(null);
     setServicio("");
@@ -16996,7 +17259,8 @@ function ReporteIncidencias({
   /*#__PURE__*/
   React.createElement(ChoferIncidentCard, {
     key: i.id,
-    incident: i
+    incident: i,
+    resaltar: i.id === irAIncidenciaId
   })))), step === "pick" &&
   /*#__PURE__*/
   /*#__PURE__*/
@@ -17125,7 +17389,7 @@ function ReporteIncidencias({
   })), /*#__PURE__*/React.createElement("div", {
     className: "text-xs font-bold text-gray-600 mb-1"
   }, "\xBFEn qu\xE9 obra est\xE1s?"), /*#__PURE__*/React.createElement(DropdownConOtro, {
-    options: cfg.obras,
+    options: obrasReales,
     value: obra,
     onChange: setObra,
     placeholder: "Selecciona la obra"
@@ -20533,7 +20797,9 @@ function AztPanel({
   const [section, setSection] = useState(null); // null = sin sección elegida aún, para evitar montar el chat automáticamente al iniciar sesión
   const [plant, setPlant] = useState("Todas");
   const [tab, setTab] = useState("nuevas"); // nuevas | resolver | resueltas
-  const TIPOS_FILTRABLES = INCIDENT_TYPES.filter(t => t.id !== "falla" && t.id !== "auxilio");
+  // "falla" tiene su propio buzón informativo (pestaña "Fallas mecánicas", sin chat) y "auxilio" es
+  // un flujo aparte (AuxilioMecanicoBuzon) — ninguno de los dos pasa por el buzón de chat de abajo.
+  const TIPOS_FILTRABLES = INCIDENT_TYPES.filter(t => t.id !== "auxilio" && t.id !== "falla");
   const [tiposSeleccionados, setTiposSeleccionados] = useState(() => new Set(TIPOS_FILTRABLES.map(t => t.id)));
   const [modalTipoAbierto, setModalTipoAbierto] = useState(false);
   const [selected, setSelected] = useState(null);
@@ -20567,7 +20833,8 @@ function AztPanel({
           bio: `${CARGO_LABEL[data.rol] || data.rol}. Responsable de la gestión operativa en ${plantasArr.join(", ")}.`,
           contacto: data.telefono || "",
           dni: initialDni,
-          foto_url: data.foto_url || null
+          foto_url: data.foto_url || null,
+          turno: data.turno || null
         });
       }
     })();
@@ -20760,7 +21027,8 @@ function AztPanel({
             ...prev,
             plantas: plantasArr,
             rol: data.rol,
-            cargo: CARGO_LABEL[data.rol] || data.rol
+            cargo: CARGO_LABEL[data.rol] || data.rol,
+            turno: data.turno || null
           }));
         }
       });
@@ -20769,38 +21037,302 @@ function AztPanel({
       sbClient.removeChannel(canal);
     };
   }, [admin?.dni]);
-  const pendEmerg = (emergencias || []).filter(e => !e.visto).length;
-  const marcarVisto = id => setEmergencias(prev => prev.map(e => e.id === id ? {
-    ...e,
-    visto: true
-  } : e));
-  const AZT_ID = "azt";
+  // Un admin nunca ve incidencias/fallas de una planta que no es la suya — ni por el routing
+  // automático (switch de abajo) ni por el "+" de agregar al chat a mano, que guarda el rol como
+  // etiqueta genérica ("Jefe de Planta") sin distinguir de qué planta. Los roles verdaderamente
+  // transversales (supervisor_mantenimiento, gerencia, etc.) tienen perfiles.planta = "Transversal"
+  // (ver convención en CLAUDE.md) y pasan esta puerta sin filtrar.
+  const miPlantaIncluye = p => (admin?.plantas || []).includes("Transversal") || (admin?.plantas || []).includes(p);
+  // "falla" vive en su propio buzón informativo (pestaña "Fallas mecánicas", sin chat) — se marca
+  // "vista" directamente, nunca pasa por el chat compartido de abajo.
+  const fallaEsParaMiRol = i => {
+    if (!miPlantaIncluye(i.planta)) return false;
+    switch (admin?.rol) {
+      case "admin_zonal_transporte":
+        return i.turnoAzt === admin.turno;
+      case "sgi":
+        return true;
+      case "despachador":
+      case "jefe_planta":
+      case "trabajadora_social":
+        return false;
+      default:
+        return true;
+      // supervisión jerárquica
+    }
+  };
+  const pendEmerg = incidents.filter(i => i.tipo === "falla" && i.estado !== "resuelta" && fallaEsParaMiRol(i) && (admin?.plantas || []).includes(i.planta)).length;
+  const marcarVisto = id => {
+    sbClient.rpc("marcar_falla_vista", {
+      p_incidencia_id: id
+    }).then(({
+      error
+    }) => {
+      if (error) console.error("No se pudo marcar la falla como vista:", error.message);
+    });
+  };
+  const fallasReales = incidents.filter(i => i.tipo === "falla" && fallaEsParaMiRol(i) && (plant === "Todas" || i.planta === plant)).map(i => ({
+    id: i.id,
+    mixer: i.unidad,
+    planta: i.planta,
+    desc: i.mensajes?.[0]?.texto || "",
+    foto: i.mensajes?.[0]?.adjuntoPath || null,
+    chofer: i.chofer,
+    hora: i.hora,
+    origen: "Incidencias",
+    visto: i.estado === "resuelta",
+    ts: i.ts
+  }));
   const plantList = ["Todas", ...(admin?.plantas || [])];
-  const filterPlant = i => (plant === "Todas" || i.planta === plant) && tiposSeleccionados.has(i.tipo);
+  const ROL_CHAT_LABEL = {
+    admin_zonal_transporte: "AZT",
+    despachador: "Ejecutivo de Despacho",
+    jefe_planta: "Jefe de Planta",
+    trabajadora_social: "Trabajadora Social",
+    sgi: "SGI"
+  };
+  const miRolChat = ROL_CHAT_LABEL[admin?.rol];
+  // Para AZT/Despacho, "quién soy" en el chat también lleva el turno — necesario para el agregado
+  // manual al chat (ver ADMIN_ROLES en IncidentModal): agregar "AZT turno día" solo le da acceso al
+  // AZT de turno día, no a cualquier AZT. Para el resto de cargos (sin turno) es el mismo label.
+  const miRolChatConTurno = (admin?.rol === "admin_zonal_transporte" || admin?.rol === "despachador") && admin?.turno ? `${miRolChat} turno ${admin.turno}` : miRolChat;
+
+  // Qué incidencias le corresponden a este cargo, según el tipo y (para AZT/Despacho) el turno
+  // activo cuando se creó la incidencia — ver migracion_incidencias.sql. Los cargos que no están
+  // en esta lista (ej. jefe_transporte, gerente_transporte_distribucion — supervisión jerárquica)
+  // ven todo, sin filtrar por turno, para no quitarles visibilidad que ya tenían. Si a alguien lo
+  // agregaron a mano al chat (botón "+" en el modal, con su turno específico), eso manda por
+  // encima de la regla automática — si no, agregarlo era solo cosmético y nunca le llegaba de
+  // verdad a su buzón.
+  const incidenciaEsParaMiRol = i => {
+    if (i.tipo === "falla") return false; // vive en su propio buzón informativo (fallaEsParaMiRol)
+    if (!miPlantaIncluye(i.planta)) return false;
+    if (miRolChatConTurno && (i.participantes || []).includes(miRolChatConTurno)) return true;
+    switch (admin?.rol) {
+      case "admin_zonal_transporte":
+        return i.turnoAzt === admin.turno;
+      case "despachador":
+        return (i.tipo === "acceso" || i.tipo === "retiro") && i.turnoDespachador === admin.turno;
+      case "jefe_planta":
+      case "trabajadora_social":
+        return i.tipo === "servicios";
+      case "sgi":
+        return false;
+      // SGI solo ve Fallas mecánicas, no el buzón de chat
+      default:
+        return true;
+    }
+  };
+
+  // Quiénes de los míos (mi rol/turno/planta) ya abrí yo — clave para que "Nuevas" vs "Por
+  // resolver" sea independiente por buzón (ver incidencia_vistas en la migración): que el AZT haya
+  // abierto una incidencia no la saca de "Nuevas" para el Despachador si él todavía no la abrió.
+  const [misVistas, setMisVistas] = useState(new Set());
+  useEffect(() => {
+    if (!admin?.id) return;
+    let vigente = true;
+    const cargarVistas = async () => {
+      const {
+        data
+      } = await sbClient.from("incidencia_vistas").select("incidencia_id").eq("admin_id", admin.id);
+      if (vigente && data) setMisVistas(new Set(data.map(v => v.incidencia_id)));
+    };
+    cargarVistas();
+    const canal = sbClient.channel(`incidencia-vistas-${admin.id}`).on("postgres_changes", {
+      event: "INSERT",
+      schema: "public",
+      table: "incidencia_vistas",
+      filter: `admin_id=eq.${admin.id}`
+    }, () => cargarVistas()).subscribe();
+    return () => {
+      vigente = false;
+      sbClient.removeChannel(canal);
+    };
+  }, [admin?.id]);
+  const filterPlant = i => (plant === "Todas" || i.planta === plant) && tiposSeleccionados.has(i.tipo) && incidenciaEsParaMiRol(i);
   const buckets = {
-    nuevas: incidents.filter(i => i.estado === "nueva" && filterPlant(i)),
-    resolver: incidents.filter(i => i.estado === "atencion" && filterPlant(i)),
+    nuevas: incidents.filter(i => i.estado !== "resuelta" && !misVistas.has(i.id) && filterPlant(i)),
+    resolver: incidents.filter(i => i.estado !== "resuelta" && misVistas.has(i.id) && filterPlant(i)),
     resueltas: incidents.filter(i => i.estado === "resuelta" && filterPlant(i))
   };
-  const totalPend = incidents.filter(i => i.estado !== "resuelta").length;
+  // Badge del menú lateral y de "Todas"/cada planta: cuenta SOLO las que de verdad no ha visto
+  // este admin (respaldado por incidencia_vistas, no una suposición del front) — igual que
+  // buckets.nuevas de abajo. Antes incluía también "Por resolver" (ya vistas, solo que sin
+  // resolver aún), así que nunca bajaba aunque las revisaras, solo cuando se resolvían — "Por
+  // resolver"/"Resueltas" siguen siendo totales que se acumulan por su cuenta en sus propias
+  // pestañas, este badge es solo el contador de "nuevas sin leer".
+  const totalPend = incidents.filter(i => i.estado !== "resuelta" && !misVistas.has(i.id) && (admin?.plantas || []).includes(i.planta) && incidenciaEsParaMiRol(i)).length;
   const sortOld = arr => arr.slice().sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  // Qué incidencias ya "parpadearon" sus 4 veces para este admin en esta sesión — un ref (no
+  // estado) porque no necesita volver a renderizar nada, solo recordar para no repetir la
+  // animación si se sale de la sección y se vuelve a entrar (AztPanel no se desmonta al cambiar de
+  // sección, solo IncidentList/EmergenciasFeed, así que esto sí sobrevive ese ir y volver).
+  const yaParpadearon = useRef(new Set());
+  const marcarVistaSiHaceFalta = i => {
+    if (!misVistas.has(i.id)) {
+      setMisVistas(prev => new Set(prev).add(i.id));
+      sbClient.rpc("marcar_incidencia_vista", {
+        p_incidencia_id: i.id,
+        p_admin_id: admin.id
+      }).then(({
+        error
+      }) => {
+        if (error) console.error("No se pudo marcar la incidencia como vista:", error.message);
+      });
+    }
+  };
   const openIncident = i => {
     setSelected(i);
     setSol(i.solucion || "");
-    if (i.estado === "nueva") {
-      setIncidents(prev => prev.map(x => x.id === i.id ? {
-        ...x,
-        estado: "atencion",
-        leidoPor: [...(x.leidoPor || []), AZT_ID]
-      } : x));
+    marcarVistaSiHaceFalta(i);
+  };
+  // Check verde directo en la tarjeta de la lista: en vez de abrir el chat completo (que se veía
+  // igual que abrirla normal, sin agilizar nada), muestra un popup chiquito y directo para
+  // confirmar la resolución — ver ResolverRapidoModal.
+  const [resolviendoRapido, setResolviendoRapido] = useState(null);
+  const openIncidentParaResolver = i => {
+    marcarVistaSiHaceFalta(i);
+    setResolviendoRapido(i);
+  };
+  const confirmarResolverRapido = solucionTexto => {
+    const rolChat = ROL_CHAT_LABEL[admin?.rol] || admin?.cargo || "Admin";
+    sbClient.rpc("resolver_incidencia", {
+      p_incidencia_id: resolviendoRapido.id,
+      p_admin_rol: rolChat,
+      p_admin_nombre: admin?.nombre || "",
+      p_solucion: solucionTexto
+    }).then(({
+      error
+    }) => {
+      if (error) console.error("No se pudo resolver la incidencia:", error.message);
+    });
+    setResolviendoRapido(null);
+  };
+
+  /* ===================== CAMPANITA DE NOTIFICACIONES (admin) ===================== */
+  // Misma lógica que ya tiene el chofer: notificaciones_personales + Web Push, reutilizando la
+  // columna "chofer_id" para CUALQUIER perfil (ver migracion_notificaciones_admin_incidencias.sql)
+  // — cero tablas nuevas, cero cambios al Edge Function.
+  const [adminNotifs, setAdminNotifs] = useState([]);
+  const [openAdminNotif, setOpenAdminNotif] = useState(false);
+  const [toastAdminNotif, setToastAdminNotif] = useState(null);
+  const [irAIncidenciaId, setIrAIncidenciaId] = useState(null); // resalta+scrollea la tarjeta al entrar desde una notificación
+  const cargarAdminNotifsRef = useRef(null);
+  useEffect(() => {
+    if (!admin?.id) return;
+    let vigente = true;
+    const cargarAdminNotifs = async () => {
+      const {
+        data
+      } = await sbClient.from("notificaciones_personales").select("*, avisos(planta)").eq("chofer_id", admin.id).order("created_at", {
+        ascending: false
+      }).limit(100);
+      if (!vigente || !data) return;
+      setAdminNotifs(prev => {
+        const frescas = data.map(mapNotifDB);
+        const idsFrescos = new Set(frescas.map(n => n.id));
+        return [...frescas, ...prev.filter(n => !idsFrescos.has(n.id))];
+      });
+    };
+    cargarAdminNotifsRef.current = cargarAdminNotifs;
+    cargarAdminNotifs();
+    const canal = sbClient.channel(`notif-personal-admin-${admin.id}`).on("postgres_changes", {
+      event: "INSERT",
+      schema: "public",
+      table: "notificaciones_personales",
+      filter: `chofer_id=eq.${admin.id}`
+    }, payload => {
+      const mapeada = mapNotifDB(payload.new);
+      setAdminNotifs(prev => [mapeada, ...prev]);
+      // Burbuja + sonido mientras el panel está abierto (celular o PC) — el push nativo ya suena
+      // solo si la pestaña no está mirando la app en ese momento.
+      reproducirSonidoNotif();
+      setToastAdminNotif(mapeada);
+    }).subscribe();
+    // Respaldo por sondeo — mismo motivo que en el resto del proyecto (Realtime a veces queda
+    // "SUBSCRIBED" sin entregar el evento).
+    const intervalo = setInterval(cargarAdminNotifs, 7000);
+    return () => {
+      vigente = false;
+      sbClient.removeChannel(canal);
+      clearInterval(intervalo);
+    };
+  }, [admin?.id]);
+  useEffect(() => {
+    if (openAdminNotif) cargarAdminNotifsRef.current?.();
+  }, [openAdminNotif]);
+  const marcarAdminNotifLeidaDB = id => {
+    setAdminNotifs(prev => prev.map(n => n.id === id ? {
+      ...n,
+      leida: true
+    } : n));
+    sbClient.from("notificaciones_personales").update({
+      leida: true
+    }).eq("id", id).then(({
+      error
+    }) => {
+      if (error) console.error("No se pudo marcar como leída:", error.message);
+    });
+  };
+  // Re-reclama en silencio la suscripción de este navegador/dispositivo para este admin si el
+  // permiso ya estaba concedido de antes (de esta cuenta u otra) — mismo motivo que en ChoferApp:
+  // sin esto, un dispositivo usado para probar varias cuentas se queda mandando los avisos a quien
+  // activó por última vez, no a quien está realmente logueado ahora.
+  useEffect(() => {
+    if (!admin?.id || typeof Notification === "undefined" || Notification.permission !== "granted") return;
+    activarPushPara(admin.id).catch(err => console.error("No se pudo re-asociar la suscripción push:", err.message));
+  }, [admin?.id]);
+  // Activar push acá es manual (botón en el header), sin el banner intrusivo del chofer — el admin
+  // ya usa el panel activamente durante su turno, alcanza con ofrecerlo una vez visible.
+  const activarPushAdmin = async () => {
+    try {
+      const activada = await activarPushPara(admin.id);
+      alert(activada ? "✅ Notificaciones activadas. Te avisaremos con sonido cuando llegue una incidencia o un aviso nuevo." : "No se otorgó el permiso de notificaciones.");
+    } catch (err) {
+      console.error("No se pudo activar las notificaciones push:", err.message);
+      alert("No se pudieron activar las notificaciones: " + err.message);
     }
   };
-  const resolve = () => {
-    setIncidents(prev => prev.map(x => x.id === selected.id ? {
-      ...x,
-      estado: "resuelta",
-      solucion: sol
-    } : x));
+  // Clic en una notificación: te lleva directo a esa incidencia (misma lógica que ya existe para
+  // el chofer) — cambia de sección/planta/pestaña según dónde esté AHORA (puede haber cambiado de
+  // estado desde que llegó la notificación).
+  const irAIncidenciaAdmin = incidenciaId => {
+    if (!incidenciaId) return;
+    const inc = incidents.find(x => x.id === incidenciaId);
+    setSection("incidencias");
+    if (inc) {
+      setIncView(inc.tipo === "falla" ? "emergencias" : "buzón");
+      setPlant((admin?.plantas || []).includes(inc.planta) ? inc.planta : "Todas");
+      setTab(inc.estado === "resuelta" ? "resueltas" : misVistas.has(inc.id) ? "resolver" : "nuevas");
+    }
+    setIrAIncidenciaId(incidenciaId);
+  };
+  useEffect(() => {
+    if (!irAIncidenciaId) return;
+    const el = document.getElementById(`incidencia-admin-${irAIncidenciaId}`) || document.getElementById(`emergencia-admin-${irAIncidenciaId}`);
+    if (el) el.scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
+    const t = setTimeout(() => setIrAIncidenciaId(null), 7500);
+    return () => clearTimeout(t);
+  }, [irAIncidenciaId]);
+
+  // Recibe el texto de solución como argumento (en vez de leerlo del estado "sol") porque el botón
+  // real que resuelve vive dentro de IncidentModal con su propio estado local ("respuesta") — ver
+  // el comentario ahí sobre por qué las props sol/setSol quedaban sin usarse.
+  const resolve = solucionTexto => {
+    const rolChat = ROL_CHAT_LABEL[admin?.rol] || admin?.cargo || "Admin";
+    sbClient.rpc("resolver_incidencia", {
+      p_incidencia_id: selected.id,
+      p_admin_rol: rolChat,
+      p_admin_nombre: admin?.nombre || "",
+      p_solucion: solucionTexto
+    }).then(({
+      error
+    }) => {
+      if (error) console.error("No se pudo resolver la incidencia:", error.message);
+    });
     setSelected(null);
     setSol("");
   };
@@ -20839,9 +21371,11 @@ function AztPanel({
   // conteos por planta (para el selector de plantas) — refleja vista activa
   const cntByPlant = p => {
     if (incView === "emergencias") {
-      return (emergencias || []).filter(e => (p === "Todas" || e.planta === p) && !e.visto).length;
+      return incidents.filter(i => i.tipo === "falla" && (p === "Todas" || i.planta === p) && i.estado !== "resuelta" && fallaEsParaMiRol(i)).length;
     }
-    return incidents.filter(i => (p === "Todas" || i.planta === p) && i.estado !== "resuelta").length;
+    // Mismo criterio que totalPend: solo las no vistas — "falla" no necesita este ajuste (arriba)
+    // porque ahí no existe un estado intermedio "vista pero sin resolver", verla YA la resuelve.
+    return incidents.filter(i => (p === "Todas" || i.planta === p) && i.estado !== "resuelta" && !misVistas.has(i.id) && incidenciaEsParaMiRol(i)).length;
   };
   const [incView, setIncView] = useState("buzón"); // "buzón" | "emergencias"
 
@@ -20928,7 +21462,7 @@ function AztPanel({
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("aside", {
-    className: "flex flex-col border-r shrink-0",
+    className: "flex flex-col border-r shrink-0 relative",
     style: {
       width: isDesktop ? 280 : "100%",
       borderColor: "#e6e8ee"
@@ -20973,7 +21507,31 @@ function AztPanel({
     className: "font-bold truncate text-base"
   }, admin.nombre), /*#__PURE__*/React.createElement("div", {
     className: "text-sm opacity-90 mt-0.5"
-  }, admin.cargo, " \xB7 Panel de UNI App"))))), /*#__PURE__*/React.createElement("div", {
+  }, admin.cargo, " \xB7 Panel de UNI App"))))), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setOpenAdminNotif(true),
+    className: "absolute flex items-center justify-center text-white",
+    style: {
+      top: 12,
+      right: 12,
+      width: 32,
+      height: 32
+    }
+  }, /*#__PURE__*/React.createElement(Bell, {
+    size: 19
+  }), adminNotifs.some(n => !n.leida) &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("span", {
+    className: "absolute rounded-full",
+    style: {
+      top: 4,
+      right: 4,
+      width: 9,
+      height: 9,
+      background: "#e11d48",
+      border: "1.5px solid " + AZUL
+    }
+  })), /*#__PURE__*/React.createElement("div", {
     className: "flex-1 overflow-y-auto py-2"
   }, SECTIONS.map(s => {
     const active = section === s.id;
@@ -21258,14 +21816,19 @@ function AztPanel({
   }, /*#__PURE__*/React.createElement(IncidentList, {
     items: sortOld(buckets[tab]),
     onOpen: openIncident,
-    tab: tab
+    onResolverDirecto: openIncidentParaResolver,
+    tab: tab,
+    yaParpadearon: yaParpadearon,
+    irAIncidenciaId: irAIncidenciaId
   })) :
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement(EmergenciasFeed, {
-    emergencias: emergencias || [],
+    emergencias: fallasReales,
     onVisto: marcarVisto,
-    plant: plant
+    plant: plant,
+    yaParpadearon: yaParpadearon,
+    irAIncidenciaId: irAIncidenciaId
   }))) :
   /*#__PURE__*/
   /*#__PURE__*/
@@ -21466,14 +22029,19 @@ function AztPanel({
   }, /*#__PURE__*/React.createElement(IncidentList, {
     items: sortOld(buckets[tab]),
     onOpen: openIncident,
-    tab: tab
+    onResolverDirecto: openIncidentParaResolver,
+    tab: tab,
+    yaParpadearon: yaParpadearon,
+    irAIncidenciaId: irAIncidenciaId
   })) :
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement(EmergenciasFeed, {
-    emergencias: emergencias || [],
+    emergencias: fallasReales,
     onVisto: marcarVisto,
-    plant: plant
+    plant: plant,
+    yaParpadearon: yaParpadearon,
+    irAIncidenciaId: irAIncidenciaId
   })), modalTipoAbierto &&
   /*#__PURE__*/
   /*#__PURE__*/
@@ -21866,7 +22434,33 @@ function AztPanel({
     setIncidents: setIncidents,
     sol: sol,
     setSol: setSol,
-    resolve: resolve
+    resolve: resolve,
+    admin: admin
+  }), resolviendoRapido &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(ResolverRapidoModal, {
+    onClose: () => setResolviendoRapido(null),
+    onConfirmar: confirmarResolverRapido
+  }), openAdminNotif &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(NotifPanel, {
+    notifs: adminNotifs,
+    setNotifs: setAdminNotifs,
+    onClose: () => setOpenAdminNotif(false),
+    onLeida: marcarAdminNotifLeidaDB,
+    onIrAMensaje: (avisoId, incidenciaId) => irAIncidenciaAdmin(incidenciaId),
+    incidents: incidents,
+    activarPush: activarPushAdmin
+  }), /*#__PURE__*/React.createElement(NotifToast, {
+    notif: toastAdminNotif,
+    onClose: () => setToastAdminNotif(null),
+    onClick: n => {
+      marcarAdminNotifLeidaDB(n.id);
+      irAIncidenciaAdmin(n.incidenciaId);
+    },
+    incidents: incidents
   }));
 }
 
@@ -22180,7 +22774,9 @@ function ReporteCard({
 function EmergenciasFeed({
   emergencias,
   onVisto,
-  plant
+  plant,
+  yaParpadearon,
+  irAIncidenciaId
 }) {
   const [search, setSearch] = useState("");
   const filterPlant = e => plant === "Todas" || e.planta === plant;
@@ -22190,6 +22786,14 @@ function EmergenciasFeed({
     return (e.mixer || "").toLowerCase().includes(q) || (e.chofer || "").toLowerCase().includes(q) || (e.desc || "").toLowerCase().includes(q);
   };
   const filtered = emergencias.filter(e => filterPlant(e) && filterSearch(e)).sort((a, b) => b.ts - a.ts);
+  // Abre la foto adjunta (si la hay) pidiendo una URL firmada al bucket "incidencias" — mismo
+  // patrón que AuxilioMecanicoBuzon, la foto nunca es pública directamente.
+  const verFoto = async path => {
+    const {
+      data
+    } = await sbClient.storage.from("incidencias").createSignedUrl(path, 60);
+    if (data?.signedUrl) window.open(data.signedUrl, "_blank");
+  };
   return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden"
   }, /*#__PURE__*/React.createElement("div", {
@@ -22200,7 +22804,7 @@ function EmergenciasFeed({
     }
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-[11px] text-gray-500 leading-relaxed mb-2"
-  }, "Registros de fallas mec\xE1nicas reportadas por los choferes a trav\xE9s de UNIKIN con el ROP. Recepci\xF3n: AZT, Despachador, Mantenimiento \xB7 SGI."), /*#__PURE__*/React.createElement("div", {
+  }, "Reportes de falla mec\xE1nica preventiva enviados desde la app por los choferes. Recepci\xF3n: AZT de turno \xB7 SGI."), /*#__PURE__*/React.createElement("div", {
     className: "relative",
     style: {
       maxWidth: 260
@@ -22221,7 +22825,10 @@ function EmergenciasFeed({
     style: {
       background: "#f6f8fc"
     }
-  }, filtered.length === 0 &&
+  }, filtered.some(e => !e.visto) &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("style", null, `@keyframes incidenciaNuevaPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(225,29,72,.45); } 50% { box-shadow: 0 0 0 6px rgba(225,29,72,0); } }`), /*#__PURE__*/React.createElement("style", null, `@keyframes incidenciaDestacadaAdmin { 0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,.5); } 50% { box-shadow: 0 0 0 6px rgba(59,130,246,0); } }`), filtered.length === 0 &&
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
@@ -22236,12 +22843,16 @@ function EmergenciasFeed({
   }, "Las fallas reportadas por los choferes aparecer\xE1n aqu\xED en tiempo real.")), /*#__PURE__*/React.createElement("div", {
     className: "space-y-3"
   }, filtered.map(e => {
-    const tiposStr = (e.fallaTipos || []).join(", ") || "Falla mecánica";
+    const yaParpadeo = yaParpadearon.current.has(e.id);
+    if (!e.visto && !yaParpadeo) yaParpadearon.current.add(e.id);
+    const resaltada = e.id === irAIncidenciaId;
     return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
       key: e.id,
+      id: `emergencia-admin-${e.id}`,
       className: "bg-white rounded-xl overflow-hidden shadow-sm transition-shadow hover:shadow-md",
       style: {
-        border: `1px solid ${e.visto ? "#e6e8ee" : "#fecdd3"}`
+        border: resaltada ? "1px solid #93c5fd" : `1px solid ${e.visto ? "#e6e8ee" : "#fecdd3"}`,
+        animation: resaltada ? "incidenciaDestacadaAdmin 1.8s ease-in-out 4" : !e.visto && !yaParpadeo ? "incidenciaNuevaPulse 1.8s ease-in-out 4" : "none"
       }
     }, /*#__PURE__*/React.createElement("div", {
       className: "flex items-center gap-3 px-4 py-3",
@@ -22265,15 +22876,9 @@ function EmergenciasFeed({
       style: {
         color: AZUL
       }
-    }, e.mixer), /*#__PURE__*/React.createElement("span", {
-      className: "text-[10px] font-bold rounded-full px-2 py-0.5",
-      style: {
-        background: e.visto ? "#eef1f6" : "#fecdd3",
-        color: e.visto ? "#6b7280" : "#e11d48"
-      }
-    }, tiposStr)), /*#__PURE__*/React.createElement("div", {
+    }, e.mixer)), /*#__PURE__*/React.createElement("div", {
       className: "text-xs text-gray-500 mt-0.5"
-    }, e.planta, " \xB7 ", e.carga)), /*#__PURE__*/React.createElement("div", {
+    }, e.planta)), /*#__PURE__*/React.createElement("div", {
       className: "text-right shrink-0"
     }, /*#__PURE__*/React.createElement("div", {
       className: "text-[11px] text-gray-400 flex items-center gap-1"
@@ -22304,19 +22909,12 @@ function EmergenciasFeed({
         borderColor: "#f0f2f6"
       }
     }, /*#__PURE__*/React.createElement("div", {
-      className: "text-sm text-gray-800 leading-relaxed"
-    }, e.desc), e.ubicacion &&
+      className: "text-sm text-gray-800 leading-relaxed whitespace-pre-line"
+    }, e.desc), e.foto &&
     /*#__PURE__*/
     /*#__PURE__*/
-    React.createElement("div", {
-      className: "flex items-center gap-2 text-xs text-gray-500"
-    }, /*#__PURE__*/React.createElement(MapPin, {
-      size: 13,
-      className: "shrink-0"
-    }), " ", e.ubicacion), e.foto &&
-    /*#__PURE__*/
-    /*#__PURE__*/
-    React.createElement("div", {
+    React.createElement("button", {
+      onClick: () => verFoto(e.foto),
       className: "flex items-center gap-2 rounded-lg px-3 py-2",
       style: {
         background: "#f1f3f8"
@@ -22325,8 +22923,11 @@ function EmergenciasFeed({
       size: 15,
       color: AZUL
     }), /*#__PURE__*/React.createElement("span", {
-      className: "text-xs text-gray-600 truncate"
-    }, typeof e.foto === "string" ? e.foto : "Foto adjunta")), /*#__PURE__*/React.createElement("div", {
+      className: "text-xs font-semibold",
+      style: {
+        color: AZUL
+      }
+    }, "Ver foto adjunta")), /*#__PURE__*/React.createElement("div", {
       className: "flex items-center gap-3 pt-1 rounded-lg px-3 py-2",
       style: {
         background: "#f8fafc",
@@ -22344,24 +22945,71 @@ function EmergenciasFeed({
       className: "flex-1 min-w-0"
     }, /*#__PURE__*/React.createElement("div", {
       className: "text-sm font-semibold text-gray-800"
-    }, e.chofer), /*#__PURE__*/React.createElement("div", {
-      className: "text-[11px] text-gray-400 flex items-center gap-2"
-    }, /*#__PURE__*/React.createElement(Phone, {
-      size: 11
-    }), " ", e.telefono, e.origen &&
-    /*#__PURE__*/
-    /*#__PURE__*/
-    React.createElement("span", null, "\xB7 v\xEDa ", e.origen))))));
+    }, e.chofer)))));
   }))));
+}
+// Popup chiquito y directo para el check verde de "resolver directamente" desde la lista — a
+// propósito NO reusa IncidentModal (que se veía igual que abrir el chat completo, sin agilizar
+// nada): solo pregunta y confirma, sin mostrar cabecera de chat, obra/hora ni mensajes.
+function ResolverRapidoModal({
+  onClose,
+  onConfirmar
+}) {
+  const [respuesta, setRespuesta] = useState("");
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    className: "absolute inset-0 flex items-center justify-center p-3 z-20",
+    style: {
+      background: "rgba(0,0,0,.4)"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-2xl w-full shadow-2xl p-4 space-y-3",
+    style: {
+      maxWidth: 420
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-sm font-bold",
+    style: {
+      color: AZUL
+    }
+  }, "Est\xE1s marcando esta incidencia como resuelta \xBFest\xE1s seguro?"), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-gray-500"
+  }, "Solo marca como resuelta en caso de que efectivamente ya se haya solucionado."), /*#__PURE__*/React.createElement("textarea", {
+    value: respuesta,
+    onChange: e => setRespuesta(e.target.value),
+    rows: 3,
+    placeholder: "Ej. Ya se coordin\xF3 con vigilancia, puedes ingresar con normalidad\u2026",
+    className: "w-full px-3 py-2.5 rounded-xl border text-sm outline-none resize-none",
+    style: {
+      borderColor: "#d5d9e4"
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: onClose,
+    className: "flex-1 py-2.5 rounded-xl font-semibold text-sm",
+    style: {
+      background: "#eef1f6",
+      color: AZUL
+    }
+  }, "Cancelar"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => onConfirmar(respuesta || "Resuelta"),
+    disabled: !respuesta.trim(),
+    className: "flex-1 py-2.5 rounded-xl font-bold text-sm disabled:opacity-40 flex items-center justify-center gap-1",
+    style: {
+      background: "#16a34a",
+      color: "white"
+    }
+  }, /*#__PURE__*/React.createElement(Check, {
+    size: 16
+  }), " Enviar y resolver"))));
 }
 function IncidentModal({
   incident,
   onClose,
   incidents,
   setIncidents,
-  sol,
-  setSol,
-  resolve
+  resolve,
+  admin
 }) {
   const [msg, setMsg] = useState("");
   const [showAdd, setShowAdd] = useState(false);
@@ -22373,35 +23021,52 @@ function IncidentModal({
     "AZT": AZUL,
     "Trabajadora Social": "#7c3aed",
     "Jefe de Planta": "#0891b2",
-    "Despachador": "#ca8a04",
+    "Ejecutivo de Despacho": "#ca8a04",
+    "SGI": "#16a34a",
     "Chofer": "#374151"
   };
+  // Para etiquetas con turno (ej. "AZT turno día", solo las usa el selector de agregar al chat) se
+  // busca el color por el rol base, quitando el sufijo de turno.
+  const colorPorEtiqueta = etiqueta => ROLE_COLORS[(etiqueta || "").replace(/ turno (día|noche)$/, "")] || AZUL;
+  const ROL_CHAT_LABEL = {
+    admin_zonal_transporte: "AZT",
+    despachador: "Ejecutivo de Despacho",
+    jefe_planta: "Jefe de Planta",
+    trabajadora_social: "Trabajadora Social",
+    sgi: "SGI"
+  };
+  const miRolChat = ROL_CHAT_LABEL[admin?.rol] || admin?.cargo || "Admin";
+  const miNombre = admin?.nombre || "";
+  // Igual que en AztPanel: para AZT/Despacho, "agregar al chat" debe ser por turno específico (no
+  // un genérico "AZT" que le daría acceso a cualquier turno) — ver ADMIN_ROLES más abajo.
+  const miRolChatConTurno = (admin?.rol === "admin_zonal_transporte" || admin?.rol === "despachador") && admin?.turno ? `${miRolChat} turno ${admin.turno}` : miRolChat;
 
   // Leer siempre el incidente actualizado del array global
   const live = incidents.find(i => i.id === incident.id) || incident;
   const msgs = live.mensajes || [];
   const [participantes, setParticipantes] = useState(live.participantes || ["AZT"]);
-  const ADMIN_ROLES = [{
-    rol: "AZT",
-    nombre: "Diego Jara"
-  }, {
-    rol: "Trabajadora Social",
-    nombre: "Hivette Ramos"
-  }, {
-    rol: "Jefe de Planta",
-    nombre: "Carla Mendoza"
-  }, {
-    rol: "Despachador",
-    nombre: "Stefany López"
-  }];
+  // AZT y Ejecutivo de Despacho van por turno específico (ver comentario de miRolChatConTurno) —
+  // agregar "AZT" a secas le daría acceso a cualquier AZT sin importar el turno, que es justo lo
+  // que no queremos.
+  const ADMIN_ROLES = ["AZT turno día", "AZT turno noche", "Ejecutivo de Despacho turno día", "Ejecutivo de Despacho turno noche", "Trabajadora Social", "Jefe de Planta", "SGI"];
   useEffect(() => {
     chatRef.current?.scrollTo?.(0, chatRef.current.scrollHeight);
   }, [msgs.length]);
   const sendMsg = () => {
     if (!msg.trim()) return;
+    sbClient.rpc("enviar_mensaje_incidencia", {
+      p_incidencia_id: live.id,
+      p_autor_rol: miRolChat,
+      p_autor_nombre: miNombre,
+      p_texto: msg
+    }).then(({
+      error
+    }) => {
+      if (error) console.error("No se pudo enviar el mensaje:", error.message);
+    });
     const newMsg = {
-      rol: "AZT",
-      nombre: "Diego Jara",
+      rol: miRolChat,
+      nombre: miNombre,
       texto: msg,
       hora: hhmm()
     };
@@ -22412,19 +23077,28 @@ function IncidentModal({
     setMsg("");
   };
   const toggleParticipante = rol => {
-    const next = participantes.includes(rol) ? participantes.filter(r => r !== rol) : [...participantes, rol];
+    const agregando = !participantes.includes(rol);
+    const next = agregando ? [...participantes, rol] : participantes.filter(r => r !== rol);
     setParticipantes(next);
+    sbClient.rpc("set_participantes_incidencia", {
+      p_incidencia_id: live.id,
+      p_participantes: next,
+      p_rol_agregado: agregando ? rol : null,
+      p_nombre_agregado: agregando ? miNombre : null
+    }).then(({
+      error
+    }) => {
+      if (error) console.error("No se pudo actualizar los participantes:", error.message);
+    });
     setIncidents(prev => prev.map(i => i.id === live.id ? {
       ...i,
       participantes: next
     } : i));
-    // Notificación en el chat
-    if (!participantes.includes(rol)) {
-      const admin = ADMIN_ROLES.find(a => a.rol === rol);
+    if (agregando) {
       const sysMsg = {
         rol: "Sistema",
         nombre: "",
-        texto: `${admin?.nombre} (${rol}) fue agregado/a al chat`,
+        texto: `${rol} fue agregado/a al chat`,
         hora: hhmm()
       };
       setIncidents(prev => prev.map(i => i.id === live.id ? {
@@ -22442,7 +23116,7 @@ function IncidentModal({
     className: "bg-white rounded-2xl w-full shadow-2xl overflow-hidden flex flex-col",
     style: {
       maxWidth: 520,
-      maxHeight: "60vh"
+      maxHeight: "90vh"
     }
   }, /*#__PURE__*/React.createElement("div", {
     className: "px-4 py-3 text-white flex items-center justify-between shrink-0",
@@ -22465,7 +23139,7 @@ function IncidentModal({
     size: 11
   }))), /*#__PURE__*/React.createElement("div", {
     className: "text-[10px] opacity-60"
-  }, live.unidad, " \xB7 ", live.planta, " \xB7 ", live.obra)), /*#__PURE__*/React.createElement("div", {
+  }, [live.unidad, live.planta, live.obra].filter(Boolean).join(" · "))), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-1 shrink-0"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowAdd(!showAdd),
@@ -22585,16 +23259,17 @@ function IncidentModal({
     className: "text-xs font-bold text-gray-600 mb-2"
   }, "Agregar al chat de esta incidencia"), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-2"
-  }, ADMIN_ROLES.map(a => {
-    const inChat = participantes.includes(a.rol);
+  }, ADMIN_ROLES.map(rol => {
+    const inChat = participantes.includes(rol);
+    const colorChip = colorPorEtiqueta(rol);
     return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
-      key: a.rol,
-      onClick: () => toggleParticipante(a.rol),
+      key: rol,
+      onClick: () => toggleParticipante(rol),
       className: "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all",
       style: {
-        background: inChat ? ROLE_COLORS[a.rol] + "18" : "white",
-        color: inChat ? ROLE_COLORS[a.rol] : "#8a91a0",
-        border: inChat ? `2px solid ${ROLE_COLORS[a.rol]}` : "1px solid #e6e8ee"
+        background: inChat ? colorChip + "18" : "white",
+        color: inChat ? colorChip : "#8a91a0",
+        border: inChat ? `2px solid ${colorChip}` : "1px solid #e6e8ee"
       }
     }, inChat ?
     /*#__PURE__*/
@@ -22606,7 +23281,7 @@ function IncidentModal({
     /*#__PURE__*/
     React.createElement(Plus, {
       size: 12
-    }), a.rol);
+    }), rol);
   }))), /*#__PURE__*/React.createElement("div", {
     className: "px-4 py-2 flex flex-wrap gap-x-4 gap-y-1 border-b text-xs shrink-0",
     style: {
@@ -22630,7 +23305,7 @@ function IncidentModal({
     className: "flex-1 overflow-y-auto p-3 space-y-2",
     style: {
       background: WA_BG,
-      minHeight: 180
+      minHeight: resolving ? 0 : 180
     }
   }, msgs.length === 0 &&
   /*#__PURE__*/
@@ -22649,17 +23324,28 @@ function IncidentModal({
       }, /*#__PURE__*/React.createElement("span", {
         className: "text-[11px] text-gray-500 bg-white/80 rounded-full px-3 py-1"
       }, m.texto));
+      // Mismos colores que el Canal de Avisos (WA_SENT = el verde de "mensaje propio"):
+      // el chofer "aparece" en el chat con su primer mensaje (burbuja celeste, a la
+      // izquierda) aunque en realidad no participa — es solo el motivo del chat. Mis
+      // propios mensajes (según mi rol logueado) van en verde a la derecha; los de
+      // cualquier OTRO participante administrativo van en blanco a la izquierda, para no
+      // Solo mis propios mensajes van en verde a la derecha — todo lo demás (el chofer y
+      // cualquier otro administrativo) en blanco a la izquierda, para no tener tantos
+      // colores distintos que confundan de un vistazo.
       const isChofer = m.rol === "Chofer";
+      const esMio = !isChofer && m.rol === miRolChat;
       const c = ROLE_COLORS[m.rol] || AZUL;
+      const alineadoDerecha = esMio;
       return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
         key: i,
-        className: `flex ${isChofer ? "justify-start" : "justify-end"}`
+        className: `flex ${alineadoDerecha ? "justify-end" : "justify-start"}`
       }, /*#__PURE__*/React.createElement("div", {
         className: "max-w-[80%] rounded-xl px-3 py-2 shadow-sm text-sm",
         style: {
-          background: isChofer ? "white" : "#eef1fb",
-          borderTopLeftRadius: isChofer ? 0 : undefined,
-          borderTopRightRadius: isChofer ? undefined : 0
+          background: esMio ? WA_SENT : "white",
+          border: !esMio ? "1px solid #e6e8ee" : undefined,
+          borderTopLeftRadius: alineadoDerecha ? undefined : 0,
+          borderTopRightRadius: alineadoDerecha ? 0 : undefined
         }
       }, /*#__PURE__*/React.createElement("div", {
         className: "text-[11px] font-bold",
@@ -22731,9 +23417,9 @@ function IncidentModal({
     style: {
       color: AZUL
     }
-  }, "\xBFQu\xE9 respuesta le env\xEDas al chofer?"), /*#__PURE__*/React.createElement("p", {
+  }, "Est\xE1s marcando esta incidencia como resuelta. \xBFQu\xE9 respuesta le env\xEDas al chofer?"), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-gray-500"
-  }, "Esta respuesta es lo que ver\xE1 el chofer en su pantalla cuando marques como resuelta."), /*#__PURE__*/React.createElement("textarea", {
+  }, "Esta respuesta es lo que ver\xE1 el chofer en su pantalla cuando marques como resuelta. Solo marca como resuelta en caso de que efectivamente ya se haya solucionado."), /*#__PURE__*/React.createElement("textarea", {
     value: respuesta,
     onChange: e => setRespuesta(e.target.value),
     rows: 3,
@@ -22753,11 +23439,7 @@ function IncidentModal({
     }
   }, "Cancelar"), /*#__PURE__*/React.createElement("button", {
     onClick: () => {
-      setIncidents(prev => prev.map(x => x.id === live.id ? {
-        ...x,
-        estado: "resuelta",
-        solucion: respuesta || "Resuelta"
-      } : x));
+      resolve(respuesta || "Resuelta");
       onClose();
     },
     disabled: !respuesta.trim(),
@@ -22794,7 +23476,10 @@ function IncidentModal({
 function IncidentList({
   items,
   onOpen,
-  tab
+  onResolverDirecto,
+  tab,
+  yaParpadearon,
+  irAIncidenciaId
 }) {
   if (items.length === 0) return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "flex flex-col items-center justify-center text-center py-16 text-gray-400"
@@ -22806,19 +23491,37 @@ function IncidentList({
   }, "No hay incidencias en esta bandeja."));
   return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "space-y-2"
-  }, /*#__PURE__*/React.createElement("div", {
+  }, tab === "nuevas" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("style", null, `@keyframes incidenciaNuevaPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(225,29,72,.45); } 50% { box-shadow: 0 0 0 6px rgba(225,29,72,0); } }`), /*#__PURE__*/React.createElement("style", null, `@keyframes incidenciaDestacadaAdmin { 0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,.5); } 50% { box-shadow: 0 0 0 6px rgba(59,130,246,0); } }`), /*#__PURE__*/React.createElement("div", {
     className: "text-xs text-gray-500 mb-1"
   }, "Ordenadas por actividad m\xE1s reciente."), items.map(i => {
     const t = INCIDENT_TYPES.find(x => x.id === i.tipo);
     const nAfectados = (i.afectados || []).length;
     const choferLabel = nAfectados > 0 ? `${i.chofer} y ${nAfectados === 1 ? "1 chofer más" : `otros ${nAfectados} choferes`}` : i.chofer;
-    return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
+    // Para "servicios", el label genérico ("Servicios de planta no disponibles") no dice cuál —
+    // se muestra el sub-servicio real (ej. "Baños o duchas sin agua") desde el primer mensaje.
+    const titulo = i.tipo === "servicios" && i.mensajes?.[0]?.texto ? i.mensajes[0].texto.split(" — ")[0] : t?.label;
+    // El parpadeo solo se reproduce 4 veces y solo la primera vez que esta incidencia se ve en
+    // esta sesión — después queda con el tinte rojizo fijo (sin animar) para seguir
+    // distinguiéndose de las de "Por resolver"/"Resueltas", pero sin parpadear para siempre.
+    const esNueva = tab === "nuevas";
+    const yaParpadeo = yaParpadearon.current.has(i.id);
+    if (esNueva && !yaParpadeo) yaParpadearon.current.add(i.id);
+    const resaltada = i.id === irAIncidenciaId;
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
       key: i.id,
-      onClick: () => onOpen(i),
-      className: "w-full flex items-center gap-3 bg-white rounded-xl px-3 py-3 shadow-sm text-left hover:shadow-md transition-shadow",
+      id: `incidencia-admin-${i.id}`,
+      className: "w-full flex items-center gap-2 rounded-xl px-3 py-3 shadow-sm hover:shadow-md transition-shadow",
       style: {
-        border: "1px solid #e6e8ee"
+        background: esNueva ? "#fff6f6" : "white",
+        border: resaltada ? "1px solid #93c5fd" : esNueva ? "1px solid #fecdd3" : "1px solid #e6e8ee",
+        animation: resaltada ? "incidenciaDestacadaAdmin 1.8s ease-in-out 4" : esNueva && !yaParpadeo ? "incidenciaNuevaPulse 1.8s ease-in-out 4" : "none"
       }
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: () => onOpen(i),
+      className: "flex-1 min-w-0 flex items-center gap-3 text-left"
     }, /*#__PURE__*/React.createElement("div", {
       className: "w-11 h-11 rounded-xl flex items-center justify-center shrink-0",
       style: {
@@ -22839,7 +23542,7 @@ function IncidentList({
       className: "flex-1 min-w-0"
     }, /*#__PURE__*/React.createElement("div", {
       className: "font-semibold text-sm text-gray-800 truncate"
-    }, t?.label), /*#__PURE__*/React.createElement("div", {
+    }, titulo), /*#__PURE__*/React.createElement("div", {
       className: "text-xs text-gray-500 truncate flex items-center gap-1"
     }, i.chofer, nAfectados > 0 &&
     /*#__PURE__*/
@@ -22850,7 +23553,7 @@ function IncidentList({
       size: 11
     }))), /*#__PURE__*/React.createElement("div", {
       className: "text-xs text-gray-400"
-    }, i.unidad, " \xB7 ", i.planta, " \xB7 ", i.obra)), /*#__PURE__*/React.createElement("div", {
+    }, [i.unidad, i.planta, i.obra].filter(Boolean).join(" · "))), /*#__PURE__*/React.createElement("div", {
       className: "text-right shrink-0"
     }, /*#__PURE__*/React.createElement("div", {
       className: "text-[11px] text-gray-400"
@@ -22869,7 +23572,23 @@ function IncidentList({
         background: tab === "nuevas" ? "#e11d48" : tab === "resolver" ? AMARILLO : "#16a34a",
         color: tab === "resolver" ? AZUL : "white"
       }
-    }, tab === "nuevas" ? "NUEVA" : tab === "resolver" ? "EN ATENCIÓN" : "RESUELTA")));
+    }, tab === "nuevas" ? "NUEVA" : tab === "resolver" ? "EN ATENCIÓN" : "RESUELTA"))), tab !== "resueltas" &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("button", {
+      onClick: e => {
+        e.stopPropagation();
+        onResolverDirecto(i);
+      },
+      title: "Marcar resuelta directamente",
+      className: "w-9 h-9 rounded-full flex items-center justify-center shrink-0",
+      style: {
+        background: "#eaf7ee",
+        color: "#16a34a"
+      }
+    }, /*#__PURE__*/React.createElement(Check, {
+      size: 18
+    })));
   }));
 }
 // Buzón real de "Auxilio mecánico" para AZT/SGI/Mantenimiento — mismo patrón de "plantas a tu
