@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-05T03:06:32.823Z */
+/* UniconApp — Bundle generado el 2026-10-05T03:20:58.523Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 18147 — CERO simplificaciones */
+/* Líneas originales del JSX: 18167 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -20846,6 +20846,14 @@ function AztPanel({
   };
   const TIPOS_FILTRABLES_TODOS = INCIDENT_TYPES.filter(t => t.id !== "auxilio" && t.id !== "falla");
   const TIPOS_FILTRABLES = TIPOS_POR_ROL[admin?.rol] ? TIPOS_FILTRABLES_TODOS.filter(t => TIPOS_POR_ROL[admin.rol].includes(t.id)) : TIPOS_FILTRABLES_TODOS;
+  // Nombres cortos para los casilleros del filtro en escritorio — los label completos (ej. "El
+  // cliente no me da acceso a la obra") son para el chofer al reportar, acá harían el filtro
+  // enorme sin necesidad.
+  const TIPO_LABEL_CORTO = {
+    acceso: "Acceso",
+    retiro: "Retiro",
+    servicios: "Servicios"
+  };
   const [tiposSeleccionados, setTiposSeleccionados] = useState(() => new Set(TIPOS_FILTRABLES.map(t => t.id)));
   // admin.rol suele llegar un instante después del primer render (se carga aparte) — el useState de
   // arriba ya no alcanza solo, porque su inicializador corre una sola vez y para entonces puede que
@@ -21808,18 +21816,35 @@ function AztPanel({
       background: incView === "emergencias" ? "#e11d48" : "#9ca3af",
       color: "white"
     }
-  }, pendEmerg))), incView === "buzón" &&
+  }, pendEmerg))), incView === "buzón" && TIPOS_FILTRABLES.length > 1 &&
   /*#__PURE__*/
   /*#__PURE__*/
-  React.createElement("button", {
-    onClick: () => setModalTipoAbierto(true),
-    className: "w-full flex items-center justify-between rounded-lg border px-3 py-2 text-xs font-semibold mb-2",
+  React.createElement("div", {
+    className: "flex items-center gap-1.5 flex-wrap mb-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setTiposSeleccionados(new Set(tiposSeleccionados.size === TIPOS_FILTRABLES.length ? [] : TIPOS_FILTRABLES.map(t => t.id))),
+    className: "px-2.5 py-1 rounded-full text-[11px] font-semibold border",
     style: {
-      borderColor: "#d5d9e4",
-      color: "#374151"
+      background: tiposSeleccionados.size === TIPOS_FILTRABLES.length ? AZUL : "white",
+      color: tiposSeleccionados.size === TIPOS_FILTRABLES.length ? "white" : "#374151",
+      borderColor: tiposSeleccionados.size === TIPOS_FILTRABLES.length ? AZUL : "#d5d9e4"
     }
-  }, /*#__PURE__*/React.createElement("span", null, tiposSeleccionados.size === TIPOS_FILTRABLES.length ? "Tipo de incidencia: Todos" : tiposSeleccionados.size === 0 ? "Tipo de incidencia: Ninguno" : `Tipo: ${tiposSeleccionados.size} seleccionados`), /*#__PURE__*/React.createElement(ChevronDown, {
-    size: 14
+  }, "Todos"), TIPOS_FILTRABLES.map(t => {
+    const checked = tiposSeleccionados.has(t.id);
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
+      key: t.id,
+      onClick: () => setTiposSeleccionados(prev => {
+        const next = new Set(prev);
+        if (next.has(t.id)) next.delete(t.id);else next.add(t.id);
+        return next;
+      }),
+      className: "px-2.5 py-1 rounded-full text-[11px] font-semibold border",
+      style: {
+        background: checked ? AZUL : "white",
+        color: checked ? "white" : "#374151",
+        borderColor: checked ? AZUL : "#d5d9e4"
+      }
+    }, TIPO_LABEL_CORTO[t.id] || t.label);
   })), incView === "buzón" ?
   /*#__PURE__*/
   /*#__PURE__*/
