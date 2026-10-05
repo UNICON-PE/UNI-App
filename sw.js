@@ -49,6 +49,12 @@ self.addEventListener("fetch", (e) => {
 // Push: notificación de un aviso nuevo en el Canal de Avisos (burbuja +
 // sonido/vibración por defecto del sistema — la Web Notification API no deja
 // elegir un sonido personalizado, solo la app nativa podría hacerlo).
+//
+// Si la app YA está abierta y enfocada en este dispositivo, no mostramos esta
+// burbuja nativa: la propia app, en vivo, ya hace sonar su propio aviso
+// (burbuja + sonido dentro de la pantalla) apenas llega el dato por Realtime
+// — mostrar las dos a la vez duplicaba el sonido sin necesidad. La burbuja
+// nativa queda solo para cuando la app está cerrada o en segundo plano.
 self.addEventListener("push", (e) => {
   let data = {};
   try {
@@ -57,36 +63,46 @@ self.addEventListener("push", (e) => {
     data = { title: "UNI App", body: e.data ? e.data.text() : "Tienes un aviso nuevo" };
   }
   e.waitUntil(
-    self.registration.showNotification(data.title || "UNI App", {
-      body: data.body || "Tienes un aviso nuevo",
-      icon: "icon-192.png",
-      // El ícono chico de la barra de estado de Android solo usa el canal alfa de esta imagen (el
-      // color se ignora siempre) — por eso icon-192.png (opaco, con fondo amarillo) salía como un
-      // cuadrito blanco sólido. icon-badge.png es una silueta blanca del camión sobre fondo
-      // transparente, generada a partir del mismo logo, para que se vea el ícono real.
-      badge: "icon-badge.png",
-      vibrate: [200, 100, 200],
-      data: { avisoId: data.avisoId || null }
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      const appEnfocada = clientList.some((c) => c.focused);
+      if (appEnfocada) return;
+      return self.registration.showNotification(data.title || "UNI App", {
+        body: data.body || "Tienes un aviso nuevo",
+        icon: "icon-192.png",
+        // El ícono chico de la barra de estado de Android solo usa el canal alfa de esta imagen (el
+        // color se ignora siempre) — por eso icon-192.png (opaco, con fondo amarillo) salía como un
+        // cuadrito blanco sólido. icon-badge.png es una silueta blanca del camión sobre fondo
+        // transparente, generada a partir del mismo logo, para que se vea el ícono real.
+        badge: "icon-badge.png",
+        vibrate: [200, 100, 200],
+        data: { avisoId: data.avisoId || null, incidenciaId: data.incidenciaId || null }
+      });
     })
   );
 });
 
 // Clic en la notificación: si la app ya está abierta en alguna pestaña, la enfoca y le avisa (por
-// postMessage) a qué aviso ir; si estaba cerrada, abre una pestaña nueva con ?avisoId=... en la URL,
-// que la app lee al cargar (ver el efecto correspondiente en ChoferApp).
+// postMessage) a qué aviso/incidencia ir; si estaba cerrada, abre una pestaña nueva con
+// ?avisoId=...&incidenciaId=... en la URL, que la app lee al cargar (ver el efecto correspondiente
+// en ChoferApp/AztPanel).
 self.addEventListener("notificationclick", (e) => {
   e.notification.close();
   const avisoId = e.notification.data?.avisoId || null;
+  const incidenciaId = e.notification.data?.incidenciaId || null;
   e.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
         if ("focus" in client) {
-          client.postMessage({ type: "ir-a-aviso", avisoId });
+          client.postMessage({ type: "ir-a-aviso", avisoId, incidenciaId });
           return client.focus();
         }
       }
       if (self.clients.openWindow) {
-        return self.clients.openWindow(avisoId ? `./?avisoId=${avisoId}` : "./");
+        const params = new URLSearchParams();
+        if (avisoId) params.set("avisoId", avisoId);
+        if (incidenciaId) params.set("incidenciaId", incidenciaId);
+        const query = params.toString();
+        return self.clients.openWindow(query ? `./?${query}` : "./");
       }
     })
   );

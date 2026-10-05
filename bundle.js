@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-04T23:19:13.334Z */
+/* UniconApp — Bundle generado el 2026-10-05T00:04:39.903Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 18064 — CERO simplificaciones */
+/* Líneas originales del JSX: 18090 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -9668,9 +9668,11 @@ function ChoferApp({
     if (!driver?.id) return;
     const params = new URLSearchParams(window.location.search);
     const avisoIdUrl = params.get("avisoId");
-    if (avisoIdUrl) {
-      irANotificacion(avisoIdUrl);
+    const incidenciaIdUrl = params.get("incidenciaId");
+    if (avisoIdUrl || incidenciaIdUrl) {
+      irANotificacion(avisoIdUrl, incidenciaIdUrl);
       params.delete("avisoId");
+      params.delete("incidenciaId");
       const query = params.toString();
       window.history.replaceState({}, "", window.location.pathname + (query ? "?" + query : ""));
     }
@@ -9678,7 +9680,7 @@ function ChoferApp({
   useEffect(() => {
     if (!driver?.id || !("serviceWorker" in navigator)) return;
     const onMensaje = e => {
-      if (e.data?.type === "ir-a-aviso") irANotificacion(e.data.avisoId);
+      if (e.data?.type === "ir-a-aviso") irANotificacion(e.data.avisoId, e.data.incidenciaId);
     };
     navigator.serviceWorker.addEventListener("message", onMensaje);
     return () => navigator.serviceWorker.removeEventListener("message", onMensaje);
@@ -21317,6 +21319,30 @@ function AztPanel({
     const t = setTimeout(() => setIrAIncidenciaId(null), 7500);
     return () => clearTimeout(t);
   }, [irAIncidenciaId]);
+
+  // Clic en la notificación push de incidencia (app cerrada/en otra pestaña): mismo mecanismo que
+  // ChoferApp — el Service Worker avisa por postMessage si la app ya estaba abierta, o agrega
+  // ?incidenciaId=... a la URL si tuvo que abrir una pestaña nueva.
+  useEffect(() => {
+    if (!admin?.id || !("serviceWorker" in navigator)) return;
+    const onMensaje = e => {
+      if (e.data?.type === "ir-a-aviso" && e.data.incidenciaId) irAIncidenciaAdmin(e.data.incidenciaId);
+    };
+    navigator.serviceWorker.addEventListener("message", onMensaje);
+    return () => navigator.serviceWorker.removeEventListener("message", onMensaje);
+  }, [admin?.id]);
+  useEffect(() => {
+    if (!admin?.id) return;
+    const params = new URLSearchParams(window.location.search);
+    const incidenciaIdUrl = params.get("incidenciaId");
+    if (incidenciaIdUrl) {
+      irAIncidenciaAdmin(incidenciaIdUrl);
+      params.delete("incidenciaId");
+      params.delete("avisoId");
+      const query = params.toString();
+      window.history.replaceState({}, "", window.location.pathname + (query ? "?" + query : ""));
+    }
+  }, [admin?.id]);
 
   // Recibe el texto de solución como argumento (en vez de leerlo del estado "sol") porque el botón
   // real que resuelve vive dentro de IncidentModal con su propio estado local ("respuesta") — ver
