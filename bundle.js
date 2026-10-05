@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-05T00:49:24.092Z */
+/* UniconApp — Bundle generado el 2026-10-05T03:06:32.823Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 18115 — CERO simplificaciones */
+/* Líneas originales del JSX: 18147 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -8397,6 +8397,11 @@ async function activarPushPara(perfilId) {
   return true;
 }
 
+// En celular, la ÚNICA burbuja/sonido debe ser la nativa del sistema (ver sw.js) — ahí SIEMPRE
+// suena, app abierta o cerrada. La burbuja interna de abajo (dentro de la pantalla) se queda solo
+// para PC/laptop, donde no hay push nativo equivalente mientras la pestaña está activa.
+const ES_MOVIL = typeof navigator !== "undefined" && /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent);
+
 /* ===================== SONIDO DE NOTIFICACIÓN (campanita en vivo) ===================== */
 // Tono corto (dos notas, ~0.18s) para cuando llega una notificación EN VIVO mientras la app está
 // abierta — el push nativo (arriba) ya suena solo si el celular está bloqueado o en otra app, pero
@@ -9613,10 +9618,12 @@ function ChoferApp({
         }
       });
       setNotifs(prev => [mapeada, ...prev]);
-      // Burbuja + sonido mientras la app está abierta (el push nativo ya suena solo si el celular
-      // está bloqueado o en otra app — ver sw.js).
-      reproducirSonidoNotif();
-      setToastNotif(mapeada);
+      // Burbuja + sonido interno solo en PC — en celular la única que debe sonar es la nativa del
+      // sistema (ver sw.js), que ahí SIEMPRE se muestra, tenga o no la app abierta.
+      if (!ES_MOVIL) {
+        reproducirSonidoNotif();
+        setToastNotif(mapeada);
+      }
     }).subscribe();
     // Respaldo por sondeo: confirmado en este mismo proyecto (ver auxilios_lectura) que el canal
     // de Realtime a veces queda "SUBSCRIBED" sin entregar el evento — sin esto, una notificación
@@ -20826,8 +20833,28 @@ function AztPanel({
   const [tab, setTab] = useState("nuevas"); // nuevas | resolver | resueltas
   // "falla" tiene su propio buzón informativo (pestaña "Fallas mecánicas", sin chat) y "auxilio" es
   // un flujo aparte (AuxilioMecanicoBuzon) — ninguno de los dos pasa por el buzón de chat de abajo.
-  const TIPOS_FILTRABLES = INCIDENT_TYPES.filter(t => t.id !== "auxilio" && t.id !== "falla");
+  // Además, el filtro por tipo solo debe ofrecer los tipos que de verdad le llegan a este cargo
+  // (mismo criterio que el switch de incidenciaEsParaMiRol) — no tiene sentido que Jefe de Planta
+  // pueda "filtrar" por acceso/retiro si nunca le llega ninguna de esas. Los cargos que no están en
+  // este mapa (supervisión jerárquica transversal) ven todos los tipos, igual que en el routing.
+  const TIPOS_POR_ROL = {
+    admin_zonal_transporte: ["acceso", "retiro", "servicios"],
+    despachador: ["acceso", "retiro"],
+    jefe_planta: ["servicios"],
+    trabajadora_social: ["servicios"],
+    sgi: []
+  };
+  const TIPOS_FILTRABLES_TODOS = INCIDENT_TYPES.filter(t => t.id !== "auxilio" && t.id !== "falla");
+  const TIPOS_FILTRABLES = TIPOS_POR_ROL[admin?.rol] ? TIPOS_FILTRABLES_TODOS.filter(t => TIPOS_POR_ROL[admin.rol].includes(t.id)) : TIPOS_FILTRABLES_TODOS;
   const [tiposSeleccionados, setTiposSeleccionados] = useState(() => new Set(TIPOS_FILTRABLES.map(t => t.id)));
+  // admin.rol suele llegar un instante después del primer render (se carga aparte) — el useState de
+  // arriba ya no alcanza solo, porque su inicializador corre una sola vez y para entonces puede que
+  // admin.rol todavía no exista (cae al "ve todos" por defecto). Este efecto corrige la selección en
+  // cuanto el rol real está disponible, para que no se quede marcando tipos que ni siquiera
+  // aparecen ya en la lista (ej. Jefe de Planta viendo "3 seleccionados" con una sola opción visible).
+  useEffect(() => {
+    setTiposSeleccionados(new Set(TIPOS_FILTRABLES.map(t => t.id)));
+  }, [admin?.rol]);
   const [modalTipoAbierto, setModalTipoAbierto] = useState(false);
   const [selected, setSelected] = useState(null);
   const [sol, setSol] = useState("");
@@ -21271,10 +21298,12 @@ function AztPanel({
     }, payload => {
       const mapeada = mapNotifDB(payload.new);
       setAdminNotifs(prev => [mapeada, ...prev]);
-      // Burbuja + sonido mientras el panel está abierto (celular o PC) — el push nativo ya suena
-      // solo si la pestaña no está mirando la app en ese momento.
-      reproducirSonidoNotif();
-      setToastAdminNotif(mapeada);
+      // Burbuja + sonido interno solo en PC — en celular la única que debe sonar es la nativa del
+      // sistema (ver sw.js), que ahí SIEMPRE se muestra, tenga o no la app abierta.
+      if (!ES_MOVIL) {
+        reproducirSonidoNotif();
+        setToastAdminNotif(mapeada);
+      }
     }).subscribe();
     // Respaldo por sondeo — mismo motivo que en el resto del proyecto (Realtime a veces queda
     // "SUBSCRIBED" sin entregar el evento).
@@ -21779,7 +21808,19 @@ function AztPanel({
       background: incView === "emergencias" ? "#e11d48" : "#9ca3af",
       color: "white"
     }
-  }, pendEmerg))), incView === "buzón" ?
+  }, pendEmerg))), incView === "buzón" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
+    onClick: () => setModalTipoAbierto(true),
+    className: "w-full flex items-center justify-between rounded-lg border px-3 py-2 text-xs font-semibold mb-2",
+    style: {
+      borderColor: "#d5d9e4",
+      color: "#374151"
+    }
+  }, /*#__PURE__*/React.createElement("span", null, tiposSeleccionados.size === TIPOS_FILTRABLES.length ? "Tipo de incidencia: Todos" : tiposSeleccionados.size === 0 ? "Tipo de incidencia: Ninguno" : `Tipo: ${tiposSeleccionados.size} seleccionados`), /*#__PURE__*/React.createElement(ChevronDown, {
+    size: 14
+  })), incView === "buzón" ?
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
@@ -22093,7 +22134,7 @@ function AztPanel({
     plant: plant,
     yaParpadearon: yaParpadearon,
     irAIncidenciaId: irAIncidenciaId
-  })), modalTipoAbierto &&
+  })))), modalTipoAbierto &&
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
@@ -22176,7 +22217,7 @@ function AztPanel({
     })), /*#__PURE__*/React.createElement("span", {
       className: "text-sm text-gray-700 flex-1"
     }, t.label));
-  }))))), section === "avisos" && (admin?.plantas?.length === 1 ?
+  }))), section === "avisos" && (admin?.plantas?.length === 1 ?
   /*#__PURE__*/
   /*#__PURE__*/
   // Un solo canal a cargo: nos saltamos la lista de canales y vamos directo al chat.
