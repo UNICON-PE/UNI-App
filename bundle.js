@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-05T00:25:34.269Z */
+/* UniconApp — Bundle generado el 2026-10-05T00:49:24.092Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 18090 — CERO simplificaciones */
+/* Líneas originales del JSX: 18115 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -9329,7 +9329,22 @@ function ChoferApp({
   const [irAMensajeAvisoId, setIrAMensajeAvisoId] = useState(null); // aviso a resaltar/centrar en PanelAvisos, pedido desde la campanita de notificaciones
   const [irAIncidenciaId, setIrAIncidenciaId] = useState(null); // incidencia a resaltar en Reportes de incidencia, pedido desde la campanita de notificaciones
   const [avisosLeidos, setAvisosLeidos] = useState(0);
+  // Respaldado en la tabla real incidencia_vistas_chofer (no solo en memoria del navegador) — así
+  // el badge de "Reportes de incidencia" de verdad baja al entrar a verlas y se queda bajo entre
+  // sesiones, en vez de reiniciarse cada vez que se recarga o se vuelve a entrar.
   const [incVistas, setIncVistas] = useState(new Set());
+  useEffect(() => {
+    if (!driver?.id) return;
+    let vigente = true;
+    sbClient.from("incidencia_vistas_chofer").select("incidencia_id, estado").eq("chofer_id", driver.id).then(({
+      data
+    }) => {
+      if (vigente && data) setIncVistas(new Set(data.map(v => v.incidencia_id + v.estado)));
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [driver?.id]);
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
   const [reasignado, setReasignado] = useState(null); // { plantaNueva } cuando detecta cambio en su perfil
@@ -9692,7 +9707,17 @@ function ChoferApp({
       setAvisosLeidos(avisos.filter(a => a.planta === driver?.planta).length);
       setAvisosNoLeidosReal(0);
     }
-    if (id === "incidencias") setIncVistas(new Set(incidents.filter(i => i.chofer === driver?.nombre).map(i => i.id + i.estado)));
+    if (id === "incidencias") {
+      const mias = incidents.filter(i => i.chofer === driver?.nombre);
+      setIncVistas(prev => new Set([...prev, ...mias.map(i => i.id + i.estado)]));
+      sbClient.rpc("marcar_incidencias_vistas_chofer", {
+        p_incidencia_ids: mias.map(i => i.id)
+      }).then(({
+        error
+      }) => {
+        if (error) console.error("No se pudieron marcar las incidencias como vistas:", error.message);
+      });
+    }
   };
 
   // Carga inicial real del badge de no-leídos (avisos_lectura es la misma fuente de verdad que
