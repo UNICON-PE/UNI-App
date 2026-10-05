@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-05T00:04:39.903Z */
+/* UniconApp — Bundle generado el 2026-10-05T00:23:25.166Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 18090 — CERO simplificaciones */
+/* Líneas originales del JSX: 18092 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -21281,8 +21281,13 @@ function AztPanel({
   // sin esto, un dispositivo usado para probar varias cuentas se queda mandando los avisos a quien
   // activó por última vez, no a quien está realmente logueado ahora.
   useEffect(() => {
-    if (!admin?.id || typeof Notification === "undefined" || Notification.permission !== "granted") return;
-    activarPushPara(admin.id).catch(err => console.error("No se pudo re-asociar la suscripción push:", err.message));
+    if (!admin?.id) return;
+    console.log("[push-reclaim admin]", {
+      adminId: admin.id,
+      permiso: typeof Notification === "undefined" ? "sin-api-Notification" : Notification.permission
+    });
+    if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
+    activarPushPara(admin.id).then(ok => console.log("[push-reclaim admin] resultado:", ok)).catch(err => console.error("[push-reclaim admin] FALLÓ:", err.message));
   }, [admin?.id]);
   // Activar push acá es manual (botón en el header), sin el banner intrusivo del chofer — el admin
   // ya usa el panel activamente durante su turno, alcanza con ofrecerlo una vez visible.
