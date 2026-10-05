@@ -1,4 +1,4 @@
-/* UniconApp — Bundle generado el 2026-10-05T03:20:58.523Z */
+/* UniconApp — Bundle generado el 2026-10-05T03:26:25.436Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
 /* Líneas originales del JSX: 18167 — CERO simplificaciones */
 
@@ -20850,9 +20850,9 @@ function AztPanel({
   // cliente no me da acceso a la obra") son para el chofer al reportar, acá harían el filtro
   // enorme sin necesidad.
   const TIPO_LABEL_CORTO = {
-    acceso: "Acceso",
-    retiro: "Retiro",
-    servicios: "Servicios"
+    acceso: "Cliente no da acceso",
+    retiro: "Cliente no deja retirar mixer",
+    servicios: "Servicios de planta"
   };
   const [tiposSeleccionados, setTiposSeleccionados] = useState(() => new Set(TIPOS_FILTRABLES.map(t => t.id)));
   // admin.rol suele llegar un instante después del primer render (se carga aparte) — el useState de
