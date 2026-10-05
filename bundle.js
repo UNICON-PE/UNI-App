@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-05T03:26:25.436Z */
+/* UniconApp — Bundle generado el 2026-10-05T03:34:47.616Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 18167 — CERO simplificaciones */
+/* Líneas originales del JSX: 18176 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -8822,6 +8822,13 @@ function UniconApp() {
         minute: "2-digit"
       }),
       ts: new Date(f.created_at).getTime(),
+      // Hora en la que se resolvió (distinta de "hora", que es cuando se reportó) — para que el
+      // buzón de Resueltas muestre y ordene por cuándo se cerró, no por cuándo llegó.
+      horaResuelta: f.resuelta_en ? new Date(f.resuelta_en).toLocaleTimeString("es-PE", {
+        hour: "2-digit",
+        minute: "2-digit"
+      }) : null,
+      resueltaEn: f.resuelta_en ? new Date(f.resuelta_en).getTime() : null,
       estado: f.estado,
       solucion: f.solucion || "",
       chofer: f.chofer_nombre,
@@ -21224,7 +21231,9 @@ function AztPanel({
   // resolver"/"Resueltas" siguen siendo totales que se acumulan por su cuenta en sus propias
   // pestañas, este badge es solo el contador de "nuevas sin leer".
   const totalPend = incidents.filter(i => i.estado !== "resuelta" && !misVistas.has(i.id) && (admin?.plantas || []).includes(i.planta) && incidenciaEsParaMiRol(i)).length;
-  const sortOld = arr => arr.slice().sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  // En "Resueltas" se ordena por cuándo se resolvió (resueltaEn), no por cuándo llegó (ts) — si
+  // no, una incidencia vieja recién resuelta se perdía abajo de todo en vez de aparecer arriba.
+  const sortOld = (arr, campo = "ts") => arr.slice().sort((a, b) => (b[campo] || 0) - (a[campo] || 0));
   // Qué incidencias ya "parpadearon" sus 4 veces para este admin en esta sesión — un ref (no
   // estado) porque no necesita volver a renderizar nada, solo recordar para no repetir la
   // animación si se sale de la sección y se vuelve a entrar (AztPanel no se desmonta al cambiar de
@@ -21931,7 +21940,7 @@ function AztPanel({
       background: "#f6f8fc"
     }
   }, /*#__PURE__*/React.createElement(IncidentList, {
-    items: sortOld(buckets[tab]),
+    items: sortOld(buckets[tab], tab === "resueltas" ? "resueltaEn" : "ts"),
     onOpen: openIncident,
     onResolverDirecto: openIncidentParaResolver,
     tab: tab,
@@ -22144,7 +22153,7 @@ function AztPanel({
       background: "#f6f8fc"
     }
   }, /*#__PURE__*/React.createElement(IncidentList, {
-    items: sortOld(buckets[tab]),
+    items: sortOld(buckets[tab], tab === "resueltas" ? "resueltaEn" : "ts"),
     onOpen: openIncident,
     onResolverDirecto: openIncidentParaResolver,
     tab: tab,
@@ -23674,7 +23683,7 @@ function IncidentList({
       className: "text-right shrink-0"
     }, /*#__PURE__*/React.createElement("div", {
       className: "text-[11px] text-gray-400"
-    }, i.hora), nAfectados > 0 &&
+    }, tab === "resueltas" ? i.horaResuelta || i.hora : i.hora), nAfectados > 0 &&
     /*#__PURE__*/
     /*#__PURE__*/
     React.createElement("span", {
