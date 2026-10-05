@@ -50,10 +50,15 @@ self.addEventListener("fetch", (e) => {
 // sonido/vibración por defecto del sistema — la Web Notification API no deja
 // elegir un sonido personalizado, solo la app nativa podría hacerlo).
 //
-// Siempre se muestra, tenga o no la pestaña enfocada — igual que WhatsApp Web:
-// cada dispositivo (celular, laptop) sueña independiente según si a ESE
-// dispositivo le llega el push, sin importar si tiene la app abierta en ese
-// momento o qué esté pasando en otro dispositivo.
+// En PC/laptop siempre se muestra, tenga o no la pestaña enfocada — igual que
+// WhatsApp Web: cada dispositivo suena independiente, sin importar qué pase
+// en otro. En CELULAR, en cambio, si la app ya está abierta y enfocada ahí
+// mismo se omite esta burbuja nativa — la propia app, en vivo, ya hace sonar
+// la suya (burbuja + sonido dentro de la pantalla) apenas llega el dato por
+// Realtime, y mostrar las dos a la vez en el mismo celular duplicaba el
+// sonido. En PC esa duplicación no se reportó como molesta, así que ahí no se
+// filtra.
+const esMovil = /Mobile|Android|iPhone|iPad/i.test(self.navigator.userAgent);
 self.addEventListener("push", (e) => {
   let data = {};
   try {
@@ -61,17 +66,26 @@ self.addEventListener("push", (e) => {
   } catch {
     data = { title: "UNI App", body: e.data ? e.data.text() : "Tienes un aviso nuevo" };
   }
+  const mostrar = () => self.registration.showNotification(data.title || "UNI App", {
+    body: data.body || "Tienes un aviso nuevo",
+    icon: "icon-192.png",
+    // El ícono chico de la barra de estado de Android solo usa el canal alfa de esta imagen (el
+    // color se ignora siempre) — por eso icon-192.png (opaco, con fondo amarillo) salía como un
+    // cuadrito blanco sólido. icon-badge.png es una silueta blanca del camión sobre fondo
+    // transparente, generada a partir del mismo logo, para que se vea el ícono real.
+    badge: "icon-badge.png",
+    vibrate: [200, 100, 200],
+    data: { avisoId: data.avisoId || null, incidenciaId: data.incidenciaId || null }
+  });
+  if (!esMovil) {
+    e.waitUntil(mostrar());
+    return;
+  }
   e.waitUntil(
-    self.registration.showNotification(data.title || "UNI App", {
-      body: data.body || "Tienes un aviso nuevo",
-      icon: "icon-192.png",
-      // El ícono chico de la barra de estado de Android solo usa el canal alfa de esta imagen (el
-      // color se ignora siempre) — por eso icon-192.png (opaco, con fondo amarillo) salía como un
-      // cuadrito blanco sólido. icon-badge.png es una silueta blanca del camión sobre fondo
-      // transparente, generada a partir del mismo logo, para que se vea el ícono real.
-      badge: "icon-badge.png",
-      vibrate: [200, 100, 200],
-      data: { avisoId: data.avisoId || null, incidenciaId: data.incidenciaId || null }
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      const appEnfocada = clientList.some((c) => c.focused);
+      if (appEnfocada) return;
+      return mostrar();
     })
   );
 });
