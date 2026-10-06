@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-05T03:34:47.616Z */
+/* UniconApp — Bundle generado el 2026-10-06T16:15:50.958Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 18176 — CERO simplificaciones */
+/* Líneas originales del JSX: 18192 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -10752,6 +10752,7 @@ function PanelAvisos({
   const bottomSentinelRef = useRef(null);
   const yaHizoScrollInicial = useRef(false);
   const yaRecalculadoConFrescosRef = useRef(false); // evita recalcular el salto más de una vez cuando llega el refresco real tras haber mostrado el chat con datos de caché
+  const yaMarcoLeidoConFrescosRef = useRef(false); // true una vez que el punto de lectura ya se avanzó usando datos reales del servidor (no la caché) en esta apertura del canal
   const primerNoLeidoIdRef = useRef(null); // espejo de primerNoLeidoId, para leer su valor actual dentro del closure async de carga de lectura sin tener que re-crear ese efecto
   const datosFrescosLecturaRef = useRef(false); // true una vez que la consulta real de ultimo_leido_at respondió (independiente de si se usó caché para no esperar)
   const scrollPendienteRef = useRef(null); // id del mensaje objetivo (o "__final__") pendiente de posicionar, se resuelve en un efecto posterior al render que pinta el separador
@@ -10961,6 +10962,7 @@ function PanelAvisos({
     let vigente = true; // se invalida en el cleanup si plantaEfectiva/miId cambian antes de que la consulta responda
     yaHizoScrollInicial.current = false;
     yaRecalculadoConFrescosRef.current = false;
+    yaMarcoLeidoConFrescosRef.current = false;
     datosFrescosLecturaRef.current = false;
     setPrimerNoLeidoId(null);
     setListoParaMostrar(false);
@@ -11245,6 +11247,16 @@ function PanelAvisos({
           }
         }
         marcarLeidoHasta(avisosData[avisosData.length - 1].created_at);
+        yaMarcoLeidoConFrescosRef.current = true;
+      }
+      // Si el canal se abrió con caché que ya mostraba mensajes no leídos (primerNoLeidoId ya
+      // puesto), el bloque de arriba no corre y el salto inicial tampoco marcó leído (los datos
+      // reales aún no habían llegado) — el punto de lectura se quedaba atascado para siempre
+      // mientras el chat cupiera en pantalla sin scroll, y el badge nunca bajaba. Se marca aquí,
+      // una sola vez, apenas llegan los datos reales.
+      if (datosFrescosRef.current && !yaMarcoLeidoConFrescosRef.current) {
+        yaMarcoLeidoConFrescosRef.current = true;
+        marcarLeidoHasta(avisosData[avisosData.length - 1].created_at);
       }
       return;
     }
@@ -11271,6 +11283,7 @@ function PanelAvisos({
     // la rama de arriba (yaHizoScrollInicial ya true) se encarga de marcar leído una vez que los
     // datos frescos lleguen, si es que no se hizo aquí.
     if (datosFrescosRef.current) {
+      yaMarcoLeidoConFrescosRef.current = true;
       marcarLeidoHasta(avisosData[avisosData.length - 1].created_at);
     }
   }, [lecturaLista, avisosData, plantaEfectiva, primerNoLeidoId]);
@@ -12571,7 +12584,7 @@ function PanelAvisos({
         agregarArchivos(archivosImagen);
       }
     },
-    placeholder: `Escribe un aviso para todos los choferes de la planta ${plantaEfectiva}....`,
+    placeholder: isDesktop ? `Escribe un aviso para todos los choferes de la planta ${plantaEfectiva}....` : "Escribe un aviso…",
     rows: 1,
     className: "flex-1 px-4 py-3 rounded-2xl border text-sm outline-none resize-none",
     style: {
@@ -15814,7 +15827,8 @@ Por favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
             rel: "noopener noreferrer",
             style: {
               color: "#2563eb",
-              textDecoration: "underline"
+              textDecoration: "underline",
+              wordBreak: "break-all"
             }
           }, part);
         }
@@ -22264,7 +22278,18 @@ function AztPanel({
       flexDirection: "column",
       background: "#f6f8fc"
     }
-  }, /*#__PURE__*/React.createElement(PanelAvisos, {
+  }, !isDesktop &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
+    onClick: () => setMobileList(true),
+    className: "text-sm text-gray-700 px-3 py-2.5 flex items-center gap-1 border-b bg-white shrink-0 font-semibold",
+    style: {
+      borderColor: "#e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement(ChevronLeft, {
+    size: 18
+  }), " ", admin.plantas[0]), /*#__PURE__*/React.createElement(PanelAvisos, {
     yo: {
       id: admin?.id,
       dni: admin?.dni,
