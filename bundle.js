@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-06T16:15:50.958Z */
+/* UniconApp — Bundle generado el 2026-10-06T16:23:43.920Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 18192 — CERO simplificaciones */
+/* Líneas originales del JSX: 18210 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -22701,6 +22701,24 @@ function relativeTime(ts) {
   if (h < 24) return `Hace ${h} h`;
   return `Hace ${Math.floor(h / 24)} d`;
 }
+// Fecha + hora corta ("06 oct, 11:58 a. m."; con año si no es el actual) para las tarjetas de los
+// buzones de incidencias — solo la hora confundía en incidencias de hace días.
+function fechaHoraCorta(ts) {
+  if (!ts) return "";
+  const d = new Date(ts);
+  const fecha = d.toLocaleDateString("es-PE", {
+    day: "2-digit",
+    month: "short",
+    ...(d.getFullYear() !== new Date().getFullYear() ? {
+      year: "numeric"
+    } : {})
+  });
+  const hora = d.toLocaleTimeString("es-PE", {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+  return `${fecha}, ${hora}`;
+}
 function EstadoMixers({
   incidents,
   plant,
@@ -23708,7 +23726,7 @@ function IncidentList({
       className: "text-right shrink-0"
     }, /*#__PURE__*/React.createElement("div", {
       className: "text-[11px] text-gray-400"
-    }, tab === "resueltas" ? i.horaResuelta || i.hora : i.hora), nAfectados > 0 &&
+    }, tab === "resueltas" ? i.resueltaEn ? fechaHoraCorta(i.resueltaEn) : i.horaResuelta || (i.ts ? fechaHoraCorta(i.ts) : i.hora) : i.ts ? fechaHoraCorta(i.ts) : i.hora), nAfectados > 0 &&
     /*#__PURE__*/
     /*#__PURE__*/
     React.createElement("span", {
