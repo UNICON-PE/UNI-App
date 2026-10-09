@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-06T16:23:43.920Z */
+/* UniconApp — Bundle generado el 2026-10-09T15:16:47.901Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 18210 — CERO simplificaciones */
+/* Líneas originales del JSX: 18198 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -9362,7 +9362,6 @@ function ChoferApp({
   const [reasignado, setReasignado] = useState(null); // { plantaNueva } cuando detecta cambio en su perfil
   const [avisosNoLeidosReal, setAvisosNoLeidosReal] = useState(0); // conteo real desde Supabase para el badge
   const [notifs, setNotifs] = useState([]); // notificaciones personales del chofer
-  const [pushBannerVisible, setPushBannerVisible] = useState(false); // banner para activar notificaciones push
   const [openNotif, setOpenNotif] = useState(false);
   const [toastNotif, setToastNotif] = useState(null); // burbuja efímera + sonido cuando llega una EN VIVO
   const [botDeepLink, setBotDeepLink] = useState(null); // ej. "op_unikin" — abre UNIBOT directo en esa opción (ver Bitácora personal)
@@ -9788,13 +9787,13 @@ function ChoferApp({
     };
   }, [driver?.id, driver?.planta]);
 
-  // DIAGNÓSTICO TEMPORAL: el banner se mostraba condicionado a que el navegador soportara Push y a
-  // confirmar que no hubiera ya una suscripción — en el celular de prueba no aparecía nunca ni
-  // force-cerrando la app, así que de momento se muestra siempre que haya sesión, sin condiciones,
-  // para confirmar que el render en sí funciona. El botón "Activar" sigue revisando soporte y
-  // avisando con un mensaje claro si falta algo (ver activarNotificacionesPush).
+  // Pide el permiso de notificaciones apenas inicia sesión, sin banner previo — si el chofer nunca
+  // respondió antes (permission === "default"), dispara directo el diálogo nativo del navegador/SO.
+  // Si ya lo rechazó antes, no se vuelve a pedir (el navegador lo ignoraría en silencio de todos modos).
   useEffect(() => {
-    if (driver?.id) setPushBannerVisible(true);
+    if (driver?.id && typeof Notification !== "undefined" && Notification.permission === "default") {
+      activarNotificacionesPush();
+    }
   }, [driver?.id]);
 
   // Re-reclama en silencio la suscripción push de este navegador/dispositivo para la cuenta que
@@ -9810,18 +9809,13 @@ function ChoferApp({
   const activarNotificacionesPush = async () => {
     try {
       const activada = await activarPushPara(driver.id);
-      if (!activada) {
-        setPushBannerVisible(false);
-        return;
-      }
+      if (!activada) return;
       // Sin esta confirmación visible, no hay forma de distinguir "se activó bien" de "falló
       // silenciosamente" — ni para el chofer ni para poder diagnosticar un reporte a distancia.
       alert("✅ Notificaciones activadas. Te avisaremos con sonido cuando llegue un aviso nuevo.");
     } catch (err) {
       console.error("No se pudo activar las notificaciones push:", err.message);
       alert("No se pudieron activar las notificaciones: " + err.message);
-    } finally {
-      setPushBannerVisible(false);
     }
   };
   if (!driver) return /*#__PURE__*/ /*#__PURE__*/React.createElement(LoginScreen, {
@@ -10058,28 +10052,7 @@ function ChoferApp({
     className: "inline-flex items-center gap-1"
   }, /*#__PURE__*/React.createElement(MapPin, {
     size: 14
-  }), driver.planta)))))), pushBannerVisible &&
-  /*#__PURE__*/
-  /*#__PURE__*/
-  React.createElement("div", {
-    className: "px-3 py-2 text-xs flex items-center justify-between gap-2",
-    style: {
-      background: "#fff7e6",
-      borderBottom: "1px solid #f0e2bd",
-      color: "#6b5219"
-    }
-  }, /*#__PURE__*/React.createElement("span", null, "\uD83D\uDD14 Activa las notificaciones para enterarte al instante de avisos nuevos."), /*#__PURE__*/React.createElement("div", {
-    className: "flex gap-2 shrink-0"
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: activarNotificacionesPush,
-    className: "font-semibold px-2 py-1 rounded text-white",
-    style: {
-      background: AZUL
-    }
-  }, "Activar"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setPushBannerVisible(false),
-    className: "px-2 py-1 font-semibold"
-  }, "Ahora no"))), /*#__PURE__*/React.createElement("div", {
+  }), driver.planta)))))), /*#__PURE__*/React.createElement("div", {
     className: "flex-1 overflow-y-auto py-2"
   }, CHANNELS.map(c => {
     const active = channel === c.id;
