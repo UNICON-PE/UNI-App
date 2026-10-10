@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-09T15:16:47.901Z */
+/* UniconApp — Bundle generado el 2026-10-10T01:10:37.561Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 18198 — CERO simplificaciones */
+/* Líneas originales del JSX: 18265 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -8832,6 +8832,7 @@ function UniconApp() {
       estado: f.estado,
       solucion: f.solucion || "",
       chofer: f.chofer_nombre,
+      choferId: f.chofer_id,
       afectados: f.afectados || [],
       participantes: f.participantes || [],
       turnoAzt: f.turno_azt,
@@ -8865,6 +8866,62 @@ function UniconApp() {
       table: "incidencia_vistas"
     }, () => cargarIncidencias()).subscribe();
     const intervalo = setInterval(cargarIncidencias, 15000); // sondeo de respaldo — mismo motivo que en el resto del proyecto: Realtime a veces no entrega el evento
+    return () => {
+      vigente = false;
+      listener?.subscription?.unsubscribe();
+      sbClient.removeChannel(canal);
+      clearInterval(intervalo);
+    };
+  }, []);
+  const [reportesFinVuelta, setReportesFinVuelta] = useState([]);
+
+  // Carga real desde Supabase para el panel "Reportes de Mixers" del AZT (antes 100% datos de
+  // ejemplo, ver EstadoMixers) — mismo patrón que cargarIncidencias: se recompone el array
+  // completo en cada carga/evento, el volumen es bajo. "estado" se deriva de `problema` (no es
+  // una columna propia) para no duplicar la misma info en dos lugares.
+  const cargarReportesFinVuelta = async () => {
+    const {
+      data: filas
+    } = await sbClient.from("reportes_fin_vuelta").select("*").order("created_at", {
+      ascending: false
+    }).limit(1000);
+    if (!filas) return;
+    setReportesFinVuelta(filas.map(f => ({
+      id: f.id,
+      mixer: f.mixer,
+      chofer: f.chofer_nombre,
+      planta: f.planta,
+      tipo: f.tipo,
+      parqueo: f.parqueo,
+      llaves: f.llaves,
+      estado: f.problema ? "Reportar problema" : "Todo bien",
+      coment: f.comentario || "",
+      lavadero: f.lavadero,
+      hora: new Date(f.created_at).toLocaleTimeString("es-PE", {
+        hour: "2-digit",
+        minute: "2-digit"
+      }),
+      ts: new Date(f.created_at).getTime()
+    })));
+  };
+  useEffect(() => {
+    let vigente = true;
+    const {
+      data: listener
+    } = sbClient.auth.onAuthStateChange((event, session) => {
+      if (session && vigente) cargarReportesFinVuelta();
+    });
+    sbClient.auth.getSession().then(({
+      data
+    }) => {
+      if (data.session && vigente) cargarReportesFinVuelta();
+    });
+    const canal = sbClient.channel("reportes-fin-vuelta-global").on("postgres_changes", {
+      event: "*",
+      schema: "public",
+      table: "reportes_fin_vuelta"
+    }, () => cargarReportesFinVuelta()).subscribe();
+    const intervalo = setInterval(cargarReportesFinVuelta, 15000); // sondeo de respaldo — mismo motivo que en el resto del proyecto: Realtime a veces no entrega el evento
     return () => {
       vigente = false;
       listener?.subscription?.unsubscribe();
@@ -9039,6 +9096,7 @@ function UniconApp() {
     setAvisos: setAvisos,
     emergencias: emergencias,
     setEmergencias: setEmergencias,
+    reportesFinVuelta: reportesFinVuelta,
     role: role,
     setRole: setRole,
     initialDni: aztDni
@@ -9946,7 +10004,10 @@ function ChoferApp({
     icon: BitacoraIcon,
     sub: "Tus notas privadas del día a día"
   }];
-  const misIncidencias = incidents.filter(i => i.chofer === driver.nombre);
+  // Por id de cuenta, no por nombre — el nombre es texto que puede cambiar (una tilde, un typo, una
+  // reactivación con el nombre retipeado distinto) y rompería en silencio el historial visible del
+  // chofer si se comparara por texto. El id es el mismo siempre que el DNI sea el mismo.
+  const misIncidencias = incidents.filter(i => i.choferId === driver.id);
   const showSidebar = isDesktop || mobileList;
   const showMain = isDesktop || !mobileList;
   return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
@@ -13311,7 +13372,11 @@ function FinDeVuelta({
   };
 
   // guardar en historial + ir a pantalla verde 1s después
-  const registrar = () => {
+  // lavaderoOverride: el ChipGrid de "Zona de lavadero" llama setLavadero(v) y registrar(v) en el
+  // mismo clic — el estado de React todavía no se actualizó para cuando este closure se ejecuta,
+  // así que leer `lavadero` directamente daría el valor ANTERIOR (o vacío, en el primer reporte de
+  // la sesión). Se recibe el valor recién elegido como parámetro en vez de depender del estado.
+  const registrar = lavaderoOverride => {
     const hora = hhmm();
     setSentAt(hora);
     const q = quad;
@@ -13354,7 +13419,25 @@ function FinDeVuelta({
       }
     }
     if (q === "lavadero") {
-      registro.lavadero = lavadero;
+      const lavaderoActual = lavaderoOverride !== undefined ? lavaderoOverride : lavadero;
+      registro.lavadero = lavaderoActual;
+      // Reporte real en Supabase (misma tabla reportes_fin_vuelta, tipo "lavadero") para que el
+      // panel "Reportes de Mixers" del AZT vea el estado actual de la flota — antes esto solo
+      // quedaba en el historial en memoria de esta sesión del chofer, nunca llegaba a nadie más.
+      const numMixer = (driver.unidad || "").replace(/[^\d]/g, "");
+      if (numMixer && lavaderoActual) {
+        sbClient.rpc("registrar_reporte_lavadero", {
+          p_mixer: numMixer,
+          p_chofer_id: driver.id,
+          p_chofer_nombre: driver.nombre,
+          p_planta: driver.planta,
+          p_lavadero: lavaderoActual
+        }).then(({
+          error
+        }) => {
+          if (error) console.error("Error registrando reporte de lavadero:", error);
+        });
+      }
     }
     setHistorial(h => [...h, registro]);
     setTimeout(() => setView("sent"), 1000);
@@ -13563,7 +13646,7 @@ function FinDeVuelta({
         value: lavadero,
         onChange: v => {
           setLavadero(v);
-          registrar();
+          registrar(v);
         }
       })
     }];
@@ -16975,7 +17058,7 @@ function ReporteIncidencias({
   const [mensajeAuxilioError, setMensajeAuxilioError] = useState("");
   // "falla" es informativa (sin chat, su propio buzón en Fallas mecánicas) — no aparece en el
   // historial de incidencias del chofer, solo la confirmación de envío de la pantalla "falla_sent".
-  const mis = incidents.filter(i => i.tipo !== "falla" && (i.chofer === driver.nombre || (i.afectados || []).includes(driver.nombre)));
+  const mis = incidents.filter(i => i.tipo !== "falla" && (i.choferId === driver.id || (i.afectados || []).includes(driver.nombre)));
 
   // Al llegar desde la campanita (notificación de "en atención" o "resuelta"), asegura estar en
   // la lista, centra la tarjeta exacta y limpia el pedido después de un rato — así no vuelve a
@@ -19280,14 +19363,17 @@ function GestionHumanaPanel({
     const esNuevo = !persona.id;
     const plantaStr = Array.isArray(persona.planta) ? persona.planta.join(",") : persona.planta;
 
-    // Validación previa: si es una persona NUEVA, el DNI no debe pertenecer ya a otra persona existente
-    if (esNuevo) {
-      const yaExiste = personal.find(p => p.dni === persona.dni);
-      if (yaExiste) {
-        setErrorModal(`El DNI ${persona.dni} ya pertenece a ${yaExiste.nombre} (${CARGO_LABEL[yaExiste.rol] || yaExiste.rol}${yaExiste.activo ? "" : ", inactivo"}). Verifica el número o edita a esa persona en vez de crear una nueva.`);
-        return;
-      }
+    // Si el DNI ya pertenece a alguien ACTIVO, sí es un conflicto real (no puede haber dos personas
+    // activas con el mismo DNI) y se bloquea. Si pertenece a alguien INACTIVO (dado de baja antes),
+    // se permite seguir — reactiva esa misma cuenta con los datos del formulario en vez de crear una
+    // fila nueva, para no perder su historial (reportes, incidencias, etc. ya ligados a su id) ni
+    // chocar con el usuario de Auth que sigue existiendo para ese DNI.
+    const coincidenciaPorDni = esNuevo ? personal.find(p => p.dni === persona.dni) : null;
+    if (coincidenciaPorDni && coincidenciaPorDni.activo) {
+      setErrorModal(`El DNI ${persona.dni} ya pertenece a ${coincidenciaPorDni.nombre} (${CARGO_LABEL[coincidenciaPorDni.rol] || coincidenciaPorDni.rol}), que está activo. Verifica el número o edita a esa persona en vez de crear una nueva.`);
+      return;
     }
+    const reactivando = Boolean(coincidenciaPorDni); // existe pero estaba inactivo
     setErrorModal("");
     const payload = {
       dni: persona.dni,
@@ -19301,8 +19387,8 @@ function GestionHumanaPanel({
       activo: true
     };
     try {
-      if (esNuevo) {
-        // Usar la función crear_usuario que ya crea el auth.user + perfil
+      if (esNuevo && !reactivando) {
+        // DNI realmente nuevo: usar crear_usuario, que crea el auth.user + perfil
         const {
           error
         } = await sbClient.rpc("crear_usuario", {
@@ -19326,20 +19412,23 @@ function GestionHumanaPanel({
           texto: `${persona.nombre} agregado correctamente.`
         });
       } else {
+        // Editar una persona existente, o reactivar a quien estaba inactivo con ese DNI — en ambos
+        // casos es el mismo id de siempre, nunca se crea una fila/cuenta nueva.
+        const idObjetivo = reactivando ? coincidenciaPorDni.id : persona.id;
         const {
           data: updData,
           error
-        } = await sbClient.from("perfiles").update(payload).eq("id", persona.id).select();
+        } = await sbClient.from("perfiles").update(payload).eq("id", idObjetivo).select();
         if (error) throw error;
         if (!updData || updData.length === 0) {
           setMensaje({
             tipo: "error",
-            texto: `No se pudo actualizar a ${persona.nombre}: la política de seguridad bloqueó el cambio (0 filas afectadas).`
+            texto: `No se pudo guardar a ${persona.nombre}: la política de seguridad bloqueó el cambio (0 filas afectadas).`
           });
         } else {
           setMensaje({
             tipo: "ok",
-            texto: `${persona.nombre} actualizado correctamente.`
+            texto: reactivando ? `${persona.nombre} reactivado correctamente (conserva su historial anterior).` : `${persona.nombre} actualizado correctamente.`
           });
         }
       }
@@ -19661,6 +19750,12 @@ function GestionHumanaPanel({
       const registrosNuevos = [];
       const errores = [];
       const turnosIgnorados = [];
+      // DNIs que SÍ aparecen en cada hoja de planta (choferes) del archivo recién subido — se usa
+      // después para dar de baja automáticamente a quien ya no figure ahí (ver más abajo). Solo se
+      // registran las plantas cuya hoja realmente vino en este Excel: si falta una hoja completa
+      // (carga parcial), esa planta no se toca. Esto NO aplica a "Personal Administrativo" — los
+      // cargos administrativos se siguen dando de baja solo a mano (botón por fila), como siempre.
+      const dnisVistosPorPlanta = new Map();
       // Match tolerante a mayúsculas/tildes/espacios raros (ej. un espacio no separable pegado al
       // copiar y pegar desde Word/PDF): si el texto exacto de la celda no calza con una key de
       // CARGO_LABEL/TURNO_LABEL, se reintenta comparando ambos lados normalizados.
@@ -19677,6 +19772,7 @@ function GestionHumanaPanel({
           if (headerRowNum === -1 && row.getCell(1).value === "DNI") headerRowNum = rowNumber;
         });
         if (headerRowNum === -1) return;
+        if (!esAdmin) dnisVistosPorPlanta.set(sheetName, new Set());
         const lastRow = sheet.rowCount;
         for (let i = headerRowNum + 1; i <= lastRow; i++) {
           const row = sheet.getRow(i);
@@ -19729,6 +19825,7 @@ function GestionHumanaPanel({
           } else {
             plantaFinal = plantaLabelRaw;
           }
+          if (!esAdmin) dnisVistosPorPlanta.get(sheetName).add(dni);
           registrosNuevos.push({
             dni,
             nombre,
@@ -19769,9 +19866,7 @@ function GestionHumanaPanel({
       let okCount = 0;
       const erroresGuardado = [];
       for (const r of aActualizar) {
-        const {
-          error
-        } = await sbClient.from("perfiles").update({
+        const payload = {
           nombre: r.nombre,
           rol: r.rol,
           planta: r.planta,
@@ -19779,7 +19874,14 @@ function GestionHumanaPanel({
           telefono: r.telefono,
           email_personal: r.email_personal,
           turno: r.turno
-        }).eq("dni", r.dni);
+        };
+        // Reactivar choferes que vuelven a aparecer en el Excel aunque estuvieran dados de baja
+        // antes — solo para cargos de chofer (CARGOS_CHOFER_MAP), igual que la baja automática de
+        // abajo. Los cargos administrativos no se tocan acá, su reactivación sigue siendo manual.
+        if (CARGOS_CHOFER_MAP[r.rol]) payload.activo = true;
+        const {
+          error
+        } = await sbClient.from("perfiles").update(payload).eq("dni", r.dni);
         if (!error) okCount++;else erroresGuardado.push(`DNI ${r.dni}: no se pudo guardar (${error.message})`);
       }
       for (const r of aCrear) {
@@ -19805,10 +19907,29 @@ function GestionHumanaPanel({
           erroresGuardado.push(`DNI ${r.dni}: no se pudo crear (${error.message})`);
         }
       }
+
+      // Baja automática por ausencia: solo para choferes (CARGOS_CHOFER_MAP) y solo en las plantas
+      // cuya hoja vino en este Excel (dnisVistosPorPlanta) — un chofer activo de esa planta que ya
+      // no figura en su hoja se da de baja (activo:false, nunca borrado duro). No aplica a cargos
+      // administrativos, esos siguen dándose de baja a mano con el botón por fila.
+      let bajasCount = 0;
+      const erroresBaja = [];
+      for (const [plantaSheet, dnisEnArchivo] of dnisVistosPorPlanta) {
+        const choferesActivosDeEsaPlanta = personal.filter(p => p.activo && p.planta === plantaSheet && CARGOS_CHOFER_MAP[p.rol]);
+        for (const p of choferesActivosDeEsaPlanta) {
+          if (dnisEnArchivo.has(p.dni)) continue;
+          const {
+            error
+          } = await sbClient.from("perfiles").update({
+            activo: false
+          }).eq("id", p.id);
+          if (!error) bajasCount++;else erroresBaja.push(`DNI ${p.dni}: no se pudo dar de baja (${error.message})`);
+        }
+      }
       setMensaje({
-        tipo: erroresGuardado.length ? "error" : "ok",
-        texto: `Carga completa: ${okCount}/${registrosNuevos.length} registros guardados (${aCrear.length} nuevos, ${aActualizar.length} actualizados).` + (erroresGuardado.length ? ` ${erroresGuardado.length} no se pudieron guardar:` : "") + (turnosIgnorados.length ? ` Se ignoró el Turno en ${turnosIgnorados.length} fila(s) porque ese cargo no lo usa:` : ""),
-        detalles: erroresGuardado.length || turnosIgnorados.length ? [...erroresGuardado, ...turnosIgnorados] : null
+        tipo: erroresGuardado.length || erroresBaja.length ? "error" : "ok",
+        texto: `Carga completa: ${okCount}/${registrosNuevos.length} registros guardados (${aCrear.length} nuevos, ${aActualizar.length} actualizados)` + (bajasCount ? `, ${bajasCount} chofer(es) dado(s) de baja por no figurar ya en su hoja` : "") + "." + (erroresGuardado.length ? ` ${erroresGuardado.length} no se pudieron guardar:` : "") + (erroresBaja.length ? ` ${erroresBaja.length} baja(s) no se pudieron aplicar:` : "") + (turnosIgnorados.length ? ` Se ignoró el Turno en ${turnosIgnorados.length} fila(s) porque ese cargo no lo usa:` : ""),
+        detalles: erroresGuardado.length || erroresBaja.length || turnosIgnorados.length ? [...erroresGuardado, ...erroresBaja, ...turnosIgnorados] : null
       });
       cargarPersonal();
     } catch (err) {
@@ -20816,6 +20937,7 @@ function AztPanel({
   setAvisos,
   emergencias,
   setEmergencias,
+  reportesFinVuelta,
   role,
   setRole,
   initialDni
@@ -21184,14 +21306,22 @@ function AztPanel({
   // resolver" sea independiente por buzón (ver incidencia_vistas en la migración): que el AZT haya
   // abierto una incidencia no la saca de "Nuevas" para el Despachador si él todavía no la abrió.
   const [misVistas, setMisVistas] = useState(new Set());
+  // Mientras esto sigue en false, totalPend se muestra en 0 en vez de contar TODO como "no visto"
+  // (misVistas arranca vacío) — sin esto, el badge mostraba el total de incidencias por un
+  // instante al iniciar sesión, hasta que llegaba el dato real de incidencia_vistas y se corregía.
+  const [vistasCargadas, setVistasCargadas] = useState(false);
   useEffect(() => {
     if (!admin?.id) return;
     let vigente = true;
+    setVistasCargadas(false);
     const cargarVistas = async () => {
       const {
         data
       } = await sbClient.from("incidencia_vistas").select("incidencia_id").eq("admin_id", admin.id);
-      if (vigente && data) setMisVistas(new Set(data.map(v => v.incidencia_id)));
+      if (vigente && data) {
+        setMisVistas(new Set(data.map(v => v.incidencia_id)));
+        setVistasCargadas(true);
+      }
     };
     cargarVistas();
     const canal = sbClient.channel(`incidencia-vistas-${admin.id}`).on("postgres_changes", {
@@ -21217,7 +21347,7 @@ function AztPanel({
   // resolver aún), así que nunca bajaba aunque las revisaras, solo cuando se resolvían — "Por
   // resolver"/"Resueltas" siguen siendo totales que se acumulan por su cuenta en sus propias
   // pestañas, este badge es solo el contador de "nuevas sin leer".
-  const totalPend = incidents.filter(i => i.estado !== "resuelta" && !misVistas.has(i.id) && (admin?.plantas || []).includes(i.planta) && incidenciaEsParaMiRol(i)).length;
+  const totalPend = vistasCargadas ? incidents.filter(i => i.estado !== "resuelta" && !misVistas.has(i.id) && (admin?.plantas || []).includes(i.planta) && incidenciaEsParaMiRol(i)).length : 0;
   // En "Resueltas" se ordena por cuándo se resolvió (resueltaEn), no por cuándo llegó (ts) — si
   // no, una incidencia vieja recién resuelta se perdía abajo de todo en vez de aparecer arriba.
   const sortOld = (arr, campo = "ts") => arr.slice().sort((a, b) => (b[campo] || 0) - (a[campo] || 0));
@@ -21706,7 +21836,7 @@ function AztPanel({
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement(EstadoMixers, {
-    incidents: incidents,
+    reportesFinVuelta: reportesFinVuelta,
     plant: plant,
     setPlant: setPlant,
     plantList: plantList,
@@ -22589,82 +22719,6 @@ function AztPanel({
 }
 
 /* ====== Reportes de fin de vuelta: feed de lo que el chofer reporta en la app ====== */
-const REPORTES_DEMO = [{
-  id: 1,
-  mixer: "076",
-  chofer: "Toribio Alva Ruiz",
-  planta: "San Juan",
-  tipo: "lavadero",
-  lavadero: "Lavadero 2",
-  hora: "08:38",
-  ts: Date.now() - 5 * 60 * 1000
-}, {
-  id: 2,
-  mixer: "101",
-  chofer: "Miguel Flores",
-  planta: "San Isidro",
-  tipo: "ubicacion",
-  parqueo: "Parqueo A - Fila 3",
-  llaves: "Garita - Casillero 12",
-  estado: "Todo bien",
-  coment: "",
-  hora: "08:20",
-  ts: Date.now() - 22 * 60 * 1000
-}, {
-  id: 3,
-  mixer: "118",
-  chofer: "Raúl Meza Curi",
-  planta: "Ancieta",
-  tipo: "lavadero",
-  lavadero: "En cola del lavadero",
-  hora: "08:10",
-  ts: Date.now() - 35 * 60 * 1000
-}, {
-  id: 4,
-  mixer: "303",
-  chofer: "Marco Díaz Solís",
-  planta: "San Juan",
-  tipo: "ubicacion",
-  parqueo: "Parqueo B - Fila 1",
-  llaves: "Con el chofer",
-  estado: "Reportar problema",
-  coment: "Espejo lateral derecho suelto, avisar a mecánica.",
-  hora: "07:52",
-  ts: Date.now() - 62 * 60 * 1000
-}, {
-  id: 5,
-  mixer: "103",
-  chofer: "Angel Martinez",
-  planta: "San Isidro",
-  tipo: "lavadero",
-  lavadero: "Lavadero 1",
-  hora: "07:40",
-  ts: Date.now() - 78 * 60 * 1000
-}, {
-  id: 6,
-  mixer: "100",
-  chofer: "Kurt Uzategui",
-  planta: "San Isidro",
-  tipo: "ubicacion",
-  parqueo: "Parqueo A - Fila 5",
-  llaves: "Garita - Casillero 8",
-  estado: "Todo bien",
-  coment: "",
-  hora: "07:15",
-  ts: Date.now() - 108 * 60 * 1000
-}, {
-  id: 7,
-  mixer: "241",
-  chofer: "Elmer Ríos Paz",
-  planta: "Ancieta",
-  tipo: "ubicacion",
-  parqueo: "Parqueo C - Fila 2",
-  llaves: "Garita - Casillero 4",
-  estado: "Todo bien",
-  coment: "",
-  hora: "06:55",
-  ts: Date.now() - 128 * 60 * 1000
-}];
 function relativeTime(ts) {
   const diff = Date.now() - ts;
   const min = Math.floor(diff / 60000);
@@ -22693,7 +22747,7 @@ function fechaHoraCorta(ts) {
   return `${fecha}, ${hora}`;
 }
 function EstadoMixers({
-  incidents,
+  reportesFinVuelta,
   plant,
   setPlant,
   plantList,
@@ -22704,8 +22758,18 @@ function EstadoMixers({
 }) {
   const [q, setQ] = useState("");
   const [tipo, setTipo] = useState("todos"); // todos | ubicacion | lavadero
+  // Estado ACTUAL de cada mixer: no puede estar a la vez "parqueado en X" y "en el lavadero", así
+  // que se queda solo con su reporte más reciente (reportesFinVuelta ya viene ordenado por fecha
+  // descendente desde cargarReportesFinVuelta), sin importar el tipo — las pestañas de abajo
+  // filtran ESTE estado actual por tipo, no un historial de envíos.
+  const vistos = new Set();
+  const estadoActual = reportesFinVuelta.filter(r => {
+    if (vistos.has(r.mixer)) return false;
+    vistos.add(r.mixer);
+    return true;
+  });
   // Ordenar por más reciente primero
-  const filtered = REPORTES_DEMO.filter(r => plant === "Todas" || r.planta === plant).filter(r => tipo === "todos" || r.tipo === tipo).filter(r => r.mixer.toLowerCase().includes(q.toLowerCase()) || r.chofer.toLowerCase().includes(q.toLowerCase())).sort((a, b) => b.ts - a.ts);
+  const filtered = estadoActual.filter(r => plant === "Todas" || r.planta === plant).filter(r => tipo === "todos" || r.tipo === tipo).filter(r => r.mixer.toLowerCase().includes(q.toLowerCase()) || r.chofer.toLowerCase().includes(q.toLowerCase())).sort((a, b) => b.ts - a.ts);
   return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "flex flex-1 min-h-0 overflow-hidden"
   }, /*#__PURE__*/React.createElement("aside", {
@@ -22729,7 +22793,6 @@ function EstadoMixers({
     className: isDesktop ? "flex-1 p-2 space-y-1" : "flex-1 p-1.5 space-y-1"
   }, plantList.map(p => {
     const active = plant === p;
-    const n = REPORTES_DEMO.filter(m => p === "Todas" || m.planta === p).length;
     return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
       key: p,
       onClick: () => setPlant(p),
@@ -22747,13 +22810,7 @@ function EstadoMixers({
       className: "shrink-0"
     }), /*#__PURE__*/React.createElement("span", {
       className: isDesktop ? "text-sm font-semibold flex-1 truncate" : "text-[10px] font-semibold leading-tight break-words"
-    }, p), /*#__PURE__*/React.createElement("span", {
-      className: "text-[10px] font-bold rounded-full px-1.5 py-0.5",
-      style: {
-        background: active ? "rgba(255,255,255,.25)" : "#eef1f6",
-        color: active ? "white" : AZUL
-      }
-    }, n));
+    }, p));
   }))), /*#__PURE__*/React.createElement("div", {
     className: "flex-1 flex flex-col min-w-0"
   }, /*#__PURE__*/React.createElement("div", {
@@ -24070,6 +24127,9 @@ function CambioSede({
   const [loading, setLoading] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState(null);
+  // Filtro de VISTA (igual patrón que GestionObras): la consulta ya trae de una vez a todos los
+  // choferes de todas las plantas del AZT, esto solo decide cuáles mostrar en la tabla.
+  const [filtroPlanta, setFiltroPlanta] = useState("Todas");
   // Conflicto de mixer duplicado: { row, otro: {id,dni,nombre}, resto } — se resuelve con Sí/No
   // antes de seguir procesando el resto de la cola de cambios de unidad.
   const [conflicto, setConflicto] = useState(null);
@@ -24252,6 +24312,8 @@ function CambioSede({
     className: "text-center py-12 text-gray-400 text-sm"
   }, "Cargando choferes...");
   const hayPendientes = rows.some(r => r.nueva !== r.actual || r.nuevaUnidad.trim() !== (r.unidad || "").trim());
+  const plantListFiltro = ["Todas", ...plantasAzt.filter(p => p !== "Transversal")];
+  const rowsFiltradas = filtroPlanta === "Todas" ? rows : rows.filter(r => r.actual === filtroPlanta);
   return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "max-w-3xl mx-auto"
   }, mensaje &&
@@ -24260,6 +24322,19 @@ function CambioSede({
   React.createElement("div", {
     className: `mb-3 text-sm px-3 py-2 rounded-lg border ${mensaje.tipo === "ok" ? "bg-green-50 border-green-200 text-green-700" : "bg-red-50 border-red-200 text-red-700"}`
   }, mensaje.texto), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-1.5 mb-3"
+  }, plantListFiltro.map(p =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
+    key: p,
+    onClick: () => setFiltroPlanta(p),
+    className: "px-2.5 py-1.5 rounded-full text-xs font-semibold",
+    style: {
+      background: filtroPlanta === p ? AZUL : "#f3f4f6",
+      color: filtroPlanta === p ? "white" : "#374151"
+    }
+  }, p))), /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-xl shadow-sm overflow-hidden"
   }, isDesktop ?
   /*#__PURE__*/
@@ -24277,7 +24352,7 @@ function CambioSede({
     className: "col-span-2"
   }, "Sede actual"), /*#__PURE__*/React.createElement("div", {
     className: "col-span-3"
-  }, "Reasignar a")), rows.map(r =>
+  }, "Reasignar a")), rowsFiltradas.map(r =>
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
@@ -24323,7 +24398,7 @@ function CambioSede({
   /*#__PURE__*/
   React.createElement("option", {
     key: p
-  }, p))))))) : rows.map(r =>
+  }, p))))))) : rowsFiltradas.map(r =>
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
@@ -24370,12 +24445,12 @@ function CambioSede({
       color: r.nuevaUnidad.trim() !== (r.unidad || "").trim() ? AZUL : "#374151",
       fontWeight: r.nuevaUnidad.trim() !== (r.unidad || "").trim() ? 700 : 400
     }
-  })))), rows.length === 0 &&
+  })))), rowsFiltradas.length === 0 &&
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
     className: "text-center py-8 text-gray-400 text-sm"
-  }, "No hay choferes activos en tu(s) planta(s).")), /*#__PURE__*/React.createElement("button", {
+  }, "No hay choferes activos en ", filtroPlanta === "Todas" ? "tu(s) planta(s)" : filtroPlanta, ".")), /*#__PURE__*/React.createElement("button", {
     onClick: guardarReasignaciones,
     disabled: guardando || !hayPendientes,
     className: "mt-4 px-5 py-3 rounded-xl font-bold text-sm disabled:opacity-40",
