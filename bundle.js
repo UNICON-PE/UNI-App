@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-12T01:31:07.091Z */
+/* UniconApp — Bundle generado el 2026-10-12T01:37:58.159Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 18395 — CERO simplificaciones */
+/* Líneas originales del JSX: 18409 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -9422,7 +9422,18 @@ function ChoferApp({
   setRole,
   setAztDni
 }) {
-  const [dni, setDni] = useState("");
+  // Precarga el DNI con el último que inició sesión con éxito en este dispositivo, para que solo
+  // tenga que tocar "Ingresar" — no se precarga/restaura la sesión en sí (eso sigue en
+  // sessionStorage, ver sbClient más arriba y el porqué de esa decisión), así que si otra persona
+  // comparte el celular y ve un DNI ajeno precargado, solo necesita reemplazarlo por el suyo antes
+  // de entrar, no entra con la cuenta equivocada.
+  const [dni, setDni] = useState(() => {
+    try {
+      return localStorage.getItem("uni_ultimo_dni") || "";
+    } catch {
+      return "";
+    }
+  });
   const [driver, setDriver] = useState(null);
   const misUnidadesPropias = useRef(new Set()); // mixers que el propio chofer acaba de editar desde su perfil, para no mostrarle "fuiste reasignado" por su propio cambio
   const [channel, setChannel] = useState(null); // avisos|finvuelta|bot|incidencias — null = sin canal elegido aún, para evitar montar el chat automáticamente al iniciar sesión
@@ -9532,6 +9543,9 @@ function ChoferApp({
         setLoginLoading(false);
         return;
       }
+      try {
+        localStorage.setItem("uni_ultimo_dni", dni);
+      } catch {}
       aplicarPerfil(perfil, dni);
     } catch (err) {
       console.error("Error de login:", err);
