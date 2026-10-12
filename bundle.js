@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-12T00:48:11.122Z */
+/* UniconApp — Bundle generado el 2026-10-12T01:31:07.091Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 18353 — CERO simplificaciones */
+/* Líneas originales del JSX: 18395 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -9377,6 +9377,40 @@ function useIsDesktop(bp = 700) {
   }, [bp]);
   return d;
 }
+
+// Intercepta el botón/gesto "Atrás" del celular para que, al estar dentro de un canal/sección
+// (mobileList=false), regrese un nivel (a la lista principal) en vez de cerrar la PWA. Un intento
+// anterior de esto (empujar un estado dummy una sola vez) se "gastaba" tras la segunda pulsada en
+// Android real y terminaba cerrando igual — acá se empuja una entrada de historial por cada nivel
+// en el que se entra, y se consume (history.back) si se sale por el botón propio de la app, para
+// que el conteo de entradas de historial nunca se desincronice de cuántos niveles hay realmente
+// abiertos. Solo corre en celular (isDesktop=false): en desktop no hay gesto de "Atrás" que atajar.
+function useMobileBackButton(isDesktop, mobileList, setMobileList) {
+  const empujadoRef = useRef(false);
+  useEffect(() => {
+    if (isDesktop) return;
+    const onPopState = () => {
+      if (empujadoRef.current) {
+        empujadoRef.current = false;
+        setMobileList(true);
+      }
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [isDesktop]);
+  useEffect(() => {
+    if (isDesktop) return;
+    if (!mobileList && !empujadoRef.current) {
+      window.history.pushState({
+        unicNivel: true
+      }, "");
+      empujadoRef.current = true;
+    } else if (mobileList && empujadoRef.current) {
+      empujadoRef.current = false;
+      window.history.back();
+    }
+  }, [isDesktop, mobileList]);
+}
 function ChoferApp({
   incidents,
   setIncidents,
@@ -9426,6 +9460,7 @@ function ChoferApp({
   const [toastNotif, setToastNotif] = useState(null); // burbuja efímera + sonido cuando llega una EN VIVO
   const [botDeepLink, setBotDeepLink] = useState(null); // ej. "op_unikin" — abre UNIBOT directo en esa opción (ver Bitácora personal)
   const isDesktop = useIsDesktop();
+  useMobileBackButton(isDesktop, mobileList, setMobileList);
   const ROLES_ADMIN_PANEL = ["jefe_planta", "despachador", "sgi", "supervisor_mantenimiento", "analista_mantenimiento", "admin_zonal_transporte", "trabajadora_social", "admin_transporte_bombas", "supervisor_bombas_jefe_ops", "gerente_transporte_distribucion", "jefe_transporte", "supervisor_transportes", "jefe_capacitacion", "administracion_personal", "mecanico_lider"];
   const ROLES_CHOFER = ["chofer", "chom_lider", "chofer_operador_bomba", "operador_bomba", "ayudante_bomba_multitask", "auxiliar_tuberia"];
   // Aplica el perfil ya resuelto (por DNI o por una sesión restaurada) y decide a qué panel
@@ -20872,6 +20907,7 @@ function AztPanel({
   const [crearEncuestaTransversalAbierta, setCrearEncuestaTransversalAbierta] = useState(false);
   const [subirCitacionTransversalAbierta, setSubirCitacionTransversalAbierta] = useState(false);
   const isDesktop = useIsDesktop();
+  useMobileBackButton(isDesktop, mobileList, setMobileList);
 
   // Cargar el perfil real del administrador desde Supabase (no hardcodeado)
   useEffect(() => {
@@ -20972,13 +21008,15 @@ function AztPanel({
       data: filas
     }, {
       data: lecturas
-    }] = await Promise.all([sbClient.from("auxilios_mecanicos").select("planta, created_at").in("planta", plantasReales), sbClient.from("auxilios_lectura").select("planta, ultimo_leido_at").eq("usuario_id", admin.id).in("planta", plantasReales)]);
+    }] = await Promise.all([sbClient.from("auxilios_mecanicos").select("planta, created_at, turno_azt").in("planta", plantasReales), sbClient.from("auxilios_lectura").select("planta, ultimo_leido_at").eq("usuario_id", admin.id).in("planta", plantasReales)]);
     if (!filas) return;
     const leidoPorPlanta = {};
     (lecturas || []).forEach(l => {
       leidoPorPlanta[l.planta] = l.ultimo_leido_at;
     });
-    const total = filas.filter(a => {
+    // AZT solo cuenta los de su propio turno (ver auxilioEsParaMiRol en AuxilioMecanicoBuzon) —
+    // SGI y Mantenimiento no filtran por turno.
+    const total = filas.filter(a => admin.rol !== "admin_zonal_transporte" || a.turno_azt === admin.turno).filter(a => {
       const cursor = leidoPorPlanta[a.planta] ? new Date(leidoPorPlanta[a.planta]) : new Date(0);
       return new Date(a.created_at) > cursor;
     }).length;
@@ -23804,6 +23842,10 @@ function AuxilioMecanicoBuzon({
   const [abierto, setAbierto] = useState(null);
   const [fotoUrl, setFotoUrl] = useState(null);
   const plantList = ["Todas", ...(admin?.plantas || [])];
+  // AZT solo ve/recibe los auxilios de su propio turno (igual que ya pasa con Incidencias, ver
+  // incidenciaEsParaMiRol) — SGI y Mantenimiento siguen viendo todos, sin filtrar por turno.
+  const auxilioEsParaMiRol = a => admin?.rol !== "admin_zonal_transporte" || a.turno_azt === admin?.turno;
+  const auxiliosPropios = auxilios.filter(auxilioEsParaMiRol);
   useEffect(() => {
     if (!admin?.id) return;
     let vigente = true;
@@ -23834,7 +23876,7 @@ function AuxilioMecanicoBuzon({
   }, [admin?.id]);
   const noLeidosEnPlanta = p => {
     const cursor = lecturas[p] ? new Date(lecturas[p]) : new Date(0);
-    return auxilios.filter(a => a.planta === p && new Date(a.created_at) > cursor).length;
+    return auxiliosPropios.filter(a => a.planta === p && new Date(a.created_at) > cursor).length;
   };
   const totalNoLeidos = (admin?.plantas || []).reduce((sum, p) => sum + noLeidosEnPlanta(p), 0);
   const abrirPlanta = async p => {
@@ -23873,14 +23915,14 @@ function AuxilioMecanicoBuzon({
   // vez de perderse el clic).
   useEffect(() => {
     if (!irAAuxilioId || cargando) return;
-    const a = auxilios.find(x => x.id === irAAuxilioId);
+    const a = auxiliosPropios.find(x => x.id === irAAuxilioId);
     if (a) {
       setPlantaSel(a.planta);
       abrirDetalle(a);
     }
     setIrAAuxilioId(null);
   }, [irAAuxilioId, auxilios, cargando]);
-  const visibles = auxilios.filter(a => plantaSel === "Todas" || a.planta === plantaSel);
+  const visibles = auxiliosPropios.filter(a => plantaSel === "Todas" || a.planta === plantaSel);
   const contenido =
   /*#__PURE__*/
   /*#__PURE__*/
