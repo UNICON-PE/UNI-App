@@ -72,7 +72,7 @@ self.addEventListener("push", (e) => {
       // transparente, generada a partir del mismo logo, para que se vea el ícono real.
       badge: "icon-badge.png",
       vibrate: [200, 100, 200],
-      data: { avisoId: data.avisoId || null, incidenciaId: data.incidenciaId || null }
+      data: { avisoId: data.avisoId || null, incidenciaId: data.incidenciaId || null, auxilioId: data.auxilioId || null }
     })
   );
 });
@@ -85,11 +85,12 @@ self.addEventListener("notificationclick", (e) => {
   e.notification.close();
   const avisoId = e.notification.data?.avisoId || null;
   const incidenciaId = e.notification.data?.incidenciaId || null;
+  const auxilioId = e.notification.data?.auxilioId || null;
   e.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
         if ("focus" in client) {
-          client.postMessage({ type: "ir-a-aviso", avisoId, incidenciaId });
+          client.postMessage({ type: "ir-a-aviso", avisoId, incidenciaId, auxilioId });
           return client.focus();
         }
       }
@@ -97,6 +98,7 @@ self.addEventListener("notificationclick", (e) => {
         const params = new URLSearchParams();
         if (avisoId) params.set("avisoId", avisoId);
         if (incidenciaId) params.set("incidenciaId", incidenciaId);
+        if (auxilioId) params.set("auxilioId", auxilioId);
         const query = params.toString();
         return self.clients.openWindow(query ? `./?${query}` : "./");
       }

@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-10T01:10:37.561Z */
+/* UniconApp — Bundle generado el 2026-10-12T00:48:11.122Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 18265 — CERO simplificaciones */
+/* Líneas originales del JSX: 18353 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -8814,6 +8814,7 @@ function UniconApp() {
     setIncidents(filas.map(f => ({
       id: f.id,
       tipo: f.tipo,
+      subtipoServicio: f.subtipo_servicio,
       unidad: f.unidad,
       planta: f.planta,
       obra: f.obra,
@@ -9108,8 +9109,8 @@ const esIncidencia = t => t === "incidencia" || t === "incidencia_atencion" || t
 // "atención" se ve naranja con un reloj (misma paleta que el badge "EN ATENCIÓN" del buzón de
 // incidencias), "resuelta" en verde con check, y "nueva" (le llega a un admin — una incidencia
 // recién cayó en su buzón) en rojo con una alerta, para que resalte que necesita acción.
-const iconOfNotif = t => t === "incidencia_atencion" ? Clock : t === "incidencia_nueva" ? AlertTriangle : esIncidencia(t) ? CheckCircle2 : t === "encontrado" ? Package : t === "sede" ? RefreshCw : t === "ruta_respondida" ? MapPin : t === "citacion" ? FileText : Bell;
-const colorOfNotif = t => t === "incidencia_atencion" ? "#d97706" : t === "incidencia_nueva" ? "#dc2626" : esIncidencia(t) ? "#16a34a" : t === "encontrado" ? "#ca8a04" : t === "sede" ? "#0891b2" : t === "ruta_respondida" ? "#7c3aed" : t === "citacion" ? "#0028AA" : AZUL;
+const iconOfNotif = t => t === "incidencia_atencion" ? Clock : t === "incidencia_nueva" ? AlertTriangle : esIncidencia(t) ? CheckCircle2 : t === "auxilio_nuevo" ? Wrench : t === "encontrado" ? Package : t === "sede" ? RefreshCw : t === "ruta_respondida" ? MapPin : t === "citacion" ? FileText : Bell;
+const colorOfNotif = t => t === "incidencia_atencion" ? "#d97706" : t === "incidencia_nueva" ? "#dc2626" : esIncidencia(t) ? "#16a34a" : t === "auxilio_nuevo" ? "#B8860B" : t === "encontrado" ? "#ca8a04" : t === "sede" ? "#0891b2" : t === "ruta_respondida" ? "#7c3aed" : t === "citacion" ? "#0028AA" : AZUL;
 // El texto se guarda con un emoji al frente (ej. "✅ Tu incidencia..."), heredado de cuando el
 // ícono de la izquierda no distinguía atención de resuelta — ya no hace falta, el ícono ya lo
 // comunica.
@@ -9127,6 +9128,7 @@ const mapNotifDB = n => ({
   detalle: n.detalle,
   avisoId: n.aviso_id,
   incidenciaId: n.incidencia_id,
+  auxilioId: n.auxilio_id,
   planta: n.avisos?.planta ?? null,
   hora: new Date(n.created_at).toLocaleTimeString("es-PE", {
     hour: "2-digit",
@@ -9216,7 +9218,7 @@ function NotifPanel({
   // original (Canal de Avisos, centrado y resaltado) — ver irANotificacion en ChoferApp.
   const abrirNotificacion = n => {
     marcarTodasLeidas();
-    onIrAMensaje?.(n.avisoId, n.incidenciaId);
+    onIrAMensaje?.(n.avisoId, n.incidenciaId, n.auxilioId);
   };
   const iconOf = iconOfNotif;
   const colorOf = colorOfNotif;
@@ -9591,10 +9593,14 @@ function ChoferApp({
     };
   }, [driver?.id]);
 
-  // Notificar cuando una incidencia del chofer pasa a resuelta
+  // Notificar cuando una incidencia del chofer pasa a resuelta — excluye "falla" (las fallas
+  // mecánicas se marcan como vistas automáticamente apenas un admin abre el feed, no porque alguien
+  // la haya atendido de verdad, así que notificar "fue resuelta" por eso sería engañoso) y excluye
+  // incidencias de OTROS choferes (antes recorría toda la flota sin filtrar por dueño).
   const prevIncidents = useRef(incidents);
   useEffect(() => {
     incidents.forEach(i => {
+      if (i.tipo === "falla" || i.choferId !== driver?.id) return;
       const prev = prevIncidents.current.find(p => p.id === i.id);
       if (prev && prev.estado !== "resuelta" && i.estado === "resuelta") {
         setNotifs(n => [{
@@ -10217,6 +10223,7 @@ function ChoferApp({
     setIncidents: setIncidents,
     setEmergencias: setEmergencias,
     setChannel: setChannel,
+    setBotDeepLink: setBotDeepLink,
     irAIncidenciaId: irAIncidenciaId,
     setIrAIncidenciaId: setIrAIncidenciaId
   }), channel === "bitacora" &&
@@ -14567,6 +14574,14 @@ function UniBot({
       onDeepLinkConsumido?.();
       return;
     }
+    // Llegada directa desde "Reportes de incidencia" al tocar "Auxilio mecánico" — entra derecho al
+    // formulario, como si lo hubiera elegido del menú principal (opción "3. Auxilio mecánico").
+    if (deepLink === "op_auxilio") {
+      push("bot", `¡Hola ${driver.nombre.split(" ")[0]}! 👷 Soy UNIBOT.`);
+      openCategory(BOT_MENU.root.options.find(o => o.id === "auxilio"));
+      onDeepLinkConsumido?.();
+      return;
+    }
     push("bot", `¡Hola ${driver.nombre.split(" ")[0]}! 👷 Soy UNIBOT, tu asistente.\n\nPor favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
   }, []);
   useEffect(() => {
@@ -17019,12 +17034,41 @@ function ChoferIncidentCard({
     size: 12
   }), " Tu incidencia est\xE1 siendo atendida. Recibir\xE1s la respuesta aqu\xED."));
 }
+// Servicios de planta más reportados (según análisis del chat de WhatsApp) — a nivel de módulo
+// porque tanto el reporte del chofer (ReporteIncidencias) como el filtro de subtipo del AZT
+// (AztPanel) necesitan la misma lista de ids/labels.
+const SERVICIOS_PLANTA = [{
+  id: "banos",
+  label: "Baños o duchas sin agua",
+  icon: Droplets
+}, {
+  id: "almuerzo",
+  label: "Almuerzo tarde, agotado o en mal estado",
+  icon: Coffee
+}, {
+  id: "agua",
+  label: "Dispensador sin agua",
+  icon: Droplets
+}, {
+  id: "comedor",
+  label: "Comedor cerrado o sin servicio",
+  icon: Home
+}, {
+  id: "luz",
+  label: "Sin luz o electricidad",
+  icon: AlertTriangle
+}, {
+  id: "wifi",
+  label: "WiFi o internet no funciona",
+  icon: X
+}];
 function ReporteIncidencias({
   driver,
   incidents,
   setIncidents,
   setEmergencias,
   setChannel,
+  setBotDeepLink,
   irAIncidenciaId,
   setIrAIncidenciaId
 }) {
@@ -17054,8 +17098,6 @@ function ReporteIncidencias({
   const [dedupCandidate, setDedupCandidate] = useState(null); // incidencia similar activa encontrada
   const [pendingSubmitFn, setPendingSubmitFn] = useState(null); // fn a ejecutar si es "nuevo"
   const [dedupConfirmed, setDedupConfirmed] = useState(false); // mostrar mensaje de confirmación
-  const [enviandoAuxilio, setEnviandoAuxilio] = useState(false);
-  const [mensajeAuxilioError, setMensajeAuxilioError] = useState("");
   // "falla" es informativa (sin chat, su propio buzón en Fallas mecánicas) — no aparece en el
   // historial de incidencias del chofer, solo la confirmación de envío de la pantalla "falla_sent".
   const mis = incidents.filter(i => i.tipo !== "falla" && (i.choferId === driver.id || (i.afectados || []).includes(driver.nombre)));
@@ -17148,39 +17190,8 @@ function ReporteIncidencias({
 
   // Tipos de falla mecánica más reportados (según análisis del chat de WhatsApp de Ancieta)
   const FALLA_TIPOS = ["Frenos", "Llanta baja", "Trompo no gira", "Chute de descarga", "Motor / No arranca", "Caja de cambios", "Sist. eléctrico / Luces", "Fuga (aire/aceite/petróleo)", "Otro"];
-
-  // Servicios de planta más reportados (según análisis del chat de WhatsApp)
-  const SERVICIOS_PLANTA = [{
-    id: "banos",
-    label: "Baños o duchas sin agua",
-    icon: Droplets
-  }, {
-    id: "almuerzo",
-    label: "Almuerzo tarde, agotado o en mal estado",
-    icon: Coffee
-  }, {
-    id: "agua",
-    label: "Dispensador sin agua",
-    icon: Droplets
-  }, {
-    id: "comedor",
-    label: "Comedor cerrado o sin servicio",
-    icon: Home
-  }, {
-    id: "luz",
-    label: "Sin luz o electricidad",
-    icon: AlertTriangle
-  }, {
-    id: "wifi",
-    label: "WiFi o internet no funciona",
-    icon: X
-  }];
   const start = t => {
     setTipo(t);
-    if (t.id === "auxilio") {
-      setStep("auxilio");
-      return;
-    }
     if (t.id === "servicios") {
       setStep("servicio");
       return;
@@ -17299,36 +17310,6 @@ function ReporteIncidencias({
     setAdjuntoServicio(null);
   };
   const submitServicio = () => checkAndSubmit("servicios", _doSubmitServicio);
-  const submitAuxilio = async data => {
-    setEnviandoAuxilio(true);
-    let fotoPath = null;
-    if (data.fotoFile) {
-      const ext = (data.fotoFile.name.split(".").pop() || "jpg").toLowerCase();
-      const path = `${driver.id}/${Date.now()}.${ext}`;
-      const {
-        error: upErr
-      } = await sbClient.storage.from("auxilios-mecanicos").upload(path, data.fotoFile);
-      if (!upErr) fotoPath = path;
-    }
-    const {
-      error
-    } = await sbClient.rpc("registrar_auxilio_mecanico", {
-      p_chofer_id: driver.id,
-      p_mixer: data.mixer,
-      p_planta: data.planta,
-      p_cargada: data.carga === "Cargado",
-      p_lugar_incidente: data.lugar,
-      p_descripcion: data.desc,
-      p_foto_path: fotoPath
-    });
-    setEnviandoAuxilio(false);
-    if (error) {
-      setMensajeAuxilioError(`No se pudo registrar el auxilio (${error.message}). Llama directamente a tu AZT o al taller mientras se resuelve.`);
-      return;
-    }
-    setStep("list");
-    setTipo(null);
-  };
   const ROADMAP = ["nueva", "atencion", "resuelta"];
   const roadLabel = {
     nueva: "Enviada",
@@ -17512,31 +17493,7 @@ function ReporteIncidencias({
       background: AMARILLO,
       color: AZUL
     }
-  }, "Enviar reporte")), step === "auxilio" &&
-  /*#__PURE__*/
-  /*#__PURE__*/
-  React.createElement("div", null, /*#__PURE__*/React.createElement(BackBtn, {
-    onClick: () => setStep("pick")
-  }), /*#__PURE__*/React.createElement("h4", {
-    className: "font-bold text-gray-700 mb-1"
-  }, "Auxilio mec\xE1nico"), /*#__PURE__*/React.createElement("p", {
-    className: "text-sm text-gray-500 mb-4"
-  }, "Completa los datos. Tu AZT y el taller ser\xE1n notificados."), mensajeAuxilioError &&
-  /*#__PURE__*/
-  /*#__PURE__*/
-  React.createElement("div", {
-    className: "mb-3 text-xs font-semibold px-3 py-2 rounded-lg",
-    style: {
-      background: "#fef2f2",
-      color: "#b91c1c",
-      border: "1px solid #fecaca"
-    }
-  }, mensajeAuxilioError), /*#__PURE__*/React.createElement(AuxilioForm, {
-    driver: driver,
-    onSubmit: submitAuxilio,
-    onCancel: () => setStep("pick"),
-    enviando: enviandoAuxilio
-  })), step === "falla_rop" &&
+  }, "Enviar reporte")), step === "falla_rop" &&
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
@@ -17801,89 +17758,12 @@ function ReporteIncidencias({
   React.createElement("div", null, /*#__PURE__*/React.createElement(BackBtn, {
     onClick: () => setStep("falla_choice")
   }), /*#__PURE__*/React.createElement("div", {
-    className: "rounded-xl p-4 mb-4",
-    style: {
-      background: "#FFF1F2",
-      border: "1px solid #fecdd3"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-start gap-2"
-  }, /*#__PURE__*/React.createElement(AlertTriangle, {
-    size: 20,
-    color: "#e11d48",
-    className: "shrink-0 mt-0.5"
-  }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    className: "text-sm font-bold",
-    style: {
-      color: "#9f1239"
-    }
-  }, "Las emergencias mec\xE1nicas no se reportan por este medio"), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs mt-1",
-    style: {
-      color: "#9f1239"
-    }
-  }, "Ejemplos: sin luces, fuga de aire o aceite, trompo no acciona, llanta reventada, freno inoperativo, unidad varada en obra o ruta.")))), /*#__PURE__*/React.createElement("div", {
     className: "text-sm font-semibold text-gray-700 mb-2"
-  }, "1. Llama a tu AZT de turno"), /*#__PURE__*/React.createElement("div", {
-    className: "space-y-2 mb-4"
-  }, /*#__PURE__*/React.createElement("a", {
-    href: `tel:${cfg.contactos["AZT día"]}`,
-    className: "flex items-center gap-3 rounded-xl px-3 py-3",
-    style: {
-      background: "white",
-      border: "1px solid #e6e8ee"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
-    style: {
-      background: AZUL,
-      color: "white"
-    }
-  }, /*#__PURE__*/React.createElement(Phone, {
-    size: 18
-  })), /*#__PURE__*/React.createElement("div", {
-    className: "flex-1"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-xs text-gray-500"
-  }, "AZT d\xEDa (ma\xF1ana)"), /*#__PURE__*/React.createElement("div", {
-    className: "text-sm font-semibold",
-    style: {
-      color: AZUL
-    }
-  }, cfg.contactos["AZT día"])), /*#__PURE__*/React.createElement(ChevronRight, {
-    size: 16,
-    className: "text-gray-300"
-  })), /*#__PURE__*/React.createElement("a", {
-    href: `tel:${cfg.contactos["AZT noche"]}`,
-    className: "flex items-center gap-3 rounded-xl px-3 py-3",
-    style: {
-      background: "white",
-      border: "1px solid #e6e8ee"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
-    style: {
-      background: AZUL_OSC,
-      color: "white"
-    }
-  }, /*#__PURE__*/React.createElement(Phone, {
-    size: 18
-  })), /*#__PURE__*/React.createElement("div", {
-    className: "flex-1"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-xs text-gray-500"
-  }, "AZT noche"), /*#__PURE__*/React.createElement("div", {
-    className: "text-sm font-semibold",
-    style: {
-      color: AZUL
-    }
-  }, cfg.contactos["AZT noche"])), /*#__PURE__*/React.createElement(ChevronRight, {
-    size: 16,
-    className: "text-gray-300"
-  }))), /*#__PURE__*/React.createElement("div", {
-    className: "text-sm font-semibold text-gray-700 mb-2"
-  }, "2. \xBFNo contestan?"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setChannel && setChannel("bot"),
+  }, "Rep\xF3rtalo"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setBotDeepLink("op_auxilio");
+      setChannel && setChannel("bot");
+    },
     className: "w-full flex items-center gap-3 rounded-xl px-3 py-3",
     style: {
       background: AMARILLO
@@ -21405,6 +21285,7 @@ function AztPanel({
   const [openAdminNotif, setOpenAdminNotif] = useState(false);
   const [toastAdminNotif, setToastAdminNotif] = useState(null);
   const [irAIncidenciaId, setIrAIncidenciaId] = useState(null); // resalta+scrollea la tarjeta al entrar desde una notificación
+  const [irAAuxilioId, setIrAAuxilioId] = useState(null); // abre el detalle exacto al entrar desde la notificación de Auxilio mecánico
   const cargarAdminNotifsRef = useRef(null);
   useEffect(() => {
     if (!admin?.id) return;
@@ -21497,6 +21378,11 @@ function AztPanel({
     }
     setIrAIncidenciaId(incidenciaId);
   };
+  const irAAuxilioAdmin = auxilioId => {
+    if (!auxilioId) return;
+    setSection("auxilio_mecanico");
+    setIrAAuxilioId(auxilioId);
+  };
   useEffect(() => {
     if (!irAIncidenciaId) return;
     const el = document.getElementById(`incidencia-admin-${irAIncidenciaId}`) || document.getElementById(`emergencia-admin-${irAIncidenciaId}`);
@@ -21514,7 +21400,8 @@ function AztPanel({
   useEffect(() => {
     if (!admin?.id || !("serviceWorker" in navigator)) return;
     const onMensaje = e => {
-      if (e.data?.type === "ir-a-aviso" && e.data.incidenciaId) irAIncidenciaAdmin(e.data.incidenciaId);
+      if (e.data?.type !== "ir-a-aviso") return;
+      if (e.data.auxilioId) irAAuxilioAdmin(e.data.auxilioId);else if (e.data.incidenciaId) irAIncidenciaAdmin(e.data.incidenciaId);
     };
     navigator.serviceWorker.addEventListener("message", onMensaje);
     return () => navigator.serviceWorker.removeEventListener("message", onMensaje);
@@ -21523,10 +21410,12 @@ function AztPanel({
     if (!admin?.id) return;
     const params = new URLSearchParams(window.location.search);
     const incidenciaIdUrl = params.get("incidenciaId");
-    if (incidenciaIdUrl) {
-      irAIncidenciaAdmin(incidenciaIdUrl);
+    const auxilioIdUrl = params.get("auxilioId");
+    if (incidenciaIdUrl || auxilioIdUrl) {
+      if (auxilioIdUrl) irAAuxilioAdmin(auxilioIdUrl);else irAIncidenciaAdmin(incidenciaIdUrl);
       params.delete("incidenciaId");
       params.delete("avisoId");
+      params.delete("auxilioId");
       const query = params.toString();
       window.history.replaceState({}, "", window.location.pathname + (query ? "?" + query : ""));
     }
@@ -21716,11 +21605,11 @@ function AztPanel({
   React.createElement(Shield, {
     size: 26
   })), /*#__PURE__*/React.createElement("div", {
-    className: "min-w-0"
+    className: "min-w-0 pr-10"
   }, /*#__PURE__*/React.createElement("div", {
     className: "font-bold truncate text-base"
   }, admin.nombre), /*#__PURE__*/React.createElement("div", {
-    className: "text-sm opacity-90 mt-0.5"
+    className: "text-sm opacity-90 mt-0.5 truncate"
   }, admin.cargo, " \xB7 Panel de UNI App"))))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setOpenAdminNotif(true),
     className: "absolute flex items-center justify-center text-white",
@@ -22677,7 +22566,9 @@ function AztPanel({
     admin: admin,
     isDesktop: isDesktop,
     setMobileList: setMobileList,
-    onLecturaCambiada: cargarAuxPreview
+    onLecturaCambiada: cargarAuxPreview,
+    irAAuxilioId: irAAuxilioId,
+    setIrAAuxilioId: setIrAAuxilioId
   })), selected &&
   /*#__PURE__*/
   /*#__PURE__*/
@@ -22704,7 +22595,7 @@ function AztPanel({
     setNotifs: setAdminNotifs,
     onClose: () => setOpenAdminNotif(false),
     onLeida: marcarAdminNotifLeidaDB,
-    onIrAMensaje: (avisoId, incidenciaId) => irAIncidenciaAdmin(incidenciaId),
+    onIrAMensaje: (avisoId, incidenciaId, auxilioId) => auxilioId ? irAAuxilioAdmin(auxilioId) : irAIncidenciaAdmin(incidenciaId),
     incidents: incidents,
     activarPush: activarPushAdmin
   }), /*#__PURE__*/React.createElement(NotifToast, {
@@ -22712,7 +22603,7 @@ function AztPanel({
     onClose: () => setToastAdminNotif(null),
     onClick: n => {
       marcarAdminNotifLeidaDB(n.id);
-      irAIncidenciaAdmin(n.incidenciaId);
+      if (n.auxilioId) irAAuxilioAdmin(n.auxilioId);else irAIncidenciaAdmin(n.incidenciaId);
     },
     incidents: incidents
   }));
@@ -22770,50 +22661,10 @@ function EstadoMixers({
   });
   // Ordenar por más reciente primero
   const filtered = estadoActual.filter(r => plant === "Todas" || r.planta === plant).filter(r => tipo === "todos" || r.tipo === tipo).filter(r => r.mixer.toLowerCase().includes(q.toLowerCase()) || r.chofer.toLowerCase().includes(q.toLowerCase())).sort((a, b) => b.ts - a.ts);
-  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-1 min-h-0 overflow-hidden"
-  }, /*#__PURE__*/React.createElement("aside", {
-    className: "flex flex-col shrink-0 border-r overflow-y-auto",
-    style: {
-      width: isDesktop ? 280 : 84,
-      borderColor: "#e6e8ee",
-      background: "#f8fafc"
-    }
-  }, isDesktop &&
+  const buscador =
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
-    className: "px-4 py-3 border-b shrink-0",
-    style: {
-      borderColor: "#e6e8ee"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-[10px] font-bold uppercase tracking-wide text-gray-400"
-  }, "Plantas a tu cargo")), /*#__PURE__*/React.createElement("div", {
-    className: isDesktop ? "flex-1 p-2 space-y-1" : "flex-1 p-1.5 space-y-1"
-  }, plantList.map(p => {
-    const active = plant === p;
-    return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
-      key: p,
-      onClick: () => setPlant(p),
-      className: isDesktop ? "w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-left transition-colors" : "w-full flex flex-col items-center gap-0.5 px-1 py-2 rounded-lg text-center transition-colors",
-      style: {
-        background: active ? AZUL : "white",
-        color: active ? "white" : "#374151",
-        border: active ? "none" : "1px solid #e6e8ee"
-      }
-    }, isDesktop &&
-    /*#__PURE__*/
-    /*#__PURE__*/
-    React.createElement(MapPin, {
-      size: 15,
-      className: "shrink-0"
-    }), /*#__PURE__*/React.createElement("span", {
-      className: isDesktop ? "text-sm font-semibold flex-1 truncate" : "text-[10px] font-semibold leading-tight break-words"
-    }, p));
-  }))), /*#__PURE__*/React.createElement("div", {
-    className: "flex-1 flex flex-col min-w-0"
-  }, /*#__PURE__*/React.createElement("div", {
     className: "px-4 py-3 border-b shrink-0 space-y-2",
     style: {
       borderColor: "#e6e8ee"
@@ -22856,7 +22707,11 @@ function EstadoMixers({
     }
   }, t.label))), /*#__PURE__*/React.createElement("div", {
     className: "text-[11px] text-gray-400"
-  }, "Reportes de fin de vuelta que hacen los choferes en la app \xB7 ", filtered.length, " registros \xB7 m\xE1s recientes primero")), /*#__PURE__*/React.createElement("div", {
+  }, "Reportes de fin de vuelta que hacen los choferes en la app \xB7 ", filtered.length, " registros \xB7 m\xE1s recientes primero"));
+  const lista =
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
     className: "flex-1 overflow-auto p-3 space-y-2",
     style: {
       background: "#f6f8fc"
@@ -22872,7 +22727,88 @@ function EstadoMixers({
   React.createElement(ReporteCard, {
     key: r.id,
     r: r
-  })))));
+  })));
+  if (!isDesktop) {
+    // Móvil: cuadrícula fija de plantas (mismo patrón que Incidencias) en vez de una columna angosta
+    // al costado — ahí los nombres de planta quedaban apretados y difíciles de leer.
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+      className: "flex flex-col flex-1 min-h-0 overflow-hidden"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center gap-2 px-3 py-2 border-b bg-white shrink-0",
+      style: {
+        borderColor: "#e6e8ee"
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: onBackMobile,
+      className: "text-gray-500 shrink-0"
+    }, /*#__PURE__*/React.createElement(ChevronLeft, {
+      size: 18
+    })), /*#__PURE__*/React.createElement("div", {
+      className: "text-xs font-bold uppercase tracking-wide text-gray-400"
+    }, "Plantas a tu cargo")), /*#__PURE__*/React.createElement("div", {
+      className: "grid grid-cols-3 gap-1.5 p-2.5 shrink-0 bg-white border-b",
+      style: {
+        borderColor: "#e6e8ee"
+      }
+    }, plantList.map(p => {
+      const active = plant === p;
+      return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
+        key: p,
+        onClick: () => setPlant(p),
+        className: "flex items-center justify-center text-center rounded-lg px-1 py-2 transition-colors",
+        style: {
+          background: active ? AZUL : "white",
+          color: active ? "white" : "#374151",
+          border: active ? "none" : "1px solid #e6e8ee"
+        }
+      }, /*#__PURE__*/React.createElement("span", {
+        className: "text-[12px] font-semibold leading-tight",
+        style: {
+          wordBreak: "break-word"
+        }
+      }, p));
+    })), /*#__PURE__*/React.createElement("div", {
+      className: "flex-1 flex flex-col min-h-0"
+    }, buscador, lista));
+  }
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-1 min-h-0 overflow-hidden"
+  }, /*#__PURE__*/React.createElement("aside", {
+    className: "flex flex-col shrink-0 border-r overflow-y-auto",
+    style: {
+      width: 280,
+      borderColor: "#e6e8ee",
+      background: "#f8fafc"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "px-4 py-3 border-b shrink-0",
+    style: {
+      borderColor: "#e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] font-bold uppercase tracking-wide text-gray-400"
+  }, "Plantas a tu cargo")), /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 p-2 space-y-1"
+  }, plantList.map(p => {
+    const active = plant === p;
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
+      key: p,
+      onClick: () => setPlant(p),
+      className: "w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-left transition-colors",
+      style: {
+        background: active ? AZUL : "white",
+        color: active ? "white" : "#374151",
+        border: active ? "none" : "1px solid #e6e8ee"
+      }
+    }, /*#__PURE__*/React.createElement(MapPin, {
+      size: 15,
+      className: "shrink-0"
+    }), /*#__PURE__*/React.createElement("span", {
+      className: "text-sm font-semibold flex-1 truncate"
+    }, p));
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 flex flex-col min-w-0"
+  }, buscador, lista));
 }
 function ReporteCard({
   r
@@ -22978,6 +22914,75 @@ function EmergenciasFeed({
   irAIncidenciaId
 }) {
   const [search, setSearch] = useState("");
+  // Solo se marca como vista la falla que de verdad entró al área visible de la pantalla (no apenas
+  // se abre el feed) — un IntersectionObserver sobre el contenedor con scroll dispara onVisto() la
+  // primera vez que cada tarjeta se hace visible. Como `visto` viene del mismo campo `estado` de la
+  // base de datos, verla desde "Todas" también la marca en su planta específica y viceversa — es un
+  // solo estado compartido, no algo que haya que sincronizar a mano entre las dos vistas.
+  const yaMarcadas = useRef(new Set());
+  const observerRef = useRef(null);
+  const scrollRef = useRef(null);
+  // onVisto cambia de identidad en cada render de AztPanel (no está memoizado ahí) — si el efecto de
+  // abajo dependiera de onVisto directamente, el observer se destruiría y recrearía constantemente
+  // (el panel se re-renderiza seguido por el sondeo/Realtime de otras cosas), perdiendo el rastro de
+  // qué tarjetas ya estaba observando antes de que llegara a disparar. Por eso se crea UNA sola vez
+  // (array de dependencias vacío) y siempre llama a la versión más reciente vía este ref.
+  const onVistoRef = useRef(onVisto);
+  useEffect(() => {
+    onVistoRef.current = onVisto;
+  }, [onVisto]);
+  useEffect(() => {
+    if (!scrollRef.current) return;
+    const obs = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        const id = entry.target.dataset.emergenciaId;
+        if (entry.isIntersecting && id && !yaMarcadas.current.has(id)) {
+          yaMarcadas.current.add(id);
+          onVistoRef.current(id);
+          obs.unobserve(entry.target);
+        }
+      });
+    }, {
+      root: scrollRef.current,
+      threshold: 0.3
+    });
+    observerRef.current = obs;
+    return () => obs.disconnect();
+  }, []);
+  const observarTarjeta = el => {
+    if (!el || !observerRef.current) return;
+    const id = el.dataset.emergenciaId;
+    if (!yaMarcadas.current.has(id)) observerRef.current.observe(el);
+  };
+  // El observer de arriba marca "vista" en tiempo real apenas se hace visible (eso sí debe
+  // actualizar los contadores al instante). Pero el COLOR de la tarjeta no debe cambiar solo delante
+  // de los ojos del admin mientras sigue mirando la misma pantalla — eso sería confuso (una tarjeta
+  // que se pone blanca sola a los 3 segundos). Por eso el rojo/animación se "congela" según el
+  // estado de `visto` que tenía cada una al entrar a esta vista, y recién se actualiza cuando cambia
+  // de planta (o se desmonta, al salir de la sección) — nunca reactivo a que `visto` cambie en vivo.
+  const emergenciasRef = useRef(emergencias);
+  emergenciasRef.current = emergencias;
+  const [vistoCongelado, setVistoCongelado] = useState(() => new Map(emergencias.map(e => [e.id, e.visto])));
+  const prevPlant = useRef(plant);
+  useEffect(() => {
+    if (prevPlant.current !== plant) {
+      prevPlant.current = plant;
+      setVistoCongelado(new Map(emergenciasRef.current.map(e => [e.id, e.visto])));
+    }
+  }, [plant]);
+  useEffect(() => {
+    setVistoCongelado(prev => {
+      let cambio = false;
+      const next = new Map(prev);
+      emergencias.forEach(e => {
+        if (!next.has(e.id)) {
+          next.set(e.id, e.visto);
+          cambio = true;
+        }
+      });
+      return cambio ? next : prev;
+    });
+  }, [emergencias]);
   const filterPlant = e => plant === "Todas" || e.planta === plant;
   const filterSearch = e => {
     if (!search.trim()) return true;
@@ -23020,11 +23025,12 @@ function EmergenciasFeed({
       borderColor: "#e6e8ee"
     }
   }))), /*#__PURE__*/React.createElement("div", {
+    ref: scrollRef,
     className: "flex-1 overflow-y-auto p-4",
     style: {
       background: "#f6f8fc"
     }
-  }, filtered.some(e => !e.visto) &&
+  }, emergencias.some(e => !(vistoCongelado.has(e.id) ? vistoCongelado.get(e.id) : e.visto)) &&
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("style", null, `@keyframes incidenciaNuevaPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(225,29,72,.45); } 50% { box-shadow: 0 0 0 6px rgba(225,29,72,0); } }`), /*#__PURE__*/React.createElement("style", null, `@keyframes incidenciaDestacadaAdmin { 0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,.5); } 50% { box-shadow: 0 0 0 6px rgba(59,130,246,0); } }`), filtered.length === 0 &&
@@ -23042,27 +23048,28 @@ function EmergenciasFeed({
   }, "Las fallas reportadas por los choferes aparecer\xE1n aqu\xED en tiempo real.")), /*#__PURE__*/React.createElement("div", {
     className: "space-y-3"
   }, filtered.map(e => {
-    const yaParpadeo = yaParpadearon.current.has(e.id);
-    if (!e.visto && !yaParpadeo) yaParpadearon.current.add(e.id);
+    const esNueva = !(vistoCongelado.has(e.id) ? vistoCongelado.get(e.id) : e.visto);
     const resaltada = e.id === irAIncidenciaId;
     return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
       key: e.id,
+      ref: observarTarjeta,
+      "data-emergencia-id": e.id,
       id: `emergencia-admin-${e.id}`,
       className: "bg-white rounded-xl overflow-hidden shadow-sm transition-shadow hover:shadow-md",
       style: {
-        border: resaltada ? "1px solid #93c5fd" : `1px solid ${e.visto ? "#e6e8ee" : "#fecdd3"}`,
-        animation: resaltada ? "incidenciaDestacadaAdmin 1.8s ease-in-out 4" : !e.visto && !yaParpadeo ? "incidenciaNuevaPulse 1.8s ease-in-out 4" : "none"
+        border: resaltada ? "1px solid #93c5fd" : `1px solid ${esNueva ? "#fecdd3" : "#e6e8ee"}`,
+        animation: resaltada ? "incidenciaDestacadaAdmin 1.8s ease-in-out 4" : esNueva ? "incidenciaNuevaPulse 1.8s ease-in-out infinite" : "none"
       }
     }, /*#__PURE__*/React.createElement("div", {
       className: "flex items-center gap-3 px-4 py-3",
       style: {
-        background: e.visto ? "#f8fafc" : "#FFF1F2"
+        background: esNueva ? "#FFF1F2" : "#f8fafc"
       }
     }, /*#__PURE__*/React.createElement("div", {
       className: "w-11 h-11 rounded-xl flex items-center justify-center shrink-0",
       style: {
-        background: e.visto ? "#eef1f6" : "#e11d48",
-        color: e.visto ? "#6b7280" : "white"
+        background: esNueva ? "#e11d48" : "#eef1f6",
+        color: esNueva ? "white" : "#6b7280"
       }
     }, /*#__PURE__*/React.createElement(Truck, {
       size: 22
@@ -23083,26 +23090,14 @@ function EmergenciasFeed({
       className: "text-[11px] text-gray-400 flex items-center gap-1"
     }, /*#__PURE__*/React.createElement(Clock, {
       size: 11
-    }), " ", e.hora), e.visto ?
+    }), " ", e.hora), !esNueva &&
     /*#__PURE__*/
     /*#__PURE__*/
     React.createElement("span", {
       className: "text-[11px] font-semibold text-gray-400 flex items-center gap-1 mt-1"
     }, /*#__PURE__*/React.createElement(Check, {
       size: 13
-    }), " Revisado") :
-    /*#__PURE__*/
-    /*#__PURE__*/
-    React.createElement("button", {
-      onClick: () => onVisto(e.id),
-      className: "text-[11px] font-bold rounded-lg px-2.5 py-1.5 flex items-center gap-1 mt-1",
-      style: {
-        background: "#16a34a",
-        color: "white"
-      }
-    }, /*#__PURE__*/React.createElement(Check, {
-      size: 12
-    }), " Marcar visto"))), /*#__PURE__*/React.createElement("div", {
+    }), " Revisado"))), /*#__PURE__*/React.createElement("div", {
       className: "px-4 py-3 space-y-2 border-t",
       style: {
         borderColor: "#f0f2f6"
@@ -23798,7 +23793,9 @@ function AuxilioMecanicoBuzon({
   admin,
   isDesktop,
   setMobileList,
-  onLecturaCambiada
+  onLecturaCambiada,
+  irAAuxilioId,
+  setIrAAuxilioId
 }) {
   const [auxilios, setAuxilios] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -23871,64 +23868,23 @@ function AuxilioMecanicoBuzon({
       if (data?.signedUrl) setFotoUrl(data.signedUrl);
     }
   };
+  // Llegada desde la notificación de "Auxilio mecánico nuevo": abre el detalle exacto apenas se
+  // terminan de cargar los auxilios (si llega antes de que carguen, espera al siguiente render en
+  // vez de perderse el clic).
+  useEffect(() => {
+    if (!irAAuxilioId || cargando) return;
+    const a = auxilios.find(x => x.id === irAAuxilioId);
+    if (a) {
+      setPlantaSel(a.planta);
+      abrirDetalle(a);
+    }
+    setIrAAuxilioId(null);
+  }, [irAAuxilioId, auxilios, cargando]);
   const visibles = auxilios.filter(a => plantaSel === "Todas" || a.planta === plantaSel);
-  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
-    className: isDesktop ? "flex flex-1 min-h-0 overflow-hidden" : "flex flex-col flex-1 min-h-0 overflow-hidden"
-  }, /*#__PURE__*/React.createElement("aside", {
-    className: "flex flex-col shrink-0 border-r overflow-y-auto",
-    style: {
-      width: isDesktop ? 280 : "100%",
-      maxHeight: isDesktop ? "none" : 180,
-      borderColor: "#e6e8ee",
-      background: "#f8fafc"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "px-4 py-3 border-b shrink-0",
-    style: {
-      borderColor: "#e6e8ee"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-[10px] font-bold uppercase tracking-wide text-gray-400"
-  }, "Plantas a tu cargo")), /*#__PURE__*/React.createElement("div", {
-    className: "flex-1 p-2 space-y-1"
-  }, plantList.map(p => {
-    const active = plantaSel === p;
-    const n = p === "Todas" ? totalNoLeidos : noLeidosEnPlanta(p);
-    return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
-      key: p,
-      onClick: () => abrirPlanta(p),
-      className: "w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-left transition-colors",
-      style: {
-        background: active ? AZUL : "white",
-        color: active ? "white" : "#374151",
-        border: active ? "none" : "1px solid #e6e8ee"
-      }
-    }, /*#__PURE__*/React.createElement(MapPin, {
-      size: 15,
-      className: "shrink-0"
-    }), /*#__PURE__*/React.createElement("span", {
-      className: "text-sm font-semibold flex-1 truncate"
-    }, p), n > 0 &&
-    /*#__PURE__*/
-    /*#__PURE__*/
-    React.createElement("span", {
-      className: "text-[10px] font-bold rounded-full px-1.5 py-0.5",
-      style: {
-        background: active ? "rgba(255,255,255,.25)" : "#fee2e2",
-        color: active ? "white" : "#b91c1c"
-      }
-    }, n));
-  }))), /*#__PURE__*/React.createElement("div", {
-    className: "flex-1 flex flex-col min-w-0 overflow-hidden"
-  }, !isDesktop &&
+  const contenido =
   /*#__PURE__*/
   /*#__PURE__*/
-  React.createElement("button", {
-    onClick: () => setMobileList(true),
-    className: "text-xs text-gray-500 m-3 mb-0 flex items-center gap-1 shrink-0"
-  }, /*#__PURE__*/React.createElement(ChevronLeft, {
-    size: 14
-  }), " Men\xFA"), /*#__PURE__*/React.createElement("div", {
+  React.createElement("div", {
     className: "flex-1 overflow-y-auto p-4"
   }, cargando ?
   /*#__PURE__*/
@@ -24020,7 +23976,8 @@ function AuxilioMecanicoBuzon({
     size: 14,
     color: "#9ca3af",
     className: "mt-1 ml-auto"
-  }))))))), abierto &&
+  }))))));
+  const modal = abierto &&
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
@@ -24117,7 +24074,108 @@ function AuxilioMecanicoBuzon({
   /*#__PURE__*/
   React.createElement("div", {
     className: "text-xs text-gray-400"
-  }, "Cargando foto...")))));
+  }, "Cargando foto..."))));
+  if (!isDesktop) {
+    // Móvil: cuadrícula fija de plantas (mismo patrón que Incidencias) en vez de la lista angosta
+    // apilada — ahí se perdían de vista las plantas que no entraban en los 180px de alto.
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+      className: "flex flex-col flex-1 min-h-0 overflow-hidden"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center gap-2 px-3 py-2 border-b bg-white shrink-0",
+      style: {
+        borderColor: "#e6e8ee"
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: () => setMobileList(true),
+      className: "text-gray-500 shrink-0"
+    }, /*#__PURE__*/React.createElement(ChevronLeft, {
+      size: 18
+    })), /*#__PURE__*/React.createElement("div", {
+      className: "text-xs font-bold uppercase tracking-wide text-gray-400"
+    }, "Plantas a tu cargo")), /*#__PURE__*/React.createElement("div", {
+      className: "grid grid-cols-3 gap-1.5 p-2.5 shrink-0 bg-white border-b",
+      style: {
+        borderColor: "#e6e8ee"
+      }
+    }, plantList.map(p => {
+      const active = plantaSel === p;
+      const n = p === "Todas" ? totalNoLeidos : noLeidosEnPlanta(p);
+      return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
+        key: p,
+        onClick: () => abrirPlanta(p),
+        className: "relative flex items-center justify-center text-center rounded-lg px-1 py-2 transition-colors",
+        style: {
+          background: active ? AZUL : "white",
+          color: active ? "white" : "#374151",
+          border: active ? "none" : "1px solid #e6e8ee"
+        }
+      }, /*#__PURE__*/React.createElement("span", {
+        className: "text-[12px] font-semibold leading-tight",
+        style: {
+          wordBreak: "break-word"
+        }
+      }, p), n > 0 &&
+      /*#__PURE__*/
+      /*#__PURE__*/
+      React.createElement("span", {
+        className: "absolute -top-1.5 -right-1.5 text-[10px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center",
+        style: {
+          background: "#e11d48",
+          color: "white"
+        }
+      }, n));
+    })), /*#__PURE__*/React.createElement("div", {
+      className: "flex-1 flex flex-col min-w-0 overflow-hidden"
+    }, contenido), modal);
+  }
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-1 min-h-0 overflow-hidden"
+  }, /*#__PURE__*/React.createElement("aside", {
+    className: "flex flex-col shrink-0 border-r overflow-y-auto",
+    style: {
+      width: 280,
+      borderColor: "#e6e8ee",
+      background: "#f8fafc"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "px-4 py-3 border-b shrink-0",
+    style: {
+      borderColor: "#e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] font-bold uppercase tracking-wide text-gray-400"
+  }, "Plantas a tu cargo")), /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 p-2 space-y-1"
+  }, plantList.map(p => {
+    const active = plantaSel === p;
+    const n = p === "Todas" ? totalNoLeidos : noLeidosEnPlanta(p);
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
+      key: p,
+      onClick: () => abrirPlanta(p),
+      className: "w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-left transition-colors",
+      style: {
+        background: active ? AZUL : "white",
+        color: active ? "white" : "#374151",
+        border: active ? "none" : "1px solid #e6e8ee"
+      }
+    }, /*#__PURE__*/React.createElement(MapPin, {
+      size: 15,
+      className: "shrink-0"
+    }), /*#__PURE__*/React.createElement("span", {
+      className: "text-sm font-semibold flex-1 truncate"
+    }, p), n > 0 &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("span", {
+      className: "text-[10px] font-bold rounded-full px-1.5 py-0.5",
+      style: {
+        background: active ? "rgba(255,255,255,.25)" : "#fee2e2",
+        color: active ? "white" : "#b91c1c"
+      }
+    }, n));
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 flex flex-col min-w-0 overflow-hidden"
+  }, contenido), modal);
 }
 function CambioSede({
   plantasAzt,
