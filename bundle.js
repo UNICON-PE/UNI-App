@@ -1,4 +1,4 @@
-/* UniconApp — Bundle generado el 2026-10-12T01:37:58.159Z */
+/* UniconApp — Bundle generado el 2026-10-12T14:28:41.721Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
 /* Líneas originales del JSX: 18409 — CERO simplificaciones */
 
@@ -21661,8 +21661,8 @@ function AztPanel({
   }, /*#__PURE__*/React.createElement("div", {
     className: "font-bold truncate text-base"
   }, admin.nombre), /*#__PURE__*/React.createElement("div", {
-    className: "text-sm opacity-90 mt-0.5 truncate"
-  }, admin.cargo, " \xB7 Panel de UNI App"))))), /*#__PURE__*/React.createElement("button", {
+    className: "text-sm opacity-90 mt-0.5"
+  }, admin.cargo))))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setOpenAdminNotif(true),
     className: "absolute flex items-center justify-center text-white",
     style: {
