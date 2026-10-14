@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-14T01:41:58.931Z */
+/* UniconApp — Bundle generado el 2026-10-14T04:24:04.584Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 18783 — CERO simplificaciones */
+/* Líneas originales del JSX: 18811 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -24367,6 +24367,13 @@ function AuxilioMecanicoBuzon({
   const [auxilios, setAuxilios] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [lecturas, setLecturas] = useState({}); // { [planta]: ultimo_leido_at }
+  // Copia "congelada" de lecturas, de ANTES de la visita actual — decide qué tarjetas se ven en
+  // rojo/animadas. "lecturas" (en vivo) se actualiza al instante al entrar a una planta (eso es lo
+  // que baja el badge de inmediato, sin cambios ahí); pero el color no debe apagarse solo frente a
+  // los ojos del admin mientras sigue mirando la misma pantalla — mismo criterio que ya se usa en
+  // Fallas Mecánicas (ver EmergenciasFeed/vistoCongelado). Solo se vuelve a congelar al cambiar de
+  // planta (abrirPlanta) o al salir de la sección (este componente se desmonta y resetea todo).
+  const [lecturasCongeladas, setLecturasCongeladas] = useState({});
   const [plantaSel, setPlantaSel] = useState("Todas");
   const [abierto, setAbierto] = useState(null);
   const [fotoUrl, setFotoUrl] = useState(null);
@@ -24388,7 +24395,11 @@ function AuxilioMecanicoBuzon({
       }), sbClient.from("auxilios_lectura").select("planta, ultimo_leido_at").eq("usuario_id", admin.id)]);
       if (!vigente) return;
       if (filas) setAuxilios(filas);
-      if (lect) setLecturas(Object.fromEntries(lect.map(l => [l.planta, l.ultimo_leido_at])));
+      if (lect) {
+        const mapaLecturas = Object.fromEntries(lect.map(l => [l.planta, l.ultimo_leido_at]));
+        setLecturas(mapaLecturas);
+        setLecturasCongeladas(mapaLecturas);
+      }
       setCargando(false);
     })();
     const canal = sbClient.channel(`auxilios-mecanicos-${admin.id}`).on("postgres_changes", {
@@ -24409,6 +24420,10 @@ function AuxilioMecanicoBuzon({
   };
   const totalNoLeidos = (admin?.plantas || []).reduce((sum, p) => sum + noLeidosEnPlanta(p), 0);
   const abrirPlanta = async p => {
+    // Congela los cursores de lectura de ANTES de esta visita (ver comentario en lecturasCongeladas
+    // más arriba) — tiene que leerse de "lecturas" (closure) justo antes de pisarlo con la hora
+    // actual, si no ya no quedaría nada que congelar.
+    setLecturasCongeladas(lecturas);
     setPlantaSel(p);
     if (!isDesktop) setMobileList(false);
     const plantasAMarcar = p === "Todas" ? admin?.plantas || [] : [p];
@@ -24452,12 +24467,19 @@ function AuxilioMecanicoBuzon({
     setIrAAuxilioId(null);
   }, [irAAuxilioId, auxilios, cargando]);
   const visibles = auxiliosPropios.filter(a => plantaSel === "Todas" || a.planta === plantaSel);
+  const esNuevaFrozen = a => {
+    const cursor = lecturasCongeladas[a.planta] ? new Date(lecturasCongeladas[a.planta]) : new Date(0);
+    return new Date(a.created_at) > cursor;
+  };
   const contenido =
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
     className: "flex-1 overflow-y-auto p-4"
-  }, cargando ?
+  }, visibles.some(esNuevaFrozen) &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("style", null, `@keyframes auxilioNuevoPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(225,29,72,.45); } 50% { box-shadow: 0 0 0 6px rgba(225,29,72,0); } }`), cargando ?
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
@@ -24507,47 +24529,49 @@ function AuxilioMecanicoBuzon({
   /*#__PURE__*/
   React.createElement("p", {
     className: "text-xs text-gray-400"
-  }, "El enlace de la hoja todav\xEDa no est\xE1 configurado.")), visibles.map(a =>
-  /*#__PURE__*/
-  /*#__PURE__*/
-  React.createElement("button", {
-    key: a.id,
-    onClick: () => abrirDetalle(a),
-    className: "w-full flex items-center gap-3 bg-white rounded-xl px-3 py-3 shadow-sm text-left hover:shadow-md transition-shadow",
-    style: {
-      border: "1px solid #e6e8ee"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "w-11 h-11 rounded-xl flex items-center justify-center shrink-0",
-    style: {
-      background: "#FFF8DB",
-      color: "#B8860B"
-    }
-  }, /*#__PURE__*/React.createElement(Wrench, {
-    size: 20
-  })), /*#__PURE__*/React.createElement("div", {
-    className: "flex-1 min-w-0"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "font-semibold text-sm text-gray-800 truncate"
-  }, a.chofer_nombre, " \xB7 ", a.mixer), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs text-gray-500 truncate"
-  }, a.descripcion), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs text-gray-400"
-  }, a.planta, " \xB7 ", a.lugar_incidente, " \xB7 ", a.cargada ? "Cargado" : "Vacío")), /*#__PURE__*/React.createElement("div", {
-    className: "text-right shrink-0"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-[11px] text-gray-400"
-  }, new Date(a.created_at).toLocaleTimeString("es-PE", {
-    hour: "2-digit",
-    minute: "2-digit"
-  })), a.foto_path &&
-  /*#__PURE__*/
-  /*#__PURE__*/
-  React.createElement(Camera, {
-    size: 14,
-    color: "#9ca3af",
-    className: "mt-1 ml-auto"
-  }))))));
+  }, "El enlace de la hoja todav\xEDa no est\xE1 configurado.")), visibles.map(a => {
+    const esNueva = esNuevaFrozen(a);
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
+      key: a.id,
+      onClick: () => abrirDetalle(a),
+      className: "w-full flex items-center gap-3 rounded-xl px-3 py-3 shadow-sm text-left hover:shadow-md transition-shadow",
+      style: {
+        background: esNueva ? "#FFF1F2" : "white",
+        border: esNueva ? "1px solid #fecdd3" : "1px solid #e6e8ee",
+        animation: esNueva ? "auxilioNuevoPulse 1.8s ease-in-out infinite" : "none"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "w-11 h-11 rounded-xl flex items-center justify-center shrink-0",
+      style: {
+        background: esNueva ? "#e11d48" : "#FFF8DB",
+        color: esNueva ? "white" : "#B8860B"
+      }
+    }, /*#__PURE__*/React.createElement(Wrench, {
+      size: 20
+    })), /*#__PURE__*/React.createElement("div", {
+      className: "flex-1 min-w-0"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "font-semibold text-sm text-gray-800 truncate"
+    }, a.chofer_nombre, " \xB7 ", a.mixer), /*#__PURE__*/React.createElement("div", {
+      className: "text-xs text-gray-500 truncate"
+    }, a.descripcion), /*#__PURE__*/React.createElement("div", {
+      className: "text-xs text-gray-400"
+    }, a.planta, " \xB7 ", a.lugar_incidente, " \xB7 ", a.cargada ? "Cargado" : "Vacío")), /*#__PURE__*/React.createElement("div", {
+      className: "text-right shrink-0"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "text-[11px] text-gray-400"
+    }, new Date(a.created_at).toLocaleTimeString("es-PE", {
+      hour: "2-digit",
+      minute: "2-digit"
+    })), a.foto_path &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement(Camera, {
+      size: 14,
+      color: "#9ca3af",
+      className: "mt-1 ml-auto"
+    })));
+  })));
   const modal = abierto &&
   /*#__PURE__*/
   /*#__PURE__*/
@@ -26253,13 +26277,27 @@ function AuxilioForm({
       color: mixer ? AZUL : "#374151",
       fontWeight: mixer ? 600 : 400
     }
-  })), /*#__PURE__*/React.createElement(PlantaAutocomplete, {
-    label: "Planta en donde operas HOY",
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: lbl
+  }, "Planta en donde operas HOY"), /*#__PURE__*/React.createElement("select", {
     value: planta,
-    onChange: setPlanta,
-    options: PLANTAS_TODAS.filter(p => p !== "Transversal"),
-    placeholder: "Escribe la planta\u2026"
-  }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    onChange: e => setPlanta(e.target.value),
+    className: inp,
+    style: {
+      borderColor: planta ? AZUL : "#d5d9e4",
+      color: planta ? AZUL : "#374151",
+      fontWeight: planta ? 600 : 400
+    }
+  }, /*#__PURE__*/React.createElement("option", {
+    value: "",
+    disabled: true
+  }, "Selecciona tu planta\u2026"), PLANTAS_TODAS.filter(p => p !== "Transversal").map(p =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("option", {
+    key: p,
+    value: p
+  }, p)))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
     className: lbl
   }, "\xBFCargado o vac\xEDo?"), /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-2 gap-1.5 mt-0.5"
