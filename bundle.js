@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-14T15:57:07.739Z */
+/* UniconApp — Bundle generado el 2026-10-14T16:43:18.512Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 18823 — CERO simplificaciones */
+/* Líneas originales del JSX: 18820 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -23657,7 +23657,7 @@ function EmergenciasFeed({
       className: "text-[11px] text-gray-400 flex items-center gap-1"
     }, /*#__PURE__*/React.createElement(Clock, {
       size: 11
-    }), " ", e.hora), !esNueva &&
+    }), " ", e.ts ? fechaHoraCorta(e.ts) : e.hora), !esNueva &&
     /*#__PURE__*/
     /*#__PURE__*/
     React.createElement("span", {
@@ -24571,10 +24571,7 @@ function AuxilioMecanicoBuzon({
       className: "text-right shrink-0"
     }, /*#__PURE__*/React.createElement("div", {
       className: "text-[11px] text-gray-400"
-    }, new Date(a.created_at).toLocaleTimeString("es-PE", {
-      hour: "2-digit",
-      minute: "2-digit"
-    })), a.foto_path &&
+    }, fechaHoraCorta(a.created_at)), a.foto_path &&
     /*#__PURE__*/
     /*#__PURE__*/
     React.createElement(Camera, {
