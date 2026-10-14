@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-14T04:28:19.274Z */
+/* UniconApp — Bundle generado el 2026-10-14T15:57:07.739Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 18815 — CERO simplificaciones */
+/* Líneas originales del JSX: 18823 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -24408,6 +24408,12 @@ function AuxilioMecanicoBuzon({
       table: "auxilios_mecanicos"
     }, payload => {
       setAuxilios(prev => [payload.new, ...prev]);
+    }).on("postgres_changes", {
+      event: "UPDATE",
+      schema: "public",
+      table: "auxilios_mecanicos"
+    }, payload => {
+      setAuxilios(prev => prev.map(a => a.id === payload.new.id ? payload.new : a));
     }).subscribe();
     return () => {
       vigente = false;
@@ -24556,7 +24562,12 @@ function AuxilioMecanicoBuzon({
       className: "text-xs text-gray-500 truncate"
     }, a.descripcion), /*#__PURE__*/React.createElement("div", {
       className: "text-xs text-gray-400"
-    }, a.planta, " \xB7 ", a.lugar_incidente, " \xB7 ", a.cargada ? "Cargado" : "Vacío")), /*#__PURE__*/React.createElement("div", {
+    }, a.planta, " \xB7 ", a.lugar_incidente, " \xB7 ", a.cargada ? "Cargado" : "Vacío"), /*#__PURE__*/React.createElement("div", {
+      className: "text-[11px] font-semibold mt-1",
+      style: {
+        color: a.estado_mantenimiento ? "#15803d" : "#b45309"
+      }
+    }, a.estado_mantenimiento ? "Atendido por Mantenimiento" : "Pendiente de revisión por Mantenimiento")), /*#__PURE__*/React.createElement("div", {
       className: "text-right shrink-0"
     }, /*#__PURE__*/React.createElement("div", {
       className: "text-[11px] text-gray-400"
@@ -24645,6 +24656,11 @@ function AuxilioMecanicoBuzon({
   }, /*#__PURE__*/React.createElement(ReadRow, {
     label: "Hora",
     value: new Date(abierto.created_at).toLocaleString("es-PE")
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "px-3 py-2"
+  }, /*#__PURE__*/React.createElement(ReadRow, {
+    label: "Mantenimiento",
+    value: abierto.estado_mantenimiento ? "Atendido por Mantenimiento" : "Pendiente de revisión por Mantenimiento"
   }))), /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl border px-3 py-2 mb-3",
     style: {
