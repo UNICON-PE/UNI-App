@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-13T19:18:18.473Z */
+/* UniconApp — Bundle generado el 2026-10-14T01:41:58.931Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 18601 — CERO simplificaciones */
+/* Líneas originales del JSX: 18783 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -8599,18 +8599,21 @@ async function ejecutarAjusteManualParaPrueba() {
         }
       }
 
-      // Reasignación de planta: el AZT anotó en la columna CITACIÓN que este chofer debe
-      // presentarse en OTRA planta mañana (ver parseCitacionConPosiblePlanta). Actualizar
-      // perfiles.planta dispara automáticamente la pantalla azul "¡Fuiste reasignado!" en
-      // ChoferApp, vía el listener de Realtime que ya existía para reasignaciones manuales.
-      if (filaCoincidente.plantaCitacion && filaCoincidente.plantaCitacion !== chofer.planta) {
+      // Reasignación de planta: si la columna CITACIÓN anotó que este chofer debe presentarse en
+      // OTRA planta mañana, esa manda (ver parseCitacionConPosiblePlanta); si CITACIÓN no trae
+      // ninguna planta, el destino por defecto es la columna PLANTA del Excel de esta noche — así
+      // alguien que estaba prestado en otro lado y hoy ya no aparece con una planta distinta en
+      // CITACIÓN, vuelve a la suya (mismo criterio que ModalSubirCitacionGeneral al publicar, para
+      // que la reasignación real coincida con lo que ya se le mostró en el Canal de Avisos).
+      const destinoCitacion = filaCoincidente.plantaCitacion || filaCoincidente.plantaExcel;
+      if (destinoCitacion && destinoCitacion !== chofer.planta) {
         const {
           error: errorPlanta
         } = await sbClient.rpc("actualizar_planta_chofer", {
           p_chofer_id: chofer.id,
-          p_planta_nueva: filaCoincidente.plantaCitacion
+          p_planta_nueva: destinoCitacion
         });
-        resumen.push(errorPlanta ? `   • ${chofer.nombre}: ❌ falló el RPC de planta (${errorPlanta.message}).` : `   • ${chofer.nombre}: ✅ reasignado de planta ${chofer.planta} → ${filaCoincidente.plantaCitacion}.`);
+        resumen.push(errorPlanta ? `   • ${chofer.nombre}: ❌ falló el RPC de planta (${errorPlanta.message}).` : `   • ${chofer.nombre}: ✅ reasignado de planta ${chofer.planta} → ${destinoCitacion}.`);
       }
     }
   }
@@ -8714,17 +8717,19 @@ async function ejecutarAjusteAutomaticoMixers() {
         }
       }
 
-      // Reasignación de planta: el AZT anotó en la columna CITACIÓN que este chofer debe
-      // presentarse en OTRA planta mañana (ver parseCitacionConPosiblePlanta). Actualizar
+      // Reasignación de planta: si CITACIÓN trae otra planta, esa manda; si no, el destino por
+      // defecto es la columna PLANTA del Excel de esta noche (mismo criterio que
+      // ModalSubirCitacionGeneral al publicar — ver comentario gemelo más arriba). Actualizar
       // perfiles.planta dispara automáticamente la pantalla azul "¡Fuiste reasignado!" en
       // ChoferApp, vía el listener de Realtime que ya existía para reasignaciones manuales — no
       // hace falta ninguna UI nueva para esto.
-      if (filaCoincidente.plantaCitacion && filaCoincidente.plantaCitacion !== chofer.planta) {
+      const destinoCitacion = filaCoincidente.plantaCitacion || filaCoincidente.plantaExcel;
+      if (destinoCitacion && destinoCitacion !== chofer.planta) {
         const {
           error: errorPlanta
         } = await sbClient.rpc("actualizar_planta_chofer", {
           p_chofer_id: chofer.id,
-          p_planta_nueva: filaCoincidente.plantaCitacion
+          p_planta_nueva: destinoCitacion
         });
         if (errorPlanta) console.warn(`No se pudo reasignar la planta de ${chofer.nombre}:`, errorPlanta.message);
       }
@@ -14198,6 +14203,15 @@ function celdaTextoExcel(row, col) {
   return String(v).trim();
 }
 
+// Deja solo los dígitos (si la columna DNI del Excel trae espacios u otros símbolos). NO se
+// rellena con ceros a la izquierda aunque queden menos de 8 dígitos — un documento extranjero
+// (ej. cédula venezolana) puede tener legítimamente menos dígitos que un DNI peruano, así que
+// "adivinar" un cero inicial podría armar un número de 8 dígitos que coincida por error con el
+// DNI de otra persona real. Si no hay match contra perfiles, se avisa en vez de intentar arreglarlo.
+function normalizarDni(texto) {
+  return (texto || "").replace(/\D/g, "");
+}
+
 // Busca en las filas leídas del Excel la que corresponde a un chofer, prefiriendo DNI exacto
 // (más confiable) y usando nombresCoinciden() como respaldo si no hay DNI o no coincide (ej. el
 // chofer aún no tiene DNI cargado en su perfil, o hay un typo en el Excel).
@@ -14266,21 +14280,27 @@ function resolverPlantaExcel(crudo) {
 
 // La columna CITACIÓN normalmente trae solo una hora, pero el AZT a veces escribe "{Planta} HH:MM"
 // (ej. "Ancieta 09:00") para avisar que ese chofer debe presentarse en OTRA planta al día
-// siguiente, no en la suya. Separa ambos datos: si el texto termina en HH:MM y lo que queda antes
-// coincide con una planta conocida, devuelve esa planta aparte; si no, se trata como una hora normal.
+// siguiente, no en la suya. Separa ambos datos: si el texto termina en HH:MM (opcionalmente
+// seguido de "a.m."/"p.m." en cualquier variante de espacios/puntos/mayúsculas — el AZT a veces
+// tipea la hora a mano en vez de dejar que Excel la formatee, ej. "SAN ISIDRO 07:30 a. m.", y antes
+// esto no se reconocía como cambio de planta por el sufijo) y lo que queda antes coincide con una
+// planta conocida, devuelve esa planta aparte; si no, se trata como una hora normal.
 function parseCitacionConPosiblePlanta(valorCrudo) {
-  const m = /^(.*\S)\s+(\d{1,2}:\d{2})$/.exec(valorCrudo || "");
+  const texto = (valorCrudo || "").trim();
+  // La hora puede traer segundos (ej. "08:00:00", típico cuando Excel formatea una celda de hora
+  // exacta) además del sufijo a.m./p.m. — el bloque de segundos es opcional y no se captura aparte.
+  const m = /^(.*\S)\s+(\d{1,2}:\d{2}(?::\d{2})?)\s*([ap]\.?\s*m\.?)?$/i.exec(texto);
   if (!m) return {
-    hora: valorCrudo || "",
+    hora: texto,
     plantaCitacion: null
   };
   const plantaCitacion = resolverPlantaExcel(m[1]);
   if (!plantaCitacion) return {
-    hora: valorCrudo,
+    hora: texto,
     plantaCitacion: null
   }; // el prefijo no es una planta reconocida, se deja tal cual
   return {
-    hora: m[2],
+    hora: m[2] + (m[3] ? " " + m[3].replace(/\s+/g, " ").trim() : ""),
     plantaCitacion
   };
 }
@@ -14321,6 +14341,7 @@ async function leerTablaCitacionDesdeExcel(excelUrl) {
         colIndex = {
           nombre: colNombre,
           dni: valores.findIndex(v => v === "dni"),
+          planta: valores.findIndex(v => v === "planta"),
           hora: valores.findIndex(v => v === "citacion"),
           ingreso: valores.findIndex(v => v === "ingreso"),
           mixer: valores.findIndex(v => v === "mixer"),
@@ -14337,6 +14358,7 @@ async function leerTablaCitacionDesdeExcel(excelUrl) {
       colIndex = {
         nombre: 2,
         dni: -1,
+        planta: 1,
         hora: 3,
         ingreso: -1,
         mixer: 4,
@@ -14355,11 +14377,14 @@ async function leerTablaCitacionDesdeExcel(excelUrl) {
       } = parseCitacionConPosiblePlanta(celdaTextoExcel(row, colIndex.hora));
       filas.push({
         nombre,
-        dni: celdaTextoExcel(row, colIndex.dni),
+        dni: normalizarDni(celdaTextoExcel(row, colIndex.dni)),
         mixer: celdaTextoExcel(row, colIndex.mixer),
         hora,
         plantaCitacion,
         // no-null si el AZT anotó que este chofer va a OTRA planta mañana
+        plantaExcel: resolverPlantaExcel(celdaTextoExcel(row, colIndex.planta)),
+        // columna PLANTA del Excel (de respaldo: si CITACIÓN no trae otra planta, se entiende que
+        // debe volver/estar en ESTA, ver destinoCitacion más abajo)
         ingreso: celdaTextoExcel(row, colIndex.ingreso),
         observacion: celdaTextoExcel(row, colIndex.observacion),
         detalle: celdaTextoExcel(row, colIndex.detalle)
@@ -20762,6 +20787,17 @@ function generarCapturaTablaPNG(titulo, encabezados, filas) {
   ctx.font = "12px system-ui, sans-serif";
   filas.forEach((fila, ri) => {
     const y = TITLE_H + HEADER_H + ri * ROW_H;
+    // Fila de separador de sección (ej. "Choferes de apoyo de otra planta") en vez de una fila de
+    // datos normal: una franja de ancho completo con el texto en negrita, no una fila por columna.
+    if (fila && fila.__seccion) {
+      ctx.fillStyle = "#EEF1FB";
+      ctx.fillRect(0, y, ancho, ROW_H);
+      ctx.fillStyle = "#0028AA";
+      ctx.font = "bold 11px system-ui, sans-serif";
+      ctx.fillText(fila.__seccion, PADDING + 6, y + ROW_H / 2);
+      ctx.font = "12px system-ui, sans-serif";
+      return;
+    }
     ctx.fillStyle = ri % 2 === 0 ? "#ffffff" : "#f4f6fa";
     ctx.fillRect(0, y, ancho, ROW_H);
     ctx.fillStyle = "#1f2937";
@@ -20870,24 +20906,119 @@ function ModalSubirCitacionGeneral({
         return;
       }
 
-      // Agrupa los números de fila por planta canónica, descartando filas sin nombre, fuera de
-      // las plantas asignadas a este AZT, o con un valor de PLANTA no reconocido.
-      const filasPorPlanta = {};
+      // PRIMERA PASADA: recolecta filas con nombre y su DNI — la columna PLANTA del Excel ya NO
+      // decide por sí sola el canal (ver más abajo), solo sirve de respaldo para choferes que
+      // todavía no tienen perfil cargado.
+      const filasValidas = [];
       const noReconocidas = new Set();
       for (let i = headerRowNum + 1; i <= sheet.rowCount; i++) {
         const row = sheet.getRow(i);
         const nombre = celdaTextoExcel(row, colIndex.nombre);
         if (!nombre) continue;
+        const dni = normalizarDni(celdaTextoExcel(row, colIndex.dni));
         const plantaCruda = celdaTextoExcel(row, colIndex.planta);
-        const plantaCanonica = resolverPlantaExcel(plantaCruda);
-        if (!plantaCanonica) {
-          if (plantaCruda) noReconocidas.add(plantaCruda);
+        const plantaExcelCanonica = resolverPlantaExcel(plantaCruda);
+        filasValidas.push({
+          rowIndex: i,
+          nombre,
+          dni,
+          plantaCruda,
+          plantaExcelCanonica
+        });
+      }
+      if (filasValidas.length === 0) {
+        setResumen(["⚠️ No se encontraron filas con nombre en el archivo."]);
+        setProcesando(false);
+        return;
+      }
+
+      // Planta ACTUAL de cada chofer (en vivo, perfiles.planta) — junto con la columna PLANTA de
+      // esta noche, decide en qué canal(es) se publica y con qué etiqueta (ver clasificación más
+      // abajo). Antes se usaba solo la columna PLANTA del Excel, que no distingue a alguien que ya
+      // estaba prestado en otra planta de alguien realmente nuevo en el cambio.
+      const dnisUnicos = [...new Set(filasValidas.map(f => f.dni).filter(Boolean))];
+      const mapaPlantaActual = {};
+      if (dnisUnicos.length) {
+        const {
+          data: perfilesActuales
+        } = await sbClient.from("perfiles").select("dni, planta").in("dni", dnisUnicos);
+        (perfilesActuales || []).forEach(p => {
+          mapaPlantaActual[p.dni] = p.planta;
+        });
+      }
+
+      // SEGUNDA PASADA: clasifica cada fila según tres datos — dónde está AHORA (planta actual, en
+      // vivo), cuál es su planta de origen (columna PLANTA de esta noche) y a dónde apunta la
+      // columna CITACIÓN ("destino": la planta que menciona la CITACIÓN si trae una, si no, por
+      // defecto su propia planta de origen — el AZT debe reescribir la planta en CITACIÓN cada
+      // noche que quiera que alguien CONTINÚE de apoyo en otro lado; si no la repite, se entiende
+      // que debe volver a su origen). Solo 4 categorías (simplificado a pedido de ewq — antes había
+      // una por cada combinación de "por qué" se mueve, resultaba demasiado denso de leer):
+      //  - destino === actual && actual === origen   → "propiosQueda" (caso normal).
+      //  - destino === actual && actual !== origen    → "apoyoContinua" (ya estaba prestado aquí y
+      //    sigue, sin ser de esta planta — separado de "propiosQueda" para no hacerlo pasar como
+      //    propio de una planta que no es la suya).
+      //  - destino !== actual                          → hay cambio para mañana, sea cual sea el
+      //    motivo (primera vez de apoyo, regreso a origen, o cambio a una tercera planta): se
+      //    agrega a "salenOtraPlanta" en la planta ACTUAL y a "llegan" en la planta DESTINO — el
+      //    motivo exacto queda visible en las columnas PLANTA/CITACIÓN de la fila, no hace falta
+      //    una etiqueta de bloque distinta para cada caso.
+      // En todos los casos con cambio, la fila queda publicada tanto en el canal de HOY (actual)
+      // como en el de MAÑANA (destino) — así se puede consultar antes y después de que
+      // ejecutarAjusteAutomaticoMixers reasigne perfiles.planta a medianoche (sin cambios ahí).
+      const gruposPorPlanta = {};
+      const agregarFila = (planta, categoria, rowIndex) => {
+        if (!planta) return;
+        if (!gruposPorPlanta[planta]) gruposPorPlanta[planta] = {
+          propiosQueda: [],
+          apoyoContinua: [],
+          salenOtraPlanta: [],
+          llegan: []
+        };
+        gruposPorPlanta[planta][categoria].push(rowIndex);
+      };
+      // Choferes cuyo DNI del Excel no calzó con ningún perfil en vivo (puede ser un DNI nuevo sin
+      // registrar, un typo, o un documento extranjero con menos dígitos que no se intenta
+      // "adivinar" — ver normalizarDni) — se avisan al final para que se revisen a mano, en vez de
+      // asumir en silencio que nunca fueron reasignados.
+      const sinPerfilEncontrado = new Set();
+      for (const f of filasValidas) {
+        if (!mapaPlantaActual[f.dni]) sinPerfilEncontrado.add(f.nombre);
+        const plantaActual = mapaPlantaActual[f.dni] || f.plantaExcelCanonica;
+        if (!plantaActual) {
+          if (f.plantaCruda) noReconocidas.add(f.plantaCruda); // ni perfil en vivo ni PLANTA reconocible: no hay dónde publicarla
           continue;
         }
-        if (!plantasAdmin.includes(plantaCanonica)) continue; // fuera del alcance de este AZT
-        (filasPorPlanta[plantaCanonica] = filasPorPlanta[plantaCanonica] || []).push(i);
+        if (!f.plantaExcelCanonica) {
+          // Sin columna PLANTA reconocible no se puede distinguir "vuelve a origen" de "va de
+          // apoyo" — se trata como caso normal en su planta actual (mismo respaldo que antes).
+          agregarFila(plantaActual, "propiosQueda", f.rowIndex);
+          continue;
+        }
+        const citacionTexto = celdaTextoExcel(sheet.getRow(f.rowIndex), colIndex.citacion);
+        const {
+          plantaCitacion
+        } = parseCitacionConPosiblePlanta(citacionTexto);
+        const destino = plantaCitacion || f.plantaExcelCanonica;
+        if (destino === plantaActual) {
+          // Sin cambio para mañana — pero igual puede ser alguien que de verdad es de esta planta,
+          // o alguien de otra planta que ya estaba prestado aquí y simplemente confirma que
+          // continúa (sin eso, se vería como "propio" de una planta que no es la suya).
+          if (plantaActual === f.plantaExcelCanonica) {
+            agregarFila(plantaActual, "propiosQueda", f.rowIndex);
+          } else {
+            agregarFila(plantaActual, "apoyoContinua", f.rowIndex);
+          }
+        } else {
+          // Hay cambio de planta para mañana (sea porque es su primera vez de apoyo, porque
+          // regresa a su origen, o porque ya estaba prestado y lo mandan a una tercera planta) —
+          // un solo bloque genérico de "se va"/"llega" en cada lado; el detalle exacto de a dónde
+          // o desde dónde ya se ve en la fila misma (columnas PLANTA y CITACIÓN).
+          agregarFila(plantaActual, "salenOtraPlanta", f.rowIndex);
+          agregarFila(destino, "llegan", f.rowIndex);
+        }
       }
-      const plantasConDatos = Object.keys(filasPorPlanta);
+      const plantasConDatos = Object.keys(gruposPorPlanta).filter(p => plantasAdmin.includes(p));
       if (plantasConDatos.length === 0) {
         setResumen(["⚠️ No se encontraron filas para ninguna de tus plantas asignadas."]);
         setProcesando(false);
@@ -20901,23 +21032,56 @@ function ModalSubirCitacionGeneral({
         headerValsOriginal[colNumber] = cell.value;
       });
       for (const planta of plantasConDatos) {
-        const filasIdx = filasPorPlanta[planta];
+        const grupo = gruposPorPlanta[planta];
+        // Orden de publicación dentro del canal de esta planta: siempre primero los propios de
+        // hoy (la lista "normal"), luego los de apoyo que ya estaban y siguen, luego los que se
+        // van mañana, y por último los que llegan — cada bloque separado con su propia etiqueta
+        // para no mezclarlos sin aviso.
+        const secciones = [{
+          filas: grupo.propiosQueda,
+          etiqueta: `Choferes de ${planta} citados para ${planta}`
+        }, {
+          filas: grupo.apoyoContinua,
+          etiqueta: "— Choferes de apoyo que continúan aquí —"
+        }, {
+          filas: grupo.salenOtraPlanta,
+          etiqueta: "— Choferes que mañana van a otra planta —"
+        }, {
+          filas: grupo.llegan,
+          etiqueta: `— Choferes que vienen a ${planta} —`
+        }].filter(s => s.filas.length > 0);
+        const totalChoferes = secciones.reduce((sum, s) => sum + s.filas.length, 0);
         const fecha = new Date().toISOString().slice(0, 10);
-        const slug = planta.replace(/\s+/g, "_");
+        // Sin tildes/ñ y solo ASCII — Supabase Storage rechaza esos caracteres en la ruta del
+        // archivo ("Invalid key"), aunque el nombre que ve el chofer (titulo/contenido del aviso)
+        // sí se deja con tilde normal.
+        const slug = planta.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, "_");
 
-        // --- 1. Excel filtrado: mismas columnas del original, solo filas de esta planta ---
+        // --- 1. Excel filtrado: mismas columnas del original, con las secciones separadas por
+        // una fila en negrita a modo de encabezado ---
         const wbPlanta = new ExcelJS.Workbook();
         const sheetPlanta = wbPlanta.addWorksheet("Citacion");
         sheetPlanta.addRow(headerValsOriginal.slice(1));
-        filasIdx.forEach(rn => {
-          const row = sheet.getRow(rn);
-          const vals = [];
-          row.eachCell({
-            includeEmpty: true
-          }, (cell, colNumber) => {
-            vals[colNumber] = cell.value;
+        secciones.forEach(seccion => {
+          if (seccion.etiqueta) {
+            const filaEtiqueta = sheetPlanta.addRow([seccion.etiqueta]);
+            filaEtiqueta.font = {
+              bold: true,
+              color: {
+                argb: "FF0028AA"
+              }
+            };
+          }
+          seccion.filas.forEach(rn => {
+            const row = sheet.getRow(rn);
+            const vals = [];
+            row.eachCell({
+              includeEmpty: true
+            }, (cell, colNumber) => {
+              vals[colNumber] = cell.value;
+            });
+            sheetPlanta.addRow(vals.slice(1));
           });
-          sheetPlanta.addRow(vals.slice(1));
         });
         const bufferExcel = await wbPlanta.xlsx.writeBuffer();
         const nombreExcel = `Citacion_${slug}_${fecha}.xlsx`;
@@ -20925,18 +21089,29 @@ function ModalSubirCitacionGeneral({
           type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         });
 
-        // --- 2. Capturas PNG: columnas resumidas, partidas en bloques de máximo MAX_FILAS_CAPTURA
-        // filas cada una — una tabla con 50-60 choferes es ilegible como miniatura en el chat.
+        // --- 2. Capturas PNG: columnas resumidas, con las mismas secciones separadas por una fila
+        // banda (ver generarCapturaTablaPNG), partidas en bloques de máximo MAX_FILAS_CAPTURA filas
+        // cada una — una tabla con 50-60 choferes es ilegible como miniatura en el chat.
         const MAX_FILAS_CAPTURA = 25;
         const encabezadosCaptura = ["Planta", "Apellidos y Nombres", "Celular", "Citación", "Ingreso", "Mixer", "Observación", "Detalle"];
-        const filasCaptura = filasIdx.map(rn => {
-          const row = sheet.getRow(rn);
-          return [celdaTextoExcel(row, colIndex.planta), celdaTextoExcel(row, colIndex.nombre), celdaTextoExcel(row, colIndex.celular), celdaTextoExcel(row, colIndex.citacion), celdaTextoExcel(row, colIndex.ingreso), celdaTextoExcel(row, colIndex.mixer), celdaTextoExcel(row, colIndex.observacion), celdaTextoExcel(row, colIndex.detalle)];
+        const filasCaptura = [];
+        const dnisPorFila = []; // mismo largo/orden que filasCaptura (null donde hay un separador de sección), sin filtrar todavía
+        secciones.forEach(seccion => {
+          if (seccion.etiqueta) {
+            filasCaptura.push({
+              __seccion: seccion.etiqueta
+            });
+            dnisPorFila.push(null);
+          }
+          seccion.filas.forEach(rn => {
+            const row = sheet.getRow(rn);
+            filasCaptura.push([celdaTextoExcel(row, colIndex.planta), celdaTextoExcel(row, colIndex.nombre), celdaTextoExcel(row, colIndex.celular), celdaTextoExcel(row, colIndex.citacion), celdaTextoExcel(row, colIndex.ingreso), celdaTextoExcel(row, colIndex.mixer), celdaTextoExcel(row, colIndex.observacion), celdaTextoExcel(row, colIndex.detalle)]);
+            // DNI de cada fila — se guarda por bloque en dnis_incluidos para que, al consultar, se
+            // pueda identificar con certeza qué imagen contiene la fila del chofer que pregunta
+            // (ver capturaParaChofer) en vez de adivinar por orden de subida.
+            dnisPorFila.push(normalizarDni(celdaTextoExcel(row, colIndex.dni)));
+          });
         });
-        // DNI de cada fila, en el mismo orden que filasCaptura — se guarda por bloque en
-        // dnis_incluidos para que, al consultar, se pueda identificar con certeza qué imagen
-        // contiene a cada chofer (ver capturaParaChofer) en vez de adivinar por orden de subida.
-        const dnisPorFila = filasIdx.map(rn => celdaTextoExcel(sheet.getRow(rn), colIndex.dni)); // mismo largo/orden que filasCaptura, sin filtrar todavía
         const bloquesCaptura = [];
         const bloquesDni = [];
         for (let i = 0; i < filasCaptura.length; i += MAX_FILAS_CAPTURA) {
@@ -20949,7 +21124,7 @@ function ModalSubirCitacionGeneral({
         const {
           error: errExcel,
           ruta: rutaExcel
-        } = await subirArchivoConReintento(intento => `${planta}/${Date.now()}_${intento}_${nombreExcel}`, blobExcel, {
+        } = await subirArchivoConReintento(intento => `${slug}/${Date.now()}_${intento}_${nombreExcel}`, blobExcel, {
           upsert: true,
           contentType: blobExcel.type
         });
@@ -20978,7 +21153,7 @@ function ModalSubirCitacionGeneral({
           const {
             error: errImg,
             ruta: rutaImagen
-          } = await subirArchivoConReintento(intento => `${planta}/${Date.now()}_${b}_${intento}_${nombreImagen}`, blobImagen, {
+          } = await subirArchivoConReintento(intento => `${slug}/${Date.now()}_${b}_${intento}_${nombreImagen}`, blobImagen, {
             upsert: true,
             contentType: "image/png"
           });
@@ -21007,9 +21182,16 @@ function ModalSubirCitacionGeneral({
         const {
           error: errInsert
         } = await sbClient.from("avisos").insert(avisosAPublicar);
-        resumenLineas.push(errInsert ? `📍 ${planta}: ❌ se subieron los archivos pero falló el aviso (${errInsert.message})` : `📍 ${planta}: ✅ ${filasIdx.length} choferes publicados en ${bloquesCaptura.length} captura(s).`);
+        if (errInsert) {
+          resumenLineas.push(`📍 ${planta}: ❌ se subieron los archivos pero falló el aviso (${errInsert.message})`);
+        } else {
+          const totalLlegan = grupo.llegan.length;
+          const detalleApoyo = totalLlegan > 0 ? ` (${totalLlegan} llegando de otra planta)` : "";
+          resumenLineas.push(`📍 ${planta}: ✅ ${totalChoferes} choferes publicados${detalleApoyo} en ${bloquesCaptura.length} captura(s).`);
+        }
       }
-      if (noReconocidas.size) resumenLineas.push(`⚠️ Valores de PLANTA no reconocidos (se ignoraron): ${[...noReconocidas].join(", ")}`);
+      if (noReconocidas.size) resumenLineas.push(`⚠️ Valores de PLANTA no reconocidos y sin perfil en el sistema (se ignoraron): ${[...noReconocidas].join(", ")}`);
+      if (sinPerfilEncontrado.size) resumenLineas.push(`⚠️ No se pudo vincular el DNI a un perfil existente (se usó la columna PLANTA del Excel tal cual, revisar a mano): ${[...sinPerfilEncontrado].join(", ")}`);
       setResumen(resumenLineas);
     } catch (e) {
       setResumen([`❌ Error: ${e.message}`]);
@@ -21040,7 +21222,7 @@ function ModalSubirCitacionGeneral({
     color: "#6b7280"
   }))), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-gray-500 mb-3"
-  }, "Sube el Excel maestro de citaci\xF3n tal como lo recibes (todas las plantas mezcladas). Se separa autom\xE1ticamente por planta y se publica el Excel filtrado + la captura en el Canal de Avisos de cada una de tus plantas asignadas (", plantasAdmin?.join(", ") || "—", ")."), /*#__PURE__*/React.createElement("input", {
+  }, "Sube el Excel maestro de citaci\xF3n tal como lo recibes (todas las plantas mezcladas). Se separa autom\xE1ticamente por la planta donde est\xE1 CADA chofer ahora mismo (no por la columna PLANTA del Excel) y se publica en el Canal de Avisos de cada una de tus plantas asignadas (", plantasAdmin?.join(", ") || "—", "). Si a alguien lo citan para otra planta, tambi\xE9n se publica all\xE1 para que lo encuentre una vez sea reasignado."), /*#__PURE__*/React.createElement("input", {
     ref: fileRef,
     type: "file",
     accept: ".xlsx,.xls",
@@ -21943,7 +22125,7 @@ function AztPanel({
       flex: 1,
       minHeight: 0
     }
-  }, admin.rol === "admin_zonal_transporte" &&
+  }, (admin.rol === "admin_zonal_transporte" || admin.rol === "jefe_transporte") &&
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement(BotonPruebaAjusteMixer, null), showSidebar &&
@@ -22698,7 +22880,7 @@ function AztPanel({
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-[10px] font-bold uppercase tracking-wide text-gray-400"
   }, "Canales de avisos")), /*#__PURE__*/React.createElement(HerramientasCanalAvisos, {
-    esAZT: admin?.rol === "admin_zonal_transporte",
+    esAZT: admin?.rol === "admin_zonal_transporte" || admin?.rol === "jefe_transporte",
     onEncuesta: () => setCrearEncuestaTransversalAbierta(true),
     onCitacion: () => setSubirCitacionTransversalAbierta(true)
   }), /*#__PURE__*/React.createElement("div", {
@@ -22792,7 +22974,7 @@ function AztPanel({
       color: AZUL
     }
   }, "Canales de avisos")), /*#__PURE__*/React.createElement(HerramientasCanalAvisos, {
-    esAZT: admin?.rol === "admin_zonal_transporte",
+    esAZT: admin?.rol === "admin_zonal_transporte" || admin?.rol === "jefe_transporte",
     onEncuesta: () => setCrearEncuestaTransversalAbierta(true),
     onCitacion: () => setSubirCitacionTransversalAbierta(true)
   }), [...plantList.filter(p => p !== "Todas")].sort((a, b) => {
