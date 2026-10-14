@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-14T04:24:04.584Z */
+/* UniconApp — Bundle generado el 2026-10-14T04:28:19.274Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 18811 — CERO simplificaciones */
+/* Líneas originales del JSX: 18815 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -26279,25 +26279,29 @@ function AuxilioForm({
     }
   })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
     className: lbl
-  }, "Planta en donde operas HOY"), /*#__PURE__*/React.createElement("select", {
-    value: planta,
-    onChange: e => setPlanta(e.target.value),
-    className: inp,
+  }, "Planta en donde operas HOY"), /*#__PURE__*/React.createElement("div", {
+    className: "mt-1 rounded-lg overflow-y-auto",
     style: {
-      borderColor: planta ? AZUL : "#d5d9e4",
-      color: planta ? AZUL : "#374151",
-      fontWeight: planta ? 600 : 400
+      border: "1px solid #e6e8ee",
+      maxHeight: 180
     }
-  }, /*#__PURE__*/React.createElement("option", {
-    value: "",
-    disabled: true
-  }, "Selecciona tu planta\u2026"), PLANTAS_TODAS.filter(p => p !== "Transversal").map(p =>
+  }, PLANTAS_TODAS.filter(p => p !== "Transversal").map(p =>
   /*#__PURE__*/
   /*#__PURE__*/
-  React.createElement("option", {
+  React.createElement("button", {
     key: p,
-    value: p
-  }, p)))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    onClick: () => setPlanta(p),
+    className: `w-full text-left ${py} px-3 ${compact ? "text-xs" : "text-sm"} flex items-center gap-2 border-b last:border-b-0`,
+    style: {
+      background: planta === p ? "#eef1fb" : "white",
+      color: planta === p ? AZUL : "#374151",
+      fontWeight: planta === p ? 600 : 400,
+      borderColor: "#f0f2f6"
+    }
+  }, /*#__PURE__*/React.createElement(MapPin, {
+    size: 14,
+    color: planta === p ? AZUL : "#9ca3af"
+  }), " ", p)))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
     className: lbl
   }, "\xBFCargado o vac\xEDo?"), /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-2 gap-1.5 mt-0.5"
