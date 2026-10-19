@@ -1,4 +1,4 @@
-/* UniconApp — Bundle generado el 2026-10-18T22:39:52.241Z */
+/* UniconApp — Bundle generado el 2026-10-19T00:50:38.981Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
 /* Líneas originales del JSX: 19669 — CERO simplificaciones */
 
@@ -27734,7 +27734,7 @@ function FotoAdjuntar({
   const handleFile = e => {
     const f = e.target.files?.[0];
     if (!f) return;
-    onToggle(f.name);
+    onToggle(f);
     const reader = new FileReader();
     reader.onload = ev => setPreview(ev.target.result);
     reader.readAsDataURL(f);
@@ -27790,7 +27790,7 @@ function FotoAdjuntar({
   /*#__PURE__*/
   React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Check, {
     size: 17
-  }), " ", attached, " \xB7 toca para cambiar") :
+  }), " ", attached.name, " \xB7 toca para cambiar") :
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Camera, {
