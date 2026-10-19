@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-19T00:53:43.815Z */
+/* UniconApp — Bundle generado el 2026-10-19T01:04:16.564Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 19677 — CERO simplificaciones */
+/* Líneas originales del JSX: 19720 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -9112,7 +9112,7 @@ function UniconApp() {
   return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "w-full flex flex-col",
     style: {
-      height: "100vh",
+      height: "100dvh",
       background: "#f1f3f7",
       fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
       overflow: "hidden"
@@ -19061,6 +19061,7 @@ function ReporteIncidencias({
   const [fallaComent, setFallaComent] = useState("");
   const [fallaUbicacion, setFallaUbicacion] = useState("");
   const [fallaAdjunto, setFallaAdjunto] = useState(null);
+  const [enviando, setEnviando] = useState(false); // mientras se sube el adjunto (puede demorar con fotos de cámara) + se registra la incidencia
   const [dedupCandidate, setDedupCandidate] = useState(null); // incidencia similar activa encontrada
   const [pendingSubmitFn, setPendingSubmitFn] = useState(null); // fn a ejecutar si es "nuevo"
   const [dedupConfirmed, setDedupConfirmed] = useState(false); // mostrar mensaje de confirmación
@@ -19166,19 +19167,58 @@ function ReporteIncidencias({
     }
     setStep("askCall");
   };
+  // Achica la foto antes de subirla si hace falta — una foto tomada con la cámara del celular
+  // suele venir en resolución completa (varios MB), lo que hacía la subida visiblemente lenta.
+  // Si algo falla acá (formato raro, etc.) sigue con el archivo original tal cual, nunca bloquea.
+  const comprimirImagen = (file, maxDim = 1600, calidad = 0.82) => new Promise(resolve => {
+    if (!file.type?.startsWith("image/")) {
+      resolve(file);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const {
+        width,
+        height
+      } = img;
+      if (width <= maxDim && height <= maxDim) {
+        resolve(file);
+        return;
+      }
+      const escala = Math.min(maxDim / width, maxDim / height);
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(width * escala);
+      canvas.height = Math.round(height * escala);
+      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(blob => {
+        resolve(blob ? new File([blob], file.name.replace(/\.[^.]+$/, "") + ".jpg", {
+          type: "image/jpeg"
+        }) : file);
+      }, "image/jpeg", calidad);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(file);
+    };
+    img.src = url;
+  });
   // Sube el adjunto (foto/archivo) al bucket dedicado, si viene uno — mismo patrón que
   // auxilios-mecanicos. Devuelve null si no hay adjunto o si falla la subida (no bloquea el envío
   // del reporte por un problema solo con la foto).
   const subirAdjuntoIncidencia = async file => {
     if (!file) return null;
-    const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+    const final = await comprimirImagen(file);
+    const ext = (final.name.split(".").pop() || "jpg").toLowerCase();
     const path = `${driver.id}/${Date.now()}.${ext}`;
     const {
       error
-    } = await sbClient.storage.from("incidencias").upload(path, file);
+    } = await sbClient.storage.from("incidencias").upload(path, final);
     return error ? null : path;
   };
   const _doSubmitFalla = async () => {
+    setEnviando(true);
     const tiposTexto = fallaTipos.filter(t => t !== "Otro").concat(fallaTipos.includes("Otro") && fallaOtroTexto.trim() ? [fallaOtroTexto.trim()] : []).join(", ");
     const texto = `🔧 Falla mecánica — Unidad ${fallaMixer}\nTipo: ${tiposTexto}\n${fallaComent.trim()}` + (fallaUbicacion.trim() ? `\nUbicación: ${fallaUbicacion.trim()}` : "");
     const adjuntoPath = await subirAdjuntoIncidencia(fallaAdjunto);
@@ -19193,6 +19233,7 @@ function ReporteIncidencias({
       p_mensaje_inicial: texto,
       p_adjunto_path: adjuntoPath
     });
+    setEnviando(false);
     if (error) {
       console.error("No se pudo registrar la falla mecánica:", error.message);
       alert("No se pudo enviar el reporte: " + error.message);
@@ -19245,6 +19286,7 @@ function ReporteIncidencias({
   };
   const submit = () => checkAndSubmit(tipo?.id, _doSubmit);
   const _doSubmitServicio = async () => {
+    setEnviando(true);
     const servicioLabel = SERVICIOS_PLANTA.find(s => s.id === servicio)?.label || "Servicio no especificado";
     const detalleBase = servicio === "almuerzo" && subAlmuerzo ? `${servicioLabel} · ${subAlmuerzo}` : servicioLabel;
     const detalle = comentario.trim() ? `${detalleBase} — ${comentario.trim()}` : detalleBase;
@@ -19260,6 +19302,7 @@ function ReporteIncidencias({
       p_mensaje_inicial: detalle,
       p_adjunto_path: adjuntoPath
     });
+    setEnviando(false);
     if (error) {
       console.error("No se pudo registrar el servicio:", error.message);
       alert("No se pudo enviar el reporte: " + error.message);
@@ -19678,13 +19721,13 @@ function ReporteIncidencias({
     onToggle: setFallaAdjunto
   })), /*#__PURE__*/React.createElement("button", {
     onClick: submitFalla,
-    disabled: !fallaFormValid,
+    disabled: !fallaFormValid || enviando,
     className: "w-full py-3 rounded-xl font-bold text-sm disabled:opacity-40",
     style: {
       background: AMARILLO,
       color: AZUL
     }
-  }, "Enviar reporte")), /*#__PURE__*/React.createElement("button", {
+  }, enviando ? "Enviando…" : "Enviar reporte")), /*#__PURE__*/React.createElement("button", {
     onClick: () => setStep("falla_rop"),
     className: "w-full mt-3 text-sm text-gray-400 hover:text-gray-600 text-center py-2"
   }, "\u2039 Volver")), step === "falla_sent" &&
@@ -19846,13 +19889,13 @@ function ReporteIncidencias({
     onToggle: setAdjuntoServicio
   })), /*#__PURE__*/React.createElement("button", {
     onClick: submitServicio,
-    disabled: servicio === "almuerzo" && !subAlmuerzo,
+    disabled: servicio === "almuerzo" && !subAlmuerzo || enviando,
     className: "w-full py-2.5 rounded-xl font-bold text-sm disabled:opacity-40",
     style: {
       background: AMARILLO,
       color: AZUL
     }
-  }, "Reportar"))), step === "dedupCheck" && dedupCandidate && (() => {
+  }, enviando ? "Enviando…" : "Reportar"))), step === "dedupCheck" && dedupCandidate && (() => {
     const totalAfectados = 1 + (dedupCandidate.afectados || []).length; // 1 = chofer original
     return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
       className: "flex flex-col pt-4"
