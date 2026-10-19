@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-14T16:43:18.512Z */
+/* UniconApp — Bundle generado el 2026-10-18T22:39:52.241Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 18820 — CERO simplificaciones */
+/* Líneas originales del JSX: 19669 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -8053,9 +8053,6 @@ const BOT_MENU = {
     }, {
       id: "op_unikin",
       label: "UNIKIN no funciona"
-    }, {
-      id: "op_instalar",
-      label: "Necesito instalar UNIKIN en mi celular u en otro celular"
     }]
   },
   unidad: {
@@ -8346,6 +8343,14 @@ const CHANNEL_INFO = {
       items: ["Objetos perdidos o encontrados (usa UNI BOT)", "Incidencias con el cliente en obra o servicios no disponibles en planta (usa Reportes de incidencia)", "Dónde dejaste el mixer (usa Reporte de fin de vuelta)"]
     }],
     cta: "Abrir mi bitácora"
+  },
+  rituales_liderazgo: {
+    icon: Users,
+    title: "Rituales de Liderazgo",
+    kicker: "Conversaciones en el Camarín",
+    desc: "Guía para ejecutar tu espacio semanal de escucha con los compañeros, registrar los acuerdos que tomen y comunicar su estatus en cada charla.",
+    sections: [],
+    cta: "Abrir"
   }
 };
 let idc = 100;
@@ -8906,7 +8911,7 @@ function UniconApp() {
       tipo: f.tipo,
       parqueo: f.parqueo,
       llaves: f.llaves,
-      estado: f.problema ? "Reportar problema" : "Todo bien",
+      estado: f.problema ? "Falla mecánica" : "Todo bien",
       problemaDesc: f.problema || "",
       coment: f.comentario || "",
       lavadero: f.lavadero,
@@ -8940,6 +8945,43 @@ function UniconApp() {
       listener?.subscription?.unsubscribe();
       sbClient.removeChannel(canal);
       clearInterval(intervalo);
+    };
+  }, []);
+
+  // Mixers actualmente enviados a Taller por un AZT (ver Reporte de mixers) — tabla aparte de
+  // reportes_fin_vuelta a propósito: esto no es "dónde quedó parqueado" sino "está en
+  // mantenimiento ahora mismo", y necesita poder "cerrarse" sin depender de que el chofer haga un
+  // reporte nuevo.
+  const [mixersTaller, setMixersTaller] = useState([]);
+  const cargarMixersTaller = async () => {
+    const {
+      data: filas
+    } = await sbClient.from("mixers_taller").select("*").is("sacado_en", null);
+    if (filas) setMixersTaller(filas);
+  };
+  useEffect(() => {
+    let vigente = true;
+    const {
+      data: listener
+    } = sbClient.auth.onAuthStateChange((event, session) => {
+      if (session && vigente) cargarMixersTaller();
+    });
+    sbClient.auth.getSession().then(({
+      data
+    }) => {
+      if (data.session && vigente) cargarMixersTaller();
+    });
+    const canalTaller = sbClient.channel("mixers-taller-global").on("postgres_changes", {
+      event: "*",
+      schema: "public",
+      table: "mixers_taller"
+    }, () => cargarMixersTaller()).subscribe();
+    const intervaloTaller = setInterval(cargarMixersTaller, 15000);
+    return () => {
+      vigente = false;
+      listener?.subscription?.unsubscribe();
+      sbClient.removeChannel(canalTaller);
+      clearInterval(intervaloTaller);
     };
   }, []);
   const [avisos, setAvisos] = useState([{
@@ -9091,6 +9133,7 @@ function UniconApp() {
     setAvisos: setAvisos,
     emergencias: emergencias,
     setEmergencias: setEmergencias,
+    mixersTaller: mixersTaller,
     role: role,
     setRole: setRole,
     setAztDni: setAztDni
@@ -9110,6 +9153,7 @@ function UniconApp() {
     emergencias: emergencias,
     setEmergencias: setEmergencias,
     reportesFinVuelta: reportesFinVuelta,
+    mixersTaller: mixersTaller,
     role: role,
     setRole: setRole,
     initialDni: aztDni
@@ -9423,6 +9467,62 @@ function useMobileBackButton(isDesktop, mobileList, setMobileList) {
     }
   }, [isDesktop, mobileList]);
 }
+function HerramientasPanel({
+  onClose,
+  onElegir,
+  mostrarRituales
+}) {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 z-50 flex items-start justify-end p-3 pt-14",
+    style: {
+      background: "rgba(0,0,0,.4)"
+    },
+    onClick: onClose
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-2xl shadow-2xl overflow-hidden",
+    style: {
+      width: 250
+    },
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "px-4 py-3 text-xs font-extrabold uppercase tracking-wide text-gray-400 border-b",
+    style: {
+      borderColor: "#eef0f4"
+    }
+  }, "Mis herramientas"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => onElegir("bitacora"),
+    className: "w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "w-9 h-9 rounded-full flex items-center justify-center shrink-0",
+    style: {
+      background: "#eef1fb"
+    }
+  }, /*#__PURE__*/React.createElement(BitacoraIcon, {
+    size: 18,
+    color: AZUL
+  })), /*#__PURE__*/React.createElement("span", {
+    className: "font-semibold text-sm text-gray-800"
+  }, "Bit\xE1cora personal")), mostrarRituales &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
+    onClick: () => onElegir("rituales_liderazgo"),
+    className: "w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 border-t",
+    style: {
+      borderColor: "#eef0f4"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "w-9 h-9 rounded-full flex items-center justify-center shrink-0",
+    style: {
+      background: "#eef1fb"
+    }
+  }, /*#__PURE__*/React.createElement(Users, {
+    size: 18,
+    color: AZUL
+  })), /*#__PURE__*/React.createElement("span", {
+    className: "font-semibold text-sm text-gray-800"
+  }, "Rituales de Liderazgo"))));
+}
 function ChoferApp({
   incidents,
   setIncidents,
@@ -9430,6 +9530,7 @@ function ChoferApp({
   setAvisos,
   emergencias,
   setEmergencias,
+  mixersTaller,
   role,
   setRole,
   setAztDni
@@ -9448,6 +9549,7 @@ function ChoferApp({
   });
   const [driver, setDriver] = useState(null);
   const misUnidadesPropias = useRef(new Set()); // mixers que el propio chofer acaba de editar desde su perfil, para no mostrarle "fuiste reasignado" por su propio cambio
+  const tallerVistoRef = useRef(new Set()); // ids de mixers_taller ya mostrados en esta sesión, para no repetir la pantalla azul en cada sondeo ni duplicarla si Realtime y el sondeo detectan el mismo envío
   const [channel, setChannel] = useState(null); // avisos|finvuelta|bot|incidencias — null = sin canal elegido aún, para evitar montar el chat automáticamente al iniciar sesión
   const channelRef = useRef(channel); // espejo de "channel" para el canal de Realtime del badge (ver más abajo), que debe quedarse conectado toda la sesión sin reconectarse en cada cambio de pantalla
   useEffect(() => {
@@ -9480,6 +9582,7 @@ function ChoferApp({
   const [avisosNoLeidosReal, setAvisosNoLeidosReal] = useState(0); // conteo real desde Supabase para el badge
   const [notifs, setNotifs] = useState([]); // notificaciones personales del chofer
   const [openNotif, setOpenNotif] = useState(false);
+  const [openHerramientas, setOpenHerramientas] = useState(false);
   const [toastNotif, setToastNotif] = useState(null); // burbuja efímera + sonido cuando llega una EN VIVO
   const [botDeepLink, setBotDeepLink] = useState(null); // ej. "op_unikin" — abre UNIBOT directo en esa opción (ver Bitácora personal)
   const isDesktop = useIsDesktop();
@@ -9653,6 +9756,47 @@ function ChoferApp({
       sbClient.removeChannel(canal);
     };
   }, [driver?.id]);
+
+  // Escuchar si un AZT envía el mixer del chofer a Taller (ver EstadoMixers / Reporte de mixers) —
+  // canal aparte de "perfil-{id}" porque esto no toca perfiles, vive en su propia tabla
+  // mixers_taller, filtrado por número de mixer (no por chofer, ya que el mixer puede pasar de
+  // mano en mano). Igual que con auxilios_lectura, Realtime puede quedar "SUBSCRIBED" sin entregar
+  // el INSERT (o el chofer puede recién abrir la app después de que ya se envió) — por eso además
+  // hay un sondeo periódico de respaldo que revisa si hay un envío abierto no visto todavía.
+  const mostrarAvisoTaller = async fila => {
+    if (!fila || tallerVistoRef.current.has(fila.id)) return;
+    tallerVistoRef.current.add(fila.id);
+    const {
+      data: aztRows
+    } = await sbClient.from("perfiles").select("nombre, telefono").eq("rol", "admin_zonal_transporte").eq("activo", true).or(`planta.ilike.%${driverRef.current.planta}%,planta.ilike.%Transversal%`);
+    setReasignado({
+      enviadoTaller: true,
+      azt: aztRows?.[0] || null
+    });
+  };
+  useEffect(() => {
+    if (!driver?.unidad) return;
+    const canalTaller = sbClient.channel(`mixer-taller-${driver.unidad}`).on("postgres_changes", {
+      event: "INSERT",
+      schema: "public",
+      table: "mixers_taller",
+      filter: `mixer=eq.${driver.unidad}`
+    }, payload => mostrarAvisoTaller(payload.new)).subscribe();
+    const chequearTaller = async () => {
+      const {
+        data
+      } = await sbClient.from("mixers_taller").select("id").eq("mixer", driver.unidad).is("sacado_en", null).order("enviado_en", {
+        ascending: false
+      }).limit(1);
+      if (data?.[0]) mostrarAvisoTaller(data[0]);
+    };
+    chequearTaller();
+    const intervaloTaller = setInterval(chequearTaller, 15000);
+    return () => {
+      sbClient.removeChannel(canalTaller);
+      clearInterval(intervaloTaller);
+    };
+  }, [driver?.unidad]);
 
   // Notificar cuando una incidencia del chofer pasa a resuelta — excluye "falla" (las fallas
   // mecánicas se marcan como vistas automáticamente apenas un admin abre el feed, no porque alguien
@@ -9997,7 +10141,36 @@ function ChoferApp({
       }
     }, "Tu cuenta fue desactivada"), /*#__PURE__*/React.createElement("p", {
       className: "text-sm text-gray-600 mb-6"
-    }, "Contacta a tu AZT o a Gesti\xF3n Humana si crees que esto es un error.")) : reasignado.unidadNueva ?
+    }, "Contacta a tu AZT o a Gesti\xF3n Humana si crees que esto es un error.")) : reasignado.enviadoTaller ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("h2", {
+      className: "text-xl font-black mb-2",
+      style: {
+        color: AZUL
+      }
+    }, "Tu cami\xF3n debe ir al taller de mantenimiento"), /*#__PURE__*/React.createElement("p", {
+      className: "text-sm text-gray-600 mb-4"
+    }, "Comun\xEDcate con tu AZT para coordinarlo."), reasignado.azt ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
+      className: "bg-gray-50 rounded-xl p-3 mb-6 text-left"
+    }, /*#__PURE__*/React.createElement("p", {
+      className: "font-bold text-sm",
+      style: {
+        color: AZUL
+      }
+    }, reasignado.azt.nombre), /*#__PURE__*/React.createElement("p", {
+      className: "text-sm text-gray-600 flex items-center gap-1.5 mt-0.5"
+    }, /*#__PURE__*/React.createElement(Phone, {
+      size: 13
+    }), " ", reasignado.azt.telefono || "Sin teléfono registrado")) :
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("p", {
+      className: "text-xs text-gray-400 mb-6"
+    }, "No se encontr\xF3 un AZT asignado a tu planta \u2014 consulta en tu planta.")) : reasignado.unidadNueva ?
     /*#__PURE__*/
     /*#__PURE__*/
     React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("h2", {
@@ -10045,6 +10218,7 @@ function ChoferApp({
       }
     }, reasignado.desactivado ? "Volver a ingresar" : "Continuar")));
   }
+  const ROLES_CON_RITUALES_LIDERAZGO = new Set(["chom_lider"]);
   const CHANNELS = [{
     id: "avisos",
     label: "Canal de Avisos",
@@ -10109,15 +10283,25 @@ function ChoferApp({
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-end gap-2 mb-2"
   }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => openChannel("bitacora"),
+    onClick: () => setOpenHerramientas(true),
     className: "relative w-10 h-10 rounded-full flex items-center justify-center",
     style: {
       background: "rgba(255,255,255,.15)"
     }
-  }, /*#__PURE__*/React.createElement(BitacoraIcon, {
-    size: 22,
+  }, /*#__PURE__*/React.createElement(HardHat, {
+    size: 20,
     color: "white"
-  })), /*#__PURE__*/React.createElement("button", {
+  })), openHerramientas &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(HerramientasPanel, {
+    onClose: () => setOpenHerramientas(false),
+    onElegir: id => {
+      setOpenHerramientas(false);
+      openChannel(id);
+    },
+    mostrarRituales: ROLES_CON_RITUALES_LIDERAZGO.has(driver.rol)
+  }), /*#__PURE__*/React.createElement("button", {
     onClick: () => setOpenNotif(true),
     className: "relative w-10 h-10 rounded-full flex items-center justify-center",
     style: {
@@ -10267,6 +10451,7 @@ function ChoferApp({
     avisos: avisos,
     setAvisos: setAvisos,
     setEmergencias: setEmergencias,
+    mixersTaller: mixersTaller,
     deepLink: botDeepLink,
     onDeepLinkConsumido: () => setBotDeepLink(null)
   }), channel === "incidencias" &&
@@ -10291,6 +10476,11 @@ function ChoferApp({
       setBotDeepLink("op_unikin");
       setChannel("bot");
     }
+  }), channel === "rituales_liderazgo" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(RitualesLiderazgo, {
+    driver: driver
   })) :
   /*#__PURE__*/
   /*#__PURE__*/
@@ -10309,6 +10499,1261 @@ function ChoferApp({
   })), /*#__PURE__*/React.createElement("p", {
     className: "text-sm font-semibold text-gray-600"
   }, "Elige una opci\xF3n del men\xFA para comenzar")))));
+}
+const DIAS_SEMANA = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+const PASOS_CAMARIN = [{
+  t: "Abro",
+  d: "Con una pregunta: «¿Cómo van? ¿Alguien ha tenido alguna dificultad en planta en la que necesite mi ayuda?»"
+}, {
+  t: "Espero",
+  d: "10 y 20 segundos de silencio para dar espacio a las respuestas."
+}, {
+  t: "Escucho",
+  d: "Sin interrumpir mientras comparten su experiencia."
+}, {
+  t: "Agradezco",
+  d: "Al compañero por compartir su experiencia."
+}, {
+  t: "Decido",
+  d: "Si puedo resolver la dificultad directamente o si necesito el apoyo de otra persona o área."
+}, {
+  t: "Comunico",
+  d: "El acuerdo definido para resolverlo, indicando las acciones a realizar y la fecha prevista de resolución."
+}, {
+  t: "Doy cierre",
+  d: "Comunico la solución o los avances; si no estoy presente, los comparto con quien lidere la siguiente charla."
+}];
+const FRASES_CAMARIN = ["«¿Qué crees que pasó? ¿Qué necesitas de mí para resolverlo?»", "«Gracias por contármelo, lo valoro mucho.»", "«Voy a coordinar con el área responsable y te daré una respuesta en la fecha acordada. Este es el avance del caso que fue reportado en la última charla por el compañero \"XXX\".»"];
+const QUE_NO_HACER_CAMARIN = ["Cerrar sin un acuerdo concreto.", "No dar seguimiento a los acuerdos en los días siguientes.", "Interrumpir o minimizar los problemas reportados por los compañeros.", "No comunicar el estatus y acuerdos completados al inicio de la siguiente charla semanal.", "Registrar acuerdos separados cuando varios compañeros reportan el mismo problema.", "Registrar incidencias que pueden ser enviadas por UNI APP."];
+function FilaCampo({
+  bg,
+  color,
+  Icon,
+  label,
+  value,
+  strong,
+  small
+}) {
+  const chipSize = small ? 26 : 36;
+  const iconSize = small ? 13 : 18;
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    className: small ? "flex items-start gap-2 mb-2.5" : "flex items-start gap-3 mb-4"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "rounded-full flex items-center justify-center shrink-0",
+    style: {
+      width: chipSize,
+      height: chipSize,
+      background: bg,
+      color
+    }
+  }, /*#__PURE__*/React.createElement(Icon, {
+    size: iconSize
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 min-w-0 pt-0.5"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: small ? "font-extrabold uppercase tracking-wide text-gray-400 text-[9px] mb-0.5" : "font-extrabold uppercase tracking-wide text-gray-400 text-[10px] mb-1"
+  }, label), /*#__PURE__*/React.createElement("div", {
+    className: strong ? small ? "font-extrabold text-sm" : "font-extrabold text-base" : small ? "text-[13px] text-gray-800" : "text-sm text-gray-800"
+  }, value)));
+}
+function BloqueSolucion({
+  texto,
+  small
+}) {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    className: small ? "rounded-xl p-2.5 mb-2.5" : "rounded-xl p-3.5 mb-4",
+    style: {
+      background: "#dcfce7"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-start gap-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "rounded-full flex items-center justify-center shrink-0",
+    style: {
+      width: small ? 26 : 36,
+      height: small ? 26 : 36,
+      background: "#16a34a",
+      color: "#fff"
+    }
+  }, /*#__PURE__*/React.createElement(CheckCircle2, {
+    size: small ? 13 : 18
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 min-w-0 pt-0.5"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: small ? "font-extrabold uppercase tracking-wide text-[9px] mb-0.5" : "font-extrabold uppercase tracking-wide text-[10px] mb-1",
+    style: {
+      color: "#166534"
+    }
+  }, "Soluci\xF3n"), /*#__PURE__*/React.createElement("div", {
+    className: small ? "text-[13px] text-gray-800" : "text-sm text-gray-800"
+  }, texto))));
+}
+function CajaColapsable({
+  abierto,
+  onToggle,
+  Icon,
+  iconColor,
+  titulo,
+  children
+}) {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl bg-white border mb-3 overflow-hidden",
+    style: {
+      borderColor: "#e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: onToggle,
+    className: "w-full flex items-center justify-between px-3.5 py-2.5 font-extrabold text-sm"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    size: 14,
+    color: iconColor
+  }), " ", titulo.toUpperCase()), abierto ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(ChevronUp, {
+    size: 14
+  }) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(ChevronDown, {
+    size: 14
+  })), abierto &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "px-3.5 pb-3"
+  }, children));
+}
+function CampoForm({
+  label,
+  value,
+  onChange,
+  placeholder,
+  textarea,
+  type
+}) {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    className: "mb-3"
+  }, /*#__PURE__*/React.createElement("label", {
+    className: "block text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-1"
+  }, label), textarea ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("textarea", {
+    value: value,
+    onChange: e => onChange(e.target.value),
+    placeholder: placeholder,
+    className: "w-full px-3 py-2 rounded-lg border text-sm",
+    style: {
+      borderColor: "#e6e8ee",
+      minHeight: 56
+    }
+  }) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("input", {
+    type: type || "text",
+    value: value,
+    onChange: e => onChange(e.target.value),
+    placeholder: placeholder,
+    className: "w-full px-3 py-2 rounded-lg border text-sm",
+    style: {
+      borderColor: "#e6e8ee"
+    }
+  }));
+}
+function TarjetaAcuerdo({
+  a,
+  estado,
+  fmtFecha,
+  notaAbierta,
+  notaTexto,
+  onNotaTexto,
+  onToggleNota,
+  onGuardarNota,
+  completarAbierto,
+  solucionTexto,
+  onSolucionTexto,
+  onToggleCompletar,
+  onConfirmarCompletar
+}) {
+  const pillBg = estado === "d" ? "#dcfce7" : estado === "v" ? "#fee2e2" : "#fef3c7";
+  const pillColor = estado === "d" ? "#166534" : estado === "v" ? "#991b1b" : "#92400e";
+  const pillTxt = estado === "d" ? "Completado" : estado === "v" ? "Vencido" : "Pendiente";
+  const avancesValor =
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", null, (a.notas || []).length === 0 && !notaAbierta &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("span", {
+    className: "text-gray-400"
+  }, "Sin avances registrados todav\xEDa."), (a.notas || []).map((n, i) =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    key: i,
+    className: "text-xs py-0.5"
+  }, /*#__PURE__*/React.createElement("b", {
+    className: "text-gray-400"
+  }, fmtFecha(n.fecha)), " ", n.texto)), estado !== "v" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "mt-1.5"
+  }, !notaAbierta ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
+    onClick: onToggleNota,
+    className: "text-xs font-bold flex items-center gap-1",
+    style: {
+      color: AZUL
+    }
+  }, /*#__PURE__*/React.createElement(Plus, {
+    size: 11
+  }), " Agregar avance") :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "flex gap-1.5"
+  }, /*#__PURE__*/React.createElement("input", {
+    value: notaTexto,
+    onChange: e => onNotaTexto(e.target.value),
+    placeholder: "Escribe un avance...",
+    className: "flex-1 min-w-0 px-2 py-1.5 rounded-lg border text-xs",
+    style: {
+      borderColor: "#e6e8ee"
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: onGuardarNota,
+    className: "px-2.5 py-1.5 rounded-lg text-xs font-bold text-white shrink-0",
+    style: {
+      background: AZUL
+    }
+  }, "Guardar"))));
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    className: "rounded-2xl bg-white border p-3.5 mb-3",
+    style: {
+      borderColor: "#e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "inline-block text-[11px] font-bold px-2.5 py-1 rounded-full mb-3",
+    style: {
+      background: pillBg,
+      color: pillColor
+    }
+  }, pillTxt), /*#__PURE__*/React.createElement(FilaCampo, {
+    small: true,
+    bg: "#eef1fb",
+    color: AZUL,
+    Icon: User,
+    label: "Compa\xF1ero",
+    value: a.companero_nombre,
+    strong: true
+  }), /*#__PURE__*/React.createElement(FilaCampo, {
+    small: true,
+    bg: "#dc2626",
+    color: "#fff",
+    Icon: AlertTriangle,
+    label: "Problem\xE1tica",
+    value: a.tema
+  }), /*#__PURE__*/React.createElement(FilaCampo, {
+    small: true,
+    bg: "#eef1fb",
+    color: AZUL,
+    Icon: FileText,
+    label: "Acuerdo",
+    value: a.acuerdo
+  }), /*#__PURE__*/React.createElement(FilaCampo, {
+    small: true,
+    bg: "#e6e8ee",
+    color: "#5c6070",
+    Icon: ListChecks,
+    label: "Avances",
+    value: avancesValor
+  }), estado === "d" && a.solucion &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(BloqueSolucion, {
+    small: true,
+    texto: a.solucion
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-3 text-xs text-gray-400 mt-2 flex-wrap"
+  }, /*#__PURE__*/React.createElement("span", null, "Inicio: ", fmtFecha(a.fecha_inicio)), /*#__PURE__*/React.createElement("span", null, "L\xEDmite: ", fmtFecha(a.fecha_limite))), estado === "p" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "mt-3"
+  }, !completarAbierto ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
+    onClick: onToggleCompletar,
+    className: "w-full py-2.5 rounded-lg font-bold text-sm text-white",
+    style: {
+      background: "#16a34a"
+    }
+  }, "Marcar completado") :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", null, /*#__PURE__*/React.createElement("textarea", {
+    value: solucionTexto,
+    onChange: e => onSolucionTexto(e.target.value),
+    placeholder: "\xBFCu\xE1l fue la soluci\xF3n?",
+    className: "w-full px-3 py-2 rounded-lg border text-sm mb-2",
+    style: {
+      borderColor: "#e6e8ee",
+      minHeight: 50
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: onConfirmarCompletar,
+    className: "flex-1 py-2 rounded-lg font-bold text-sm text-white",
+    style: {
+      background: "#16a34a"
+    }
+  }, "Guardar y marcar completado"), /*#__PURE__*/React.createElement("button", {
+    onClick: onToggleCompletar,
+    className: "flex-1 py-2 rounded-lg font-bold text-sm border",
+    style: {
+      borderColor: "#e6e8ee",
+      color: "#5c6070"
+    }
+  }, "Cancelar")))));
+}
+function ComunicacionEstatus({
+  deck,
+  index,
+  config,
+  configAbierto,
+  onAbrirConfig,
+  confDia,
+  setConfDia,
+  confH,
+  setConfH,
+  confM,
+  setConfM,
+  confAP,
+  setConfAP,
+  onGuardarConfig,
+  onCerrar,
+  onPrev,
+  onNext,
+  cardRef,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+  fmtFecha
+}) {
+  const hp = config.hora.split(":");
+  let hh12 = parseInt(hp[0], 10) % 12;
+  if (hh12 === 0) hh12 = 12;
+  const ap = parseInt(hp[0], 10) < 12 ? "a.m." : "p.m.";
+  const etiquetaConfig = `Tu charla: ${DIAS_SEMANA[config.dia]} ${hh12}:${hp[1]} ${ap}`;
+  const slide = deck[index];
+  const totalCards = deck.filter(s => s.tipo !== "intro").length;
+  let posCard = 0;
+  for (let i = 0; i <= index && i < deck.length; i++) {
+    if (deck[i].tipo !== "intro") posCard++;
+  }
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 z-50 flex flex-col",
+    style: {
+      background: "#f6f8fc"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2 px-3.5 py-2.5 bg-white border-b",
+    style: {
+      borderColor: "#e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "flex-1 text-xs font-extrabold",
+    style: {
+      color: AZUL_OSC
+    }
+  }, "Comunicaci\xF3n del estatus"), /*#__PURE__*/React.createElement("button", {
+    onClick: onCerrar,
+    className: "w-6 h-6 rounded-full flex items-center justify-center",
+    style: {
+      background: "#f6f8fc"
+    }
+  }, /*#__PURE__*/React.createElement(X, {
+    size: 13,
+    color: "#5c6070"
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between px-3.5 py-2 bg-white border-b text-xs text-gray-500",
+    style: {
+      borderColor: "#e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("span", null, etiquetaConfig), /*#__PURE__*/React.createElement("button", {
+    onClick: onAbrirConfig,
+    className: "font-bold",
+    style: {
+      color: AZUL
+    }
+  }, "Editar")), configAbierto &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "flex flex-wrap gap-1.5 px-3.5 py-2.5 bg-white border-b",
+    style: {
+      borderColor: "#e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("select", {
+    value: confDia,
+    onChange: e => setConfDia(parseInt(e.target.value, 10)),
+    className: "flex-1 basis-full px-2 py-1.5 rounded-lg border text-xs",
+    style: {
+      borderColor: "#e6e8ee"
+    }
+  }, DIAS_SEMANA.map((d, i) =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("option", {
+    key: i,
+    value: i
+  }, d))), /*#__PURE__*/React.createElement("select", {
+    value: confH,
+    onChange: e => setConfH(parseInt(e.target.value, 10)),
+    className: "flex-1 px-2 py-1.5 rounded-lg border text-xs",
+    style: {
+      borderColor: "#e6e8ee"
+    }
+  }, Array.from({
+    length: 12
+  }, (_, i) => i + 1).map(h =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("option", {
+    key: h,
+    value: h
+  }, h < 10 ? "0" + h : h))), /*#__PURE__*/React.createElement("select", {
+    value: confM,
+    onChange: e => setConfM(e.target.value),
+    className: "flex-1 px-2 py-1.5 rounded-lg border text-xs",
+    style: {
+      borderColor: "#e6e8ee"
+    }
+  }, ["00", "15", "30", "45"].map(m =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("option", {
+    key: m,
+    value: m
+  }, m))), /*#__PURE__*/React.createElement("select", {
+    value: confAP,
+    onChange: e => setConfAP(e.target.value),
+    className: "flex-1 px-2 py-1.5 rounded-lg border text-xs",
+    style: {
+      borderColor: "#e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("option", {
+    value: "a.m."
+  }, "a.m."), /*#__PURE__*/React.createElement("option", {
+    value: "p.m."
+  }, "p.m.")), /*#__PURE__*/React.createElement("button", {
+    onClick: onGuardarConfig,
+    className: "basis-full py-2 rounded-lg font-bold text-xs text-white",
+    style: {
+      background: AZUL
+    }
+  }, "Guardar")), /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 overflow-auto flex flex-col items-center justify-center p-4"
+  }, !slide &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "text-center flex flex-col items-center gap-2.5"
+  }, /*#__PURE__*/React.createElement(CheckCircle2, {
+    size: 40,
+    color: "#16a34a"
+  }), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm text-gray-600 leading-relaxed"
+  }, "No tienes nada nuevo que comunicar todav\xEDa.", /*#__PURE__*/React.createElement("br", null), "Vuelve a revisar antes de tu pr\xF3xima charla.")), slide && slide.tipo === "intro" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "flex flex-col items-center gap-2.5 cursor-pointer",
+    onClick: onNext
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "w-12 h-12 rounded-full flex items-center justify-center",
+    style: {
+      background: "#eef1fb",
+      color: AZUL
+    }
+  }, slide.titulo === "Acuerdos completados" ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(CheckCircle2, {
+    size: 22
+  }) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(Clock, {
+    size: 22
+  })), /*#__PURE__*/React.createElement("h4", {
+    className: "text-lg font-extrabold text-center",
+    style: {
+      color: AZUL_OSC
+    }
+  }, slide.titulo), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs text-gray-400"
+  }, "Toca para continuar")), slide && slide.tipo !== "intro" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-1.5 justify-center mb-2"
+  }, Array.from({
+    length: totalCards
+  }, (_, i) => i + 1).map(n =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("span", {
+    key: n,
+    style: {
+      height: 6,
+      width: n === posCard ? 16 : 6,
+      borderRadius: n === posCard ? 3 : 999,
+      background: n === posCard ? AZUL : "#e6e8ee",
+      display: "inline-block"
+    }
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-bold text-gray-400 mb-3.5"
+  }, posCard, " de ", totalCards), /*#__PURE__*/React.createElement("div", {
+    ref: cardRef,
+    onPointerDown: onPointerDown,
+    onPointerMove: onPointerMove,
+    onPointerUp: onPointerUp,
+    onPointerCancel: onPointerUp,
+    className: "w-full bg-white rounded-2xl border p-5 shadow-lg select-none",
+    style: {
+      borderColor: "#e6e8ee",
+      maxWidth: 420,
+      cursor: "grab",
+      touchAction: "pan-y"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "inline-flex items-center gap-1.5 text-sm font-extrabold px-3.5 py-1.5 rounded-full mb-4",
+    style: {
+      background: slide.tipo === "sol" ? "#dcfce7" : "#fef3c7",
+      color: slide.tipo === "sol" ? "#166534" : "#92400e"
+    }
+  }, slide.tipo === "sol" ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(CheckCircle2, {
+    size: 16
+  }) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(Clock, {
+    size: 16
+  }), " ", slide.tipo === "sol" ? "Solucionado" : "Pendiente"), /*#__PURE__*/React.createElement(FilaCampo, {
+    bg: "#eef1fb",
+    color: AZUL,
+    Icon: User,
+    label: "Compa\xF1ero",
+    value: slide.a.companero_nombre,
+    strong: true
+  }), /*#__PURE__*/React.createElement(FilaCampo, {
+    bg: "#dc2626",
+    color: "#fff",
+    Icon: AlertTriangle,
+    label: "Problem\xE1tica",
+    value: slide.a.tema
+  }), /*#__PURE__*/React.createElement(FilaCampo, {
+    bg: "#eef1fb",
+    color: AZUL,
+    Icon: FileText,
+    label: "Acuerdo",
+    value: slide.a.acuerdo
+  }), /*#__PURE__*/React.createElement(FilaCampo, {
+    bg: "#e6e8ee",
+    color: "#5c6070",
+    Icon: ListChecks,
+    label: "Avances",
+    value: (slide.a.notas || []).length ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", null, slide.a.notas.map((n, i) =>
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
+      key: i,
+      className: "text-xs py-0.5"
+    }, /*#__PURE__*/React.createElement("b", {
+      className: "text-gray-400"
+    }, fmtFecha(n.fecha)), " ", n.texto))) : "Sin avances registrados todavía."
+  }), slide.tipo === "sol" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(BloqueSolucion, {
+    texto: slide.a.solucion
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-1.5 text-xs text-gray-400 mt-4 pt-3 border-t",
+    style: {
+      borderColor: "#e6e8ee"
+    }
+  }, slide.tipo === "sol" ? `Resuelto: ${fmtFecha(slide.a.fecha_solucion)}` : `Vence: ${fmtFecha(slide.a.fecha_limite)}`)), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2.5 w-full mt-3.5",
+    style: {
+      maxWidth: 420
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: onPrev,
+    className: "flex-1 py-3 rounded-xl font-bold text-sm border",
+    style: {
+      borderColor: "#e6e8ee",
+      color: "#5c6070"
+    }
+  }, "\u2190 Anterior"), /*#__PURE__*/React.createElement("button", {
+    onClick: onNext,
+    className: "flex-1 py-3 rounded-xl font-bold text-sm text-white",
+    style: {
+      background: AZUL
+    }
+  }, "Siguiente \u2192")), /*#__PURE__*/React.createElement("div", {
+    className: "text-[11px] text-gray-400 mt-2.5"
+  }, "Tambi\xE9n puedes deslizar la tarjeta"))));
+}
+function RitualesLiderazgo({
+  driver
+}) {
+  const [vista, setVista] = useState("home");
+  const [tab, setTab] = useState("guia");
+  const [cargando, setCargando] = useState(true);
+  const [acuerdos, setAcuerdos] = useState([]);
+  const [config, setConfig] = useState({
+    dia: 2,
+    hora: "07:00"
+  });
+  const [filtroBit, setFiltroBit] = useState(null);
+  const [abiertoFrases, setAbiertoFrases] = useState(false);
+  const [abiertoNoHacer, setAbiertoNoHacer] = useState(false);
+  const [fNombre, setFNombre] = useState("");
+  const [fTema, setFTema] = useState("");
+  const [fAcuerdo, setFAcuerdo] = useState("");
+  const [fInicio, setFInicio] = useState(() => new Date().toISOString().slice(0, 10));
+  const [fLimite, setFLimite] = useState("");
+  const [guardandoForm, setGuardandoForm] = useState(false);
+  const [avisoForm, setAvisoForm] = useState("");
+  const [exitoForm, setExitoForm] = useState(false);
+  const [notaAbierta, setNotaAbierta] = useState(null);
+  const [notaTexto, setNotaTexto] = useState("");
+  const [completarAbierto, setCompletarAbierto] = useState(null);
+  const [solucionTexto, setSolucionTexto] = useState("");
+  const [commOpen, setCommOpen] = useState(false);
+  const [commDeck, setCommDeck] = useState([]);
+  const [commIndex, setCommIndex] = useState(0);
+  const [commReturnTab, setCommReturnTab] = useState("guia");
+  const [commConfigAbierto, setCommConfigAbierto] = useState(false);
+  const [confDia, setConfDia] = useState(2);
+  const [confH, setConfH] = useState(7);
+  const [confM, setConfM] = useState("00");
+  const [confAP, setConfAP] = useState("a.m.");
+  const commCardRef = useRef(null);
+  const dragRef = useRef({
+    startX: 0,
+    dragging: false
+  });
+  useEffect(() => {
+    if (!driver?.id) return;
+    let vigente = true;
+    (async () => {
+      const [{
+        data: ac
+      }, {
+        data: cfg
+      }] = await Promise.all([sbClient.from("rituales_acuerdos").select("*").eq("lider_id", driver.id).order("created_at", {
+        ascending: false
+      }), sbClient.from("rituales_config").select("*").eq("lider_id", driver.id).maybeSingle()]);
+      if (!vigente) return;
+      if (ac) setAcuerdos(ac);
+      if (cfg) setConfig({
+        dia: cfg.charla_dia,
+        hora: cfg.charla_hora
+      });
+      setCargando(false);
+    })();
+    return () => {
+      vigente = false;
+    };
+  }, [driver?.id]);
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const fmtFecha = iso => {
+    if (!iso) return "";
+    const d = new Date(iso + "T00:00:00");
+    return d.toLocaleDateString("es-PE", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric"
+    });
+  };
+  const estadoDe = a => a.estado === "completado" ? "d" : new Date(a.fecha_limite + "T00:00:00") < hoy ? "v" : "p";
+  const conteo = {
+    p: 0,
+    d: 0,
+    v: 0
+  };
+  acuerdos.forEach(a => conteo[estadoDe(a)]++);
+  const guardarAcuerdo = async () => {
+    if (!fNombre.trim() || !fTema.trim() || !fAcuerdo.trim() || !fLimite) {
+      setAvisoForm("Completa todos los campos obligatorios");
+      return;
+    }
+    setGuardandoForm(true);
+    const {
+      data,
+      error
+    } = await sbClient.from("rituales_acuerdos").insert({
+      lider_id: driver.id,
+      companero_nombre: fNombre.trim(),
+      tema: fTema.trim(),
+      acuerdo: fAcuerdo.trim(),
+      fecha_inicio: fInicio,
+      fecha_limite: fLimite,
+      estado: "pendiente",
+      notas: []
+    }).select().single();
+    setGuardandoForm(false);
+    if (error) {
+      setAvisoForm("No se pudo guardar: " + error.message);
+      return;
+    }
+    setAcuerdos(prev => [data, ...prev]);
+    setFNombre("");
+    setFTema("");
+    setFAcuerdo("");
+    setFLimite("");
+    setAvisoForm("");
+    setExitoForm(true);
+    setTimeout(() => setExitoForm(false), 2500);
+  };
+  const toggleCompletar = id => {
+    setCompletarAbierto(prev => prev === id ? null : id);
+    setSolucionTexto("");
+  };
+  const confirmarCompletar = async id => {
+    if (!solucionTexto.trim()) return;
+    const fechaSol = new Date().toISOString().slice(0, 10);
+    const {
+      error
+    } = await sbClient.from("rituales_acuerdos").update({
+      estado: "completado",
+      solucion: solucionTexto.trim(),
+      fecha_solucion: fechaSol
+    }).eq("id", id);
+    if (error) return;
+    setAcuerdos(prev => prev.map(a => a.id === id ? {
+      ...a,
+      estado: "completado",
+      solucion: solucionTexto.trim(),
+      fecha_solucion: fechaSol
+    } : a));
+    setCompletarAbierto(null);
+    setSolucionTexto("");
+  };
+  const toggleNota = id => {
+    setNotaAbierta(prev => prev === id ? null : id);
+    setNotaTexto("");
+  };
+  const guardarNota = async id => {
+    if (!notaTexto.trim()) return;
+    const acuerdo = acuerdos.find(a => a.id === id);
+    const nuevaNota = {
+      fecha: new Date().toISOString().slice(0, 10),
+      texto: notaTexto.trim()
+    };
+    const notas = [...(acuerdo.notas || []), nuevaNota];
+    const {
+      error
+    } = await sbClient.from("rituales_acuerdos").update({
+      notas
+    }).eq("id", id);
+    if (error) return;
+    setAcuerdos(prev => prev.map(a => a.id === id ? {
+      ...a,
+      notas
+    } : a));
+    setNotaAbierta(null);
+    setNotaTexto("");
+  };
+  const getCycleStart = (cfg, now) => {
+    const [hh, mm] = cfg.hora.split(":").map(Number);
+    const d = new Date(now);
+    const diff = (d.getDay() - cfg.dia + 7) % 7;
+    d.setDate(d.getDate() - diff);
+    d.setHours(hh, mm, 0, 0);
+    d.setHours(d.getHours() + 2);
+    if (d.getTime() > now.getTime()) d.setDate(d.getDate() - 7);
+    return d;
+  };
+  const construirDeck = (cfg = config) => {
+    const cutoff = getCycleStart(cfg, new Date());
+    const sol = acuerdos.filter(a => a.estado === "completado" && a.fecha_solucion && new Date(a.fecha_solucion + "T12:00:00") > cutoff).sort((a, b) => (a.fecha_solucion || "").localeCompare(b.fecha_solucion || ""));
+    const pen = acuerdos.filter(a => estadoDe(a) === "p").sort((a, b) => (a.fecha_limite || "").localeCompare(b.fecha_limite || ""));
+    const slides = [];
+    if (sol.length) {
+      slides.push({
+        tipo: "intro",
+        titulo: "Acuerdos completados"
+      });
+      sol.forEach(a => slides.push({
+        tipo: "sol",
+        a
+      }));
+    }
+    if (pen.length) {
+      slides.push({
+        tipo: "intro",
+        titulo: "Acuerdos pendientes"
+      });
+      pen.forEach(a => slides.push({
+        tipo: "pen",
+        a
+      }));
+    }
+    return slides;
+  };
+  const abrirComm = () => {
+    setCommReturnTab(tab);
+    setCommDeck(construirDeck());
+    setCommIndex(0);
+    setCommConfigAbierto(false);
+    setCommOpen(true);
+  };
+  const cerrarComm = () => setCommOpen(false);
+  const commNext = () => {
+    setCommIndex(i => {
+      if (i + 1 >= commDeck.length) {
+        setCommOpen(false);
+        return i;
+      }
+      return i + 1;
+    });
+  };
+  const commPrev = () => {
+    setCommIndex(i => {
+      let j = i - 1;
+      while (j >= 0 && commDeck[j].tipo === "intro") j--;
+      if (j < 0) {
+        setCommOpen(false);
+        setTab(commReturnTab);
+        return i;
+      }
+      return j;
+    });
+  };
+  useEffect(() => {
+    if (!commOpen) return;
+    const slide = commDeck[commIndex];
+    if (slide && slide.tipo === "intro") {
+      const t = setTimeout(() => commNext(), 1300);
+      return () => clearTimeout(t);
+    }
+  }, [commOpen, commIndex, commDeck]);
+  const onPointerDownCard = e => {
+    dragRef.current = {
+      startX: e.clientX,
+      dx: 0,
+      dragging: true
+    };
+    if (commCardRef.current) commCardRef.current.style.transition = "none";
+    try {
+      e.target.setPointerCapture(e.pointerId);
+    } catch (err) {}
+  };
+  const onPointerMoveCard = e => {
+    if (!dragRef.current.dragging || !commCardRef.current) return;
+    const dx = e.clientX - dragRef.current.startX;
+    dragRef.current.dx = dx;
+    commCardRef.current.style.transform = `translateX(${dx}px) rotate(${dx / 18}deg)`;
+  };
+  const onPointerUpCard = () => {
+    if (!dragRef.current.dragging || !commCardRef.current) return;
+    const style = commCardRef.current.style;
+    const dx = dragRef.current.dx || 0;
+    dragRef.current.dragging = false;
+    style.transition = "transform .22s ease";
+    if (dx < -80) {
+      style.transform = "translateX(-600px) rotate(-18deg)";
+      setTimeout(commNext, 160);
+    } else if (dx > 80) {
+      style.transform = "translateX(600px) rotate(18deg)";
+      setTimeout(commPrev, 160);
+    } else {
+      style.transform = "translateX(0) rotate(0)";
+    }
+  };
+  const abrirConfigComm = () => {
+    const [hh, mm] = config.hora.split(":").map(Number);
+    const ap = hh < 12 ? "a.m." : "p.m.";
+    let h12 = hh % 12;
+    if (h12 === 0) h12 = 12;
+    setConfDia(config.dia);
+    setConfH(h12);
+    setConfM(mm < 10 ? "0" + mm : "" + mm);
+    setConfAP(ap);
+    setCommConfigAbierto(true);
+  };
+  const guardarConfigComm = async () => {
+    let hh = parseInt(confH, 10) % 12;
+    if (confAP === "p.m.") hh += 12;
+    const hora = (hh < 10 ? "0" : "") + hh + ":" + confM;
+    const nuevaConfig = {
+      dia: confDia,
+      hora
+    };
+    setConfig(nuevaConfig);
+    setCommConfigAbierto(false);
+    setCommDeck(construirDeck(nuevaConfig));
+    setCommIndex(0);
+    await sbClient.from("rituales_config").upsert({
+      lider_id: driver.id,
+      charla_dia: confDia,
+      charla_hora: hora
+    });
+  };
+  if (cargando) {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+      className: "flex-1 flex items-center justify-center p-10"
+    }, /*#__PURE__*/React.createElement(RefreshCw, {
+      className: "animate-spin",
+      size: 24,
+      color: AZUL
+    }));
+  }
+  if (vista === "home") {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+      className: "flex-1 overflow-y-auto p-4",
+      style: {
+        background: "#f6f8fc"
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: () => setVista("detalle"),
+      className: "w-full bg-white rounded-2xl border p-4 flex flex-col gap-2 text-left",
+      style: {
+        borderColor: "#e6e8ee",
+        maxWidth: 420
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "w-10 h-10 rounded-xl flex items-center justify-center",
+      style: {
+        background: "#eef1fb"
+      }
+    }, /*#__PURE__*/React.createElement(MessageCircle, {
+      size: 20,
+      color: AZUL
+    })), /*#__PURE__*/React.createElement("h3", {
+      className: "font-bold text-sm"
+    }, "Conversaciones en el Camar\xEDn"), /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center gap-1.5 text-xs font-bold text-gray-500"
+    }, /*#__PURE__*/React.createElement(RefreshCw, {
+      size: 11
+    }), " Semanal")));
+  }
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 overflow-y-auto",
+    style: {
+      background: "#f6f8fc"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "p-4 max-w-xl mx-auto"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setVista("home"),
+    className: "flex items-center gap-1 text-xs font-bold mb-3",
+    style: {
+      color: AZUL
+    }
+  }, /*#__PURE__*/React.createElement(ChevronLeft, {
+    size: 14
+  }), " Rituales de Liderazgo"), /*#__PURE__*/React.createElement("button", {
+    onClick: abrirComm,
+    className: "w-full flex items-center gap-3 rounded-2xl p-3 mb-4 text-left",
+    style: {
+      background: "#eef1fb"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "w-9 h-9 rounded-full flex items-center justify-center shrink-0",
+    style: {
+      background: AZUL
+    }
+  }, /*#__PURE__*/React.createElement(Radio, {
+    size: 17,
+    color: "white"
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 min-w-0"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "font-bold text-sm",
+    style: {
+      color: AZUL_OSC
+    }
+  }, "Comunicaci\xF3n del estatus"), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs text-gray-500"
+  }, "Lo que debes contar en tu pr\xF3xima charla")), /*#__PURE__*/React.createElement(ChevronRight, {
+    size: 18,
+    color: AZUL
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-1 p-1 rounded-xl mb-4",
+    style: {
+      background: "#e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setTab("guia"),
+    className: "flex-1 py-2 rounded-lg text-sm font-bold",
+    style: {
+      background: tab === "guia" ? "white" : "transparent",
+      color: tab === "guia" ? AZUL : "#5c6070"
+    }
+  }, "Gu\xEDa"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setTab("bit"),
+    className: "flex-1 py-2 rounded-lg text-sm font-bold",
+    style: {
+      background: tab === "bit" ? "white" : "transparent",
+      color: tab === "bit" ? AZUL : "#5c6070"
+    }
+  }, "Bit\xE1cora")), tab === "guia" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm text-gray-600 leading-relaxed mb-4"
+  }, "Espacio de escucha de 15 minutos dentro de la charla semanal para recoger las dificultades que afectan a los compa\xF1eros, registrar acuerdos concretos para resolverlas y comunicar su estatus."), /*#__PURE__*/React.createElement("div", {
+    className: "rounded-xl p-3 mb-5 bg-white border",
+    style: {
+      borderColor: "#e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2 py-1 text-sm text-gray-700"
+  }, /*#__PURE__*/React.createElement(RefreshCw, {
+    size: 14,
+    color: "#5c6070"
+  }), " 1 vez por semana (15 minutos antes de finalizar la charla)"), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2 py-1 text-sm text-gray-700"
+  }, /*#__PURE__*/React.createElement(Clock, {
+    size: 14,
+    color: "#5c6070"
+  }), " 15 minutos"), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2 py-1 text-sm text-gray-700"
+  }, /*#__PURE__*/React.createElement(MapPin, {
+    size: 14,
+    color: "#5c6070"
+  }), " Zona de reuni\xF3n donde se dicta la charla")), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide mb-3",
+    style: {
+      color: "#1a1d2e"
+    }
+  }, /*#__PURE__*/React.createElement(ListChecks, {
+    size: 14,
+    color: AZUL
+  }), " Paso a paso"), /*#__PURE__*/React.createElement("div", {
+    className: "mb-5",
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 12
+    }
+  }, PASOS_CAMARIN.map((p, i) =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    key: i,
+    className: "flex gap-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-sm font-extrabold text-white",
+    style: {
+      background: AZUL_OSC
+    }
+  }, i + 1), /*#__PURE__*/React.createElement("div", {
+    className: "text-sm leading-relaxed pt-1"
+  }, /*#__PURE__*/React.createElement("b", {
+    style: {
+      color: AZUL_OSC
+    }
+  }, p.t, " \u2014 "), /*#__PURE__*/React.createElement("span", {
+    className: "text-gray-600"
+  }, p.d))))), /*#__PURE__*/React.createElement(CajaColapsable, {
+    abierto: abiertoFrases,
+    onToggle: () => setAbiertoFrases(v => !v),
+    Icon: MessageCircle,
+    iconColor: AZUL,
+    titulo: "Frases gu\xEDa"
+  }, FRASES_CAMARIN.map((f, i) =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    key: i,
+    className: "border-l-4 rounded-r-lg px-3 py-2 mb-1 text-sm italic text-gray-600",
+    style: {
+      borderColor: AZUL
+    }
+  }, f))), /*#__PURE__*/React.createElement(CajaColapsable, {
+    abierto: abiertoNoHacer,
+    onToggle: () => setAbiertoNoHacer(v => !v),
+    Icon: X,
+    iconColor: "#dc2626",
+    titulo: "Qu\xE9 no hacer"
+  }, QUE_NO_HACER_CAMARIN.map((d, i) =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    key: i,
+    className: "flex gap-2 py-1 text-sm leading-snug text-gray-700"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "font-extrabold",
+    style: {
+      color: "#dc2626"
+    }
+  }, "\u2718"), " ", d))), /*#__PURE__*/React.createElement("div", {
+    className: "h-px my-5",
+    style: {
+      background: "#e6e8ee"
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "rounded-2xl bg-white border p-4",
+    style: {
+      borderColor: "#e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "font-bold text-sm mb-3 flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement(Plus, {
+    size: 14,
+    color: AZUL
+  }), " Registrar un acuerdo"), /*#__PURE__*/React.createElement(CampoForm, {
+    label: "Nombre del compa\xF1ero",
+    value: fNombre,
+    onChange: setFNombre,
+    placeholder: "Qui\xE9n plante\xF3 el tema"
+  }), /*#__PURE__*/React.createElement(CampoForm, {
+    label: "Problem\xE1tica / tema",
+    value: fTema,
+    onChange: setFTema,
+    placeholder: "Qu\xE9 problem\xE1tica se levant\xF3",
+    textarea: true
+  }), /*#__PURE__*/React.createElement(CampoForm, {
+    label: "Acuerdo",
+    value: fAcuerdo,
+    onChange: setFAcuerdo,
+    placeholder: "Qu\xE9 se acord\xF3 hacer para resolverlo",
+    textarea: true
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 gap-2"
+  }, /*#__PURE__*/React.createElement(CampoForm, {
+    label: "Fecha inicio",
+    value: fInicio,
+    onChange: setFInicio,
+    type: "date"
+  }), /*#__PURE__*/React.createElement(CampoForm, {
+    label: "Fecha l\xEDmite",
+    value: fLimite,
+    onChange: setFLimite,
+    type: "date"
+  })), avisoForm &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "text-xs font-semibold mb-2",
+    style: {
+      color: "#dc2626"
+    }
+  }, avisoForm), exitoForm &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "text-xs font-bold mb-2 flex items-center gap-1.5",
+    style: {
+      color: "#166534"
+    }
+  }, /*#__PURE__*/React.createElement(CheckCircle2, {
+    size: 14
+  }), " Acuerdo guardado"), /*#__PURE__*/React.createElement("button", {
+    onClick: guardarAcuerdo,
+    disabled: guardandoForm,
+    className: "w-full py-3 rounded-xl font-bold disabled:opacity-40",
+    style: {
+      background: AMARILLO,
+      color: AZUL
+    }
+  }, guardandoForm ? "Guardando…" : "Guardar acuerdo"))), tab === "bit" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-3 gap-2 mb-4"
+  }, ["p", "d", "v"].map(k =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
+    key: k,
+    onClick: () => setFiltroBit(f => f === k ? null : k),
+    className: "rounded-xl p-2.5 text-center border-2",
+    style: {
+      borderColor: filtroBit === k ? AZUL : "#e6e8ee",
+      background: filtroBit === k ? "#eef1fb" : "white"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xl font-extrabold",
+    style: {
+      color: k === "p" ? "#d97706" : k === "d" ? "#16a34a" : "#dc2626"
+    }
+  }, conteo[k]), /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] font-bold text-gray-500"
+  }, k === "p" ? "Pendientes" : k === "d" ? "Completados" : "Vencidos")))), filtroBit &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", null, acuerdos.filter(a => estadoDe(a) === filtroBit).length === 0 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "text-center text-sm text-gray-400 py-8"
+  }, "No hay acuerdos ", filtroBit === "p" ? "pendientes" : filtroBit === "d" ? "completados" : "vencidos", " por ahora."), acuerdos.filter(a => estadoDe(a) === filtroBit).map(a =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(TarjetaAcuerdo, {
+    key: a.id,
+    a: a,
+    estado: estadoDe(a),
+    fmtFecha: fmtFecha,
+    notaAbierta: notaAbierta === a.id,
+    notaTexto: notaTexto,
+    onNotaTexto: setNotaTexto,
+    onToggleNota: () => toggleNota(a.id),
+    onGuardarNota: () => guardarNota(a.id),
+    completarAbierto: completarAbierto === a.id,
+    solucionTexto: solucionTexto,
+    onSolucionTexto: setSolucionTexto,
+    onToggleCompletar: () => toggleCompletar(a.id),
+    onConfirmarCompletar: () => confirmarCompletar(a.id)
+  }))))), commOpen &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(ComunicacionEstatus, {
+    deck: commDeck,
+    index: commIndex,
+    config: config,
+    configAbierto: commConfigAbierto,
+    onAbrirConfig: abrirConfigComm,
+    confDia: confDia,
+    setConfDia: setConfDia,
+    confH: confH,
+    setConfH: setConfH,
+    confM: confM,
+    setConfM: setConfM,
+    confAP: confAP,
+    setConfAP: setConfAP,
+    onGuardarConfig: guardarConfigComm,
+    onCerrar: cerrarComm,
+    onPrev: commPrev,
+    onNext: commNext,
+    cardRef: commCardRef,
+    onPointerDown: onPointerDownCard,
+    onPointerMove: onPointerMoveCard,
+    onPointerUp: onPointerUpCard,
+    fmtFecha: fmtFecha
+  }));
 }
 function ChannelHeader({
   onBack,
@@ -14523,6 +15968,7 @@ function UniBot({
   avisos,
   setAvisos,
   setEmergencias,
+  mixersTaller,
   deepLink,
   onDeepLinkConsumido
 }) {
@@ -14598,6 +16044,7 @@ function UniBot({
   // reutiliza para los dos pasos de texto libre (problema y comentario).
   const [fv, setFv] = useState({});
   const [fvInput, setFvInput] = useState("");
+  const [fvFallaTipos, setFvFallaTipos] = useState([]);
 
   // Menú principal estilo BCP (con descripción corta)
   const MAIN_MENU = [{
@@ -15039,6 +16486,9 @@ function UniBot({
           problema: fila.problema,
           comentario: fila.comentario
         }));
+        if ((mixersTaller || []).some(t => t.mixer === key)) {
+          push("bot", "🔧 Tu AZT indicó que este mixer debe ser llevado al taller de mantenimiento.");
+        }
         setCtxDinamico({
           tipo: "mixer",
           key
@@ -15273,8 +16723,9 @@ function UniBot({
   const fvProblema = si => {
     push("user", si ? "Sí, reportar ⚠️" : "No, todo bien ✅");
     if (si) {
-      push("bot", "Cuéntame qué problema tiene (ej. ruido en la tolva, falla eléctrica…):");
+      push("bot", "Cuéntame qué tipo de falla tiene y una breve descripción:");
       setFvInput("");
+      setFvFallaTipos([]);
       setMode("finvueltaProblemaTexto");
     } else {
       fvTerminarUbicacion({
@@ -15284,13 +16735,33 @@ function UniBot({
       });
     }
   };
+  // Además de guardar el problema en el reporte de fin de vuelta (como antes), esto crea una
+  // incidencia de tipo "falla" — igual que el formulario dedicado de Reportes de incidencia —
+  // para que alimente el mismo reporte de mixers que ve el AZT.
   const fvEnviarProblemaTexto = () => {
-    const txt = fvInput.trim();
-    if (!txt) return;
-    push("user", txt);
+    const desc = fvInput.trim();
+    if (fvFallaTipos.length === 0 || !desc) return;
+    const tiposTexto = fvFallaTipos.join(", ");
+    push("user", `${tiposTexto} — ${desc}`);
+    const numMixer = (driver.unidad || "").replace(/[^\d]/g, "");
+    if (numMixer) {
+      sbClient.rpc("crear_incidencia", {
+        p_chofer_id: driver.id,
+        p_tipo: "falla",
+        p_planta: driver.planta,
+        p_unidad: numMixer,
+        p_obra: null,
+        p_mensaje_inicial: `🔧 Falla mecánica — Unidad ${numMixer}\nTipo: ${tiposTexto}\n${desc}`,
+        p_adjunto_path: null
+      }).then(({
+        error
+      }) => {
+        if (error) console.error("Error registrando la falla mecánica desde fin de vuelta:", error.message);
+      });
+    }
     fvTerminarUbicacion({
       ...fv,
-      problemaTxt: txt,
+      problemaTxt: `${tiposTexto} — ${desc}`,
       coment: ""
     });
   };
@@ -16774,6 +18245,11 @@ Por favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
   React.createElement("div", {
     className: "flex flex-col gap-2 pt-1"
   }, /*#__PURE__*/React.createElement("button", {
+    onClick: volverMenuPrincipal,
+    className: "text-xs flex items-center gap-1 text-gray-500 mb-1"
+  }, /*#__PURE__*/React.createElement(ChevronLeft, {
+    size: 14
+  }), " Men\xFA principal"), /*#__PURE__*/React.createElement("button", {
     onClick: () => fvElegirQuad("ubicacion"),
     className: "w-full flex items-center gap-2 py-2.5 px-3 rounded-xl font-semibold text-sm text-left",
     style: {
@@ -16797,7 +18273,14 @@ Por favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
-    className: "flex gap-2 pt-1"
+    className: "pt-1"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: volverMenuPrincipal,
+    className: "text-xs flex items-center gap-1 text-gray-500 mb-1.5"
+  }, /*#__PURE__*/React.createElement(ChevronLeft, {
+    size: 14
+  }), " Men\xFA principal"), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => fvPlantaConfirm(true),
     className: "flex-1 py-2.5 rounded-xl font-semibold text-sm",
@@ -16814,14 +18297,21 @@ Por favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
       color: "#e11d48",
       border: "2px solid #e11d48"
     }
-  }, "No \u274C")), mode === "finvueltaPlantaPicker" &&
+  }, "No \u274C"))), mode === "finvueltaPlantaPicker" &&
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
-    className: "space-y-1.5 pt-1",
+    className: "pt-1",
     style: {
       maxWidth: "88%"
     }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: volverMenuPrincipal,
+    className: "text-xs flex items-center gap-1 text-gray-500 mb-1.5"
+  }, /*#__PURE__*/React.createElement(ChevronLeft, {
+    size: 14
+  }), " Men\xFA principal"), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-1.5"
   }, [...PLANTAS_TODAS.filter(p => p !== driver.planta && p !== "Transversal"), "Taller"].map(p =>
   /*#__PURE__*/
   /*#__PURE__*/
@@ -16837,14 +18327,21 @@ Por favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
   }, p), /*#__PURE__*/React.createElement(ChevronRight, {
     size: 14,
     className: "text-gray-300 shrink-0"
-  })))), mode === "finvueltaZona" &&
+  }))))), mode === "finvueltaZona" &&
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
-    className: "space-y-1.5 pt-1",
+    className: "pt-1",
     style: {
       maxWidth: "88%"
     }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: volverMenuPrincipal,
+    className: "text-xs flex items-center gap-1 text-gray-500 mb-1.5"
+  }, /*#__PURE__*/React.createElement(ChevronLeft, {
+    size: 14
+  }), " Men\xFA principal"), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-1.5"
   }, (PLANT_CONFIG[fv.planta] || PLANT_CONFIG_FALLBACK).parqueo.map(z =>
   /*#__PURE__*/
   /*#__PURE__*/
@@ -16860,14 +18357,21 @@ Por favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
   }, z), /*#__PURE__*/React.createElement(ChevronRight, {
     size: 14,
     className: "text-gray-300 shrink-0"
-  })))), mode === "finvueltaLlaves" &&
+  }))))), mode === "finvueltaLlaves" &&
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
-    className: "space-y-1.5 pt-1",
+    className: "pt-1",
     style: {
       maxWidth: "88%"
     }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: volverMenuPrincipal,
+    className: "text-xs flex items-center gap-1 text-gray-500 mb-1.5"
+  }, /*#__PURE__*/React.createElement(ChevronLeft, {
+    size: 14
+  }), " Men\xFA principal"), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-1.5"
   }, ["En garita", "Con el AZT", "En la unidad", "Con vigilancia"].map(k =>
   /*#__PURE__*/
   /*#__PURE__*/
@@ -16883,11 +18387,18 @@ Por favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
   }, k), /*#__PURE__*/React.createElement(ChevronRight, {
     size: 14,
     className: "text-gray-300 shrink-0"
-  })))), mode === "finvueltaProblema" &&
+  }))))), mode === "finvueltaProblema" &&
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
-    className: "flex gap-2 pt-1"
+    className: "pt-1"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: volverMenuPrincipal,
+    className: "text-xs flex items-center gap-1 text-gray-500 mb-1.5"
+  }, /*#__PURE__*/React.createElement(ChevronLeft, {
+    size: 14
+  }), " Men\xFA principal"), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => fvProblema(false),
     className: "flex-1 py-2.5 rounded-xl font-semibold text-sm",
@@ -16904,38 +18415,73 @@ Por favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
       color: "#e11d48",
       border: "2px solid #e11d48"
     }
-  }, "S\xED, reportar \u26A0\uFE0F")), mode === "finvueltaProblemaTexto" &&
+  }, "S\xED, reportar \u26A0\uFE0F"))), mode === "finvueltaProblemaTexto" &&
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
-    className: "flex items-center gap-2 pt-1"
-  }, /*#__PURE__*/React.createElement("input", {
+    className: "pt-1",
+    style: {
+      maxWidth: "92%"
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: volverMenuPrincipal,
+    className: "text-xs flex items-center gap-1 text-gray-500 mb-1.5"
+  }, /*#__PURE__*/React.createElement(ChevronLeft, {
+    size: 14
+  }), " Men\xFA principal"), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-semibold text-gray-600"
+  }, "Tipo de falla ", /*#__PURE__*/React.createElement("span", {
+    className: "text-[11px] text-gray-400 font-normal"
+  }, "(puedes marcar m\xE1s de una)")), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-2 mt-2 mb-3"
+  }, FALLA_TIPOS.map(ft => {
+    const sel = fvFallaTipos.includes(ft);
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
+      key: ft,
+      onClick: () => setFvFallaTipos(prev => sel ? prev.filter(x => x !== ft) : [...prev, ft]),
+      className: "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
+      style: {
+        background: sel ? AZUL : "white",
+        color: sel ? "white" : "#374151",
+        border: "1.5px solid " + (sel ? AZUL : "#d5d9e4")
+      }
+    }, ft);
+  })), /*#__PURE__*/React.createElement("label", {
+    className: "text-xs font-semibold text-gray-600"
+  }, "Descripci\xF3n breve"), /*#__PURE__*/React.createElement("textarea", {
     value: fvInput,
     onChange: e => setFvInput(e.target.value),
-    onKeyDown: e => e.key === "Enter" && fvInput.trim() && fvEnviarProblemaTexto(),
-    placeholder: "Ej. ruido en la tolva, falla el\xE9ctrica\u2026",
-    className: "flex-1 px-3 py-2 rounded-full border text-sm outline-none",
+    rows: 3,
+    placeholder: "Ej: Freno se pega, llegando a planta se ingresa al taller",
+    className: "w-full mt-1 px-3 py-2.5 rounded-lg border text-sm outline-none resize-none mb-2",
     style: {
       borderColor: "#d5d9e4"
     }
   }), /*#__PURE__*/React.createElement("button", {
-    onClick: () => fvInput.trim() && fvEnviarProblemaTexto(),
-    disabled: !fvInput.trim(),
-    className: "w-9 h-9 rounded-full flex items-center justify-center disabled:opacity-40",
+    onClick: () => fvFallaTipos.length > 0 && fvInput.trim() && fvEnviarProblemaTexto(),
+    disabled: fvFallaTipos.length === 0 || !fvInput.trim(),
+    className: "w-full py-2.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-40",
     style: {
-      background: AMARILLO
+      background: AMARILLO,
+      color: AZUL
     }
   }, /*#__PURE__*/React.createElement(Send, {
-    size: 16,
-    color: AZUL
-  }))), mode === "finvueltaLavadero" &&
+    size: 16
+  }), " Enviar")), mode === "finvueltaLavadero" &&
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
-    className: "space-y-1.5 pt-1",
+    className: "pt-1",
     style: {
       maxWidth: "88%"
     }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: volverMenuPrincipal,
+    className: "text-xs flex items-center gap-1 text-gray-500 mb-1.5"
+  }, /*#__PURE__*/React.createElement(ChevronLeft, {
+    size: 14
+  }), " Men\xFA principal"), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-1.5"
   }, [...(PLANT_CONFIG[driver.planta] || PLANT_CONFIG_FALLBACK).lavadero, "En cola del lavadero"].map(l =>
   /*#__PURE__*/
   /*#__PURE__*/
@@ -16951,7 +18497,7 @@ Por favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
   }, l), /*#__PURE__*/React.createElement(ChevronRight, {
     size: 14,
     className: "text-gray-300 shrink-0"
-  })))), mode === "mixerInput" &&
+  }))))), mode === "mixerInput" &&
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
@@ -17469,6 +19015,11 @@ const SERVICIOS_PLANTA = [{
   label: "WiFi o internet no funciona",
   icon: X
 }];
+// Tipos de falla mecánica más reportados (según análisis del chat de WhatsApp de Ancieta) —
+// compartido entre el formulario de "Falla mecánica" de Reportes de incidencia y el paso de
+// "¿el camión tiene algún problema?" de Reporte de fin de vuelta, para que ambos alimenten el
+// mismo reporte de mixers del AZT con las mismas categorías.
+const FALLA_TIPOS = ["Frenos", "Llanta baja", "Trompo no gira", "Chute de descarga", "Motor / No arranca", "Caja de cambios", "Sist. eléctrico / Luces", "Fuga (aire/aceite/petróleo)", "Otro"];
 function ReporteIncidencias({
   driver,
   incidents,
@@ -17594,9 +19145,6 @@ function ReporteIncidencias({
     setFallaMixer("");
     setFallaComent("");
   };
-
-  // Tipos de falla mecánica más reportados (según análisis del chat de WhatsApp de Ancieta)
-  const FALLA_TIPOS = ["Frenos", "Llanta baja", "Trompo no gira", "Chute de descarga", "Motor / No arranca", "Caja de cambios", "Sist. eléctrico / Luces", "Fuga (aire/aceite/petróleo)", "Otro"];
   const start = t => {
     setTipo(t);
     if (t.id === "servicios") {
@@ -17769,7 +19317,7 @@ function ReporteIncidencias({
     className: "font-bold text-gray-700 mb-3"
   }, "\xBFQu\xE9 est\xE1 pasando?"), /*#__PURE__*/React.createElement("div", {
     className: "space-y-2"
-  }, INCIDENT_TYPES.filter(t => t.id !== "auxilio").map(t =>
+  }, INCIDENT_TYPES.filter(t => t.id !== "auxilio" && t.id !== "falla").map(t =>
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("button", {
@@ -21382,6 +22930,7 @@ function AztPanel({
   emergencias,
   setEmergencias,
   reportesFinVuelta,
+  mixersTaller,
   role,
   setRole,
   initialDni
@@ -22293,6 +23842,8 @@ function AztPanel({
   /*#__PURE__*/
   React.createElement(EstadoMixers, {
     reportesFinVuelta: reportesFinVuelta,
+    mixersTaller: mixersTaller,
+    aztId: admin?.id,
     plant: plant,
     setPlant: setPlant,
     plantList: plantList,
@@ -22379,26 +23930,7 @@ function AztPanel({
       background: incView === "buzón" ? "#e11d48" : "#9ca3af",
       color: "white"
     }
-  }, totalPend)), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setIncView("emergencias"),
-    className: "flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-bold transition-all",
-    style: {
-      background: incView === "emergencias" ? "white" : "transparent",
-      color: incView === "emergencias" ? "#e11d48" : "#6b7280",
-      boxShadow: incView === "emergencias" ? "0 1px 3px rgba(0,0,0,.1)" : "none"
-    }
-  }, /*#__PURE__*/React.createElement(Wrench, {
-    size: 13
-  }), " Fallas mec\xE1nicas", pendEmerg > 0 &&
-  /*#__PURE__*/
-  /*#__PURE__*/
-  React.createElement("span", {
-    className: "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
-    style: {
-      background: incView === "emergencias" ? "#e11d48" : "#9ca3af",
-      color: "white"
-    }
-  }, pendEmerg))), incView === "buzón" && TIPOS_FILTRABLES.length > 1 &&
+  }, totalPend))), incView === "buzón" && TIPOS_FILTRABLES.length > 1 &&
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
@@ -23206,6 +24738,8 @@ function fechaHoraCorta(ts) {
 }
 function EstadoMixers({
   reportesFinVuelta,
+  mixersTaller,
+  aztId,
   plant,
   setPlant,
   plantList,
@@ -23216,6 +24750,13 @@ function EstadoMixers({
 }) {
   const [q, setQ] = useState("");
   const [tipo, setTipo] = useState("todos"); // todos | ubicacion | lavadero
+  const [estadoFiltro, setEstadoFiltro] = useState("operativo"); // operativo | falla — solo aplica cuando tipo === "ubicacion"
+  // "Taller" es una pseudo-planta local a esta vista (no toca el `plant`/`setPlant` que viene de
+  // AztPanel, compartido también con Incidencias) — así elegirla acá no afecta esa otra sección.
+  const [verTaller, setVerTaller] = useState(false);
+  const [retirarModal, setRetirarModal] = useState(null); // número de mixer que se está retirando, o null
+  const tallerAbiertos = (mixersTaller || []).filter(t => !t.sacado_en);
+  const tallerSet = new Set(tallerAbiertos.map(t => t.mixer));
   // Estado ACTUAL de cada mixer: no puede estar a la vez "parqueado en X" y "en el lavadero", así
   // que se queda solo con su reporte más reciente (reportesFinVuelta ya viene ordenado por fecha
   // descendente desde cargarReportesFinVuelta), sin importar el tipo — las pestañas de abajo
@@ -23227,8 +24768,47 @@ function EstadoMixers({
     return true;
   });
   // Ordenar por más reciente primero
-  const filtered = estadoActual.filter(r => plant === "Todas" || r.planta === plant).filter(r => tipo === "todos" || r.tipo === tipo).filter(r => r.mixer.toLowerCase().includes(q.toLowerCase()) || r.chofer.toLowerCase().includes(q.toLowerCase())).sort((a, b) => b.ts - a.ts);
-  const buscador =
+  const filtered = estadoActual.filter(r => plant === "Todas" || r.planta === plant).filter(r => tipo === "todos" || r.tipo === tipo).filter(r => tipo !== "ubicacion" || estadoFiltro === "falla" === (r.estado === "Falla mecánica")).filter(r => r.mixer.toLowerCase().includes(q.toLowerCase()) || r.chofer.toLowerCase().includes(q.toLowerCase())).sort((a, b) => b.ts - a.ts);
+  const tallerCards = estadoActual.filter(r => tallerSet.has(r.mixer)).filter(r => r.mixer.toLowerCase().includes(q.toLowerCase()) || r.chofer.toLowerCase().includes(q.toLowerCase())).sort((a, b) => b.ts - a.ts);
+  const confirmarRetiro = async planta => {
+    if (!aztId || !retirarModal) return;
+    const {
+      error
+    } = await sbClient.rpc("sacar_mixer_de_taller", {
+      p_mixer: retirarModal,
+      p_azt_id: aztId,
+      p_planta_destino: planta
+    });
+    if (error) {
+      console.error("No se pudo sacar el mixer de taller:", error.message);
+      alert("No se pudo registrar el cambio: " + error.message);
+    }
+    setRetirarModal(null);
+  };
+  const buscador = verTaller ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "px-4 py-3 border-b shrink-0 space-y-2",
+    style: {
+      borderColor: "#e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "relative"
+  }, /*#__PURE__*/React.createElement(Search, {
+    size: 15,
+    className: "absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+  }), /*#__PURE__*/React.createElement("input", {
+    value: q,
+    onChange: e => setQ(e.target.value),
+    placeholder: "Buscar por mixer o chofer\u2026",
+    className: "w-full pl-9 pr-3 py-2 rounded-lg border text-sm outline-none",
+    style: {
+      borderColor: "#d5d9e4"
+    }
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "text-[11px] text-gray-400"
+  }, "Mixers que un AZT envi\xF3 a Taller \xB7 ", tallerCards.length, " registros \xB7 m\xE1s recientes primero")) :
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
@@ -23272,10 +24852,56 @@ function EstadoMixers({
       color: tipo === t.id ? "white" : "#6b7280",
       border: tipo === t.id ? "none" : "1px solid #e6e8ee"
     }
-  }, t.label))), /*#__PURE__*/React.createElement("div", {
+  }, t.label))), tipo === "ubicacion" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "flex gap-1.5"
+  }, [{
+    id: "operativo",
+    label: "Operativo"
+  }, {
+    id: "falla",
+    label: "Con falla mecánica"
+  }].map(e =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
+    key: e.id,
+    onClick: () => setEstadoFiltro(e.id),
+    className: "px-3 py-1 rounded-full text-[11px] font-semibold",
+    style: {
+      background: estadoFiltro === e.id ? e.id === "falla" ? "#e11d48" : "#16a34a" : "white",
+      color: estadoFiltro === e.id ? "white" : "#6b7280",
+      border: estadoFiltro === e.id ? "none" : "1px solid #e6e8ee"
+    }
+  }, e.label))), /*#__PURE__*/React.createElement("div", {
     className: "text-[11px] text-gray-400"
   }, "Reportes de fin de vuelta que hacen los choferes en la app \xB7 ", filtered.length, " registros \xB7 m\xE1s recientes primero"));
-  const lista =
+  const lista = verTaller ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "flex-1 overflow-auto p-3 space-y-2",
+    style: {
+      background: "#f6f8fc"
+    }
+  }, tallerCards.length === 0 ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "text-center text-gray-400 py-8 text-sm"
+  }, "No hay mixers en el taller.") : tallerCards.map(r =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(ReporteCard, {
+    key: r.id,
+    r: r,
+    enTaller: true,
+    aztId: aztId,
+    modoTaller: true,
+    onRetirar: () => setRetirarModal(r.mixer)
+  }))) :
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
@@ -23293,8 +24919,19 @@ function EstadoMixers({
   /*#__PURE__*/
   React.createElement(ReporteCard, {
     key: r.id,
-    r: r
+    r: r,
+    enTaller: tallerSet.has(r.mixer),
+    aztId: aztId
   })));
+  const modal = retirarModal &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(ModalRetirarTaller, {
+    mixer: retirarModal,
+    plantas: plantList.filter(p => p !== "Todas"),
+    onCancel: () => setRetirarModal(null),
+    onConfirm: confirmarRetiro
+  });
   if (!isDesktop) {
     // Móvil: cuadrícula fija de plantas (mismo patrón que Incidencias) en vez de una columna angosta
     // al costado — ahí los nombres de planta quedaban apretados y difíciles de leer.
@@ -23318,10 +24955,13 @@ function EstadoMixers({
         borderColor: "#e6e8ee"
       }
     }, plantList.map(p => {
-      const active = plant === p;
+      const active = !verTaller && plant === p;
       return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
         key: p,
-        onClick: () => setPlant(p),
+        onClick: () => {
+          setVerTaller(false);
+          setPlant(p);
+        },
         className: "flex items-center justify-center text-center rounded-lg px-1 py-2 transition-colors",
         style: {
           background: active ? AZUL : "white",
@@ -23335,8 +24975,30 @@ function EstadoMixers({
         }
       }, p));
     })), /*#__PURE__*/React.createElement("div", {
+      className: "px-2.5 pb-2.5 shrink-0 bg-white border-b",
+      style: {
+        borderColor: "#e6e8ee"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "border-t mb-2",
+      style: {
+        borderColor: "#e6e8ee"
+      }
+    }), /*#__PURE__*/React.createElement("button", {
+      onClick: () => setVerTaller(true),
+      className: "w-full flex items-center justify-center gap-1.5 rounded-lg px-1 py-2 transition-colors",
+      style: {
+        background: verTaller ? "#92400e" : "white",
+        color: verTaller ? "white" : "#92400e",
+        border: verTaller ? "none" : "1.5px solid #fde68a"
+      }
+    }, /*#__PURE__*/React.createElement(Wrench, {
+      size: 13
+    }), /*#__PURE__*/React.createElement("span", {
+      className: "text-[12px] font-bold"
+    }, "Taller"))), /*#__PURE__*/React.createElement("div", {
       className: "flex-1 flex flex-col min-h-0"
-    }, buscador, lista));
+    }, buscador, lista), modal);
   }
   return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "flex flex-1 min-h-0 overflow-hidden"
@@ -23357,10 +25019,13 @@ function EstadoMixers({
   }, "Plantas a tu cargo")), /*#__PURE__*/React.createElement("div", {
     className: "flex-1 p-2 space-y-1"
   }, plantList.map(p => {
-    const active = plant === p;
+    const active = !verTaller && plant === p;
     return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
       key: p,
-      onClick: () => setPlant(p),
+      onClick: () => {
+        setVerTaller(false);
+        setPlant(p);
+      },
       className: "w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-left transition-colors",
       style: {
         background: active ? AZUL : "white",
@@ -23373,15 +25038,53 @@ function EstadoMixers({
     }), /*#__PURE__*/React.createElement("span", {
       className: "text-sm font-semibold flex-1 truncate"
     }, p));
-  }))), /*#__PURE__*/React.createElement("div", {
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "border-t my-2",
+    style: {
+      borderColor: "#e6e8ee"
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setVerTaller(true),
+    className: "w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-left transition-colors",
+    style: {
+      background: verTaller ? "#92400e" : "white",
+      color: verTaller ? "white" : "#92400e",
+      border: verTaller ? "none" : "1.5px solid #fde68a"
+    }
+  }, /*#__PURE__*/React.createElement(Wrench, {
+    size: 15,
+    className: "shrink-0"
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "text-sm font-semibold flex-1 truncate"
+  }, "Taller")))), /*#__PURE__*/React.createElement("div", {
     className: "flex-1 flex flex-col min-w-0"
-  }, buscador, lista));
+  }, buscador, lista), modal);
 }
 function ReporteCard({
-  r
+  r,
+  enTaller,
+  aztId,
+  modoTaller,
+  onRetirar
 }) {
+  const [enviando, setEnviando] = useState(false);
+  const enviarATaller = async () => {
+    if (!aztId || enviando) return;
+    setEnviando(true);
+    const {
+      error
+    } = await sbClient.rpc("enviar_mixer_a_taller", {
+      p_mixer: r.mixer,
+      p_azt_id: aztId
+    });
+    if (error) {
+      console.error("No se pudo enviar el mixer a taller:", error.message);
+      alert("No se pudo registrar el cambio: " + error.message);
+    }
+    setEnviando(false);
+  };
   const isLav = r.tipo === "lavadero";
-  const conProblema = r.tipo === "ubicacion" && r.estado === "Reportar problema";
+  const conProblema = r.tipo === "ubicacion" && r.estado === "Falla mecánica";
   return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-xl p-3",
     style: {
@@ -23469,7 +25172,98 @@ function ReporteCard({
       color: conProblema ? "#991b1b" : "#4b5563",
       border: `1px solid ${conProblema ? "#fecaca" : "#e6e8ee"}`
     }
-  }, "\uD83D\uDCAC ", [r.problemaDesc, r.coment].filter(Boolean).join(" — "))));
+  }, "\uD83D\uDCAC ", [r.problemaDesc, r.coment].filter(Boolean).join(" — ")), modoTaller ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
+    onClick: onRetirar,
+    className: "w-full mt-2 py-1.5 rounded-lg text-xs font-bold",
+    style: {
+      background: "#fef3c7",
+      color: "#92400e",
+      border: "1.5px solid #fde68a"
+    }
+  }, "\uD83D\uDD27 Retirar del taller") : conProblema ? enTaller ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "w-full mt-2 py-1.5 rounded-lg text-xs font-bold text-center",
+    style: {
+      background: "#fef3c7",
+      color: "#92400e",
+      border: "1.5px solid #fde68a"
+    }
+  }, "\uD83D\uDD27 En Taller") :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
+    onClick: enviarATaller,
+    disabled: enviando,
+    className: "w-full mt-2 py-1.5 rounded-lg text-xs font-bold disabled:opacity-40",
+    style: {
+      background: "white",
+      color: "#6b7280",
+      border: "1.5px solid #e6e8ee"
+    }
+  }, enviando ? "Guardando…" : "Enviar a Taller") : null));
+}
+function ModalRetirarTaller({
+  mixer,
+  plantas,
+  onCancel,
+  onConfirm
+}) {
+  const [destino, setDestino] = useState(plantas[0] || "");
+  const [enviando, setEnviando] = useState(false);
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 z-50 flex items-center justify-center p-4",
+    style: {
+      background: "rgba(0,0,0,.5)"
+    },
+    onClick: onCancel
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-2xl p-5 shadow-2xl w-full max-w-sm",
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("h4", {
+    className: "font-bold text-gray-800 mb-1"
+  }, "Retirar mixer ", mixer, " del taller"), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm text-gray-600 mb-3"
+  }, "\xBFA qu\xE9 planta quieres retirarlo?"), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-1.5 mb-4 max-h-56 overflow-y-auto"
+  }, plantas.map(p =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
+    key: p,
+    onClick: () => setDestino(p),
+    className: "w-full text-left px-3 py-2 rounded-lg text-sm font-semibold",
+    style: {
+      background: destino === p ? AZUL : "#f6f8fc",
+      color: destino === p ? "white" : "#374151",
+      border: destino === p ? "none" : "1px solid #e6e8ee"
+    }
+  }, p))), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: onCancel,
+    className: "flex-1 py-2.5 rounded-xl font-semibold text-sm",
+    style: {
+      background: "#f3f4f6",
+      color: "#374151"
+    }
+  }, "Cancelar"), /*#__PURE__*/React.createElement("button", {
+    disabled: !destino || enviando,
+    onClick: async () => {
+      setEnviando(true);
+      await onConfirm(destino);
+      setEnviando(false);
+    },
+    className: "flex-1 py-2.5 rounded-xl font-bold text-sm disabled:opacity-40",
+    style: {
+      background: AMARILLO,
+      color: AZUL
+    }
+  }, enviando ? "Guardando…" : "Retirar"))));
 }
 
 /* ====== Feed de Fallas Mecánicas (dentro de incidencias) ====== */
