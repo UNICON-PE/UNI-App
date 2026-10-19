@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-19T01:04:16.564Z */
+/* UniconApp — Bundle generado el 2026-10-19T04:33:41.010Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 19720 — CERO simplificaciones */
+/* Líneas originales del JSX: 19808 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -8839,6 +8839,10 @@ function UniconApp() {
         minute: "2-digit"
       }),
       ts: new Date(f.created_at).getTime(),
+      // Hora del ÚLTIMO movimiento (reporte original o el refuerzo más reciente) — es lo que usa
+      // checkAndSubmit para decidir si un reporte nuevo todavía se agrupa con esta incidencia, en
+      // vez de contar siempre desde el primer reporte (ver comentario en checkAndSubmit).
+      tsActividad: f.ultima_actividad ? new Date(f.ultima_actividad).getTime() : new Date(f.created_at).getTime(),
       // Hora en la que se resolvió (distinta de "hora", que es cuando se reportó) — para que el
       // buzón de Resueltas muestre y ordene por cuándo se cerró, no por cuándo llegó.
       horaResuelta: f.resuelta_en ? new Date(f.resuelta_en).toLocaleTimeString("es-PE", {
@@ -18894,6 +18898,9 @@ function ChoferIncidentCard({
     resuelta: "#16a34a"
   };
   const activeColor = STATE_COLOR[i.estado];
+  // Para "servicios" el label genérico ("Servicios de planta no disponibles") no dice cuál — igual
+  // que ya hace IncidentList del lado del AZT, se saca el sub-servicio real del primer mensaje.
+  const titulo = i.tipo === "servicios" && i.mensajes?.[0]?.texto ? i.mensajes[0].texto.split(" — ")[0] : INCIDENT_TYPES.find(t => t.id === i.tipo)?.label;
   return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     id: `incidencia-${i.id}`,
     className: "bg-white rounded-xl p-3 shadow-sm",
@@ -18905,7 +18912,7 @@ function ChoferIncidentCard({
     className: "flex items-center justify-between"
   }, /*#__PURE__*/React.createElement("div", {
     className: "font-semibold text-sm text-gray-800"
-  }, INCIDENT_TYPES.find(t => t.id === i.tipo)?.label), /*#__PURE__*/React.createElement("span", {
+  }, titulo), /*#__PURE__*/React.createElement("span", {
     className: "text-[11px] text-gray-400"
   }, i.hora)), /*#__PURE__*/React.createElement("div", {
     className: "text-xs text-gray-500"
@@ -19013,11 +19020,13 @@ const SERVICIOS_PLANTA = [{
 }, {
   id: "comedor",
   label: "Comedor cerrado o sin servicio",
-  icon: Home
+  icon: Home,
+  deshabilitado: true
 }, {
   id: "luz",
   label: "Sin luz o electricidad",
-  icon: AlertTriangle
+  icon: AlertTriangle,
+  deshabilitado: true
 }, {
   id: "wifi",
   label: "WiFi o internet no funciona",
@@ -19046,6 +19055,7 @@ function ReporteIncidencias({
   // esta pantalla mostraba una lista fija de ejemplo ("[Obra 1]", "[Obra 2]") sin relación con las
   // obras reales configuradas para la planta.
   const [obrasReales, setObrasReales] = useState([]);
+  const [obraModalAbierto, setObraModalAbierto] = useState(false);
   useEffect(() => {
     sbClient.from("obras_planta").select("obra").eq("planta", driver.planta).order("obra").then(({
       data
@@ -19084,12 +19094,44 @@ function ReporteIncidencias({
     return () => clearTimeout(t);
   }, [irAIncidenciaId]);
 
-  // Chequeo de duplicado: busca incidencia activa similar (mismo tipo, misma planta, últimas 4 h).
-  // Para acceso/retiro, además exige que sea la MISMA obra (o una palabra clave en común, ej.
-  // "Museo de la Nación" calza con "Museo") — si no, reportar una obra distinta ("123") no debería
-  // emparejarse con otra activa de una obra totalmente distinta ("Westin") solo por coincidir tipo
-  // y planta. "servicios" no tiene concepto de obra puntual, así que sigue emparejando por planta.
-  const DEDUP_VENTANA = 4 * 60 * 60 * 1000;
+  // Chequeo de duplicado: busca incidencia activa similar (mismo tipo, misma planta, sin resolver,
+  // con movimiento dentro de la ventana de ese tipo). Para acceso/retiro, además exige que sea la
+  // MISMA obra (o una palabra clave en común, ej. "Museo de la Nación" calza con "Museo") — si no,
+  // reportar una obra distinta ("123") no debería emparejarse con otra de una obra totalmente
+  // distinta ("Westin") solo por coincidir tipo y planta. "servicios" compara por subtipo_servicio
+  // exacto (columna ya existía en la BD para filtrar por subtipo, pero nunca se llegó a enviar desde
+  // _doSubmitServicio) — así "almuerzo" no calza como duplicado de "baños".
+  //
+  // La ventana se cuenta desde el ÚLTIMO movimiento de la incidencia (i.tsActividad, que se
+  // actualiza en la BD cada vez que alguien se suma — ver reforzar_incidencia), NO desde el primer
+  // reporte: si A reportó hace 3h pero B se sumó hace 10min, la incidencia sigue "viva" para
+  // agrupar — recién cuando pasa la ventana completa SIN que nadie se sume, el siguiente reporte
+  // abre una incidencia nueva e independiente (que a su vez empieza a agrupar desde cero).
+  //
+  // "preguntar: false" (acceso, retiro, y el sub-servicio "almuerzo") hace que, si hay candidato,
+  // el reporte se sume automáticamente sin mostrarle al chofer la pantalla de "¿es el mismo
+  // problema?" — un chofer no tiene cómo saber si su bloqueo de hoy es el mismo de hace horas o
+  // uno nuevo, así que no tiene sentido pedirle que lo decida; el sistema lo decide solo con la
+  // regla de la ventana. El resto de "servicios" (baños, dispensador, wifi) sigue preguntando, como
+  // antes.
+  const DEDUP_CONFIG = {
+    acceso: {
+      preguntar: false,
+      ventanaMin: 120
+    },
+    retiro: {
+      preguntar: false,
+      ventanaMin: 30
+    },
+    servicios: {
+      preguntar: true,
+      ventanaMin: 240
+    }
+  };
+  const DEDUP_SERVICIO_ALMUERZO = {
+    preguntar: false,
+    ventanaMin: 24 * 60
+  };
   const PALABRAS_GENERICAS_OBRA = new Set(["de", "del", "la", "el", "los", "las", "y", "en", "obra"]);
   const normalizarObra = s => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
   const obrasSimilares = (a, b) => {
@@ -19101,23 +19143,84 @@ function ReporteIncidencias({
     const palabrasB = new Set(nb.split(/\s+/).filter(w => w.length > 2 && !PALABRAS_GENERICAS_OBRA.has(w)));
     return palabrasA.some(w => palabrasB.has(w));
   };
-  const checkAndSubmit = (tipoId, submitFn) => {
+  const checkAndSubmit = async (tipoId, submitFn) => {
+    // Evita que un doble toque en "Enviar" (o dos pestañas con la misma cuenta) dispare dos
+    // consultas casi simultáneas que no alcanzan a verse entre sí — cada una vería "sin candidato"
+    // antes de que la otra termine de guardar, y crearían 2 incidencias en vez de agrupar.
+    if (enviando) return;
+    setEnviando(true);
     const ahora = Date.now();
-    const candidato = incidents.find(i => i.planta === driver.planta && i.tipo === tipoId && i.estado !== "resuelta" && (i.ts ? ahora - i.ts < DEDUP_VENTANA : true) && (tipoId === "servicios" || obrasSimilares(i.obra, obra)));
-    if (candidato) {
+    const esAlmuerzo = tipoId === "servicios" && servicio === "almuerzo";
+    const cfg = esAlmuerzo ? DEDUP_SERVICIO_ALMUERZO : DEDUP_CONFIG[tipoId] || {
+      preguntar: true,
+      ventanaMin: 240
+    };
+    const ventanaMs = cfg.ventanaMin * 60 * 1000;
+    // Consulta directa a la BD en vez de usar el estado local "incidents": ese estado se refresca
+    // por Realtime + un sondeo cada 15s, lo que deja una ventana de varios segundos (a veces más)
+    // donde el reporte de OTRO chofer, recién creado, todavía no aparece ahí — en la prueba real
+    // esto hizo que 3 reportes segudos (11-17s entre cada uno) nunca se agruparan entre sí, porque
+    // cada sesión decidía con una copia desactualizada. Consultando la BD al momento de decidir, la
+    // ventana de "desactualizado" baja de varios segundos a lo que tarda esta sola consulta.
+    const {
+      data: filas
+    } = await sbClient.from("incidencias").select("id,tipo,planta,obra,subtipo_servicio,estado,afectados,chofer_id,chofer_nombre,created_at,ultima_actividad").eq("planta", driver.planta).eq("tipo", tipoId).neq("estado", "resuelta");
+    const candidato = (filas || []).map(f => ({
+      id: f.id,
+      tipo: f.tipo,
+      planta: f.planta,
+      obra: f.obra,
+      subtipoServicio: f.subtipo_servicio,
+      estado: f.estado,
+      afectados: f.afectados || [],
+      choferId: f.chofer_id,
+      chofer: f.chofer_nombre,
+      hora: new Date(f.created_at).toLocaleTimeString("es-PE", {
+        hour: "2-digit",
+        minute: "2-digit"
+      }),
+      tsActividad: f.ultima_actividad ? new Date(f.ultima_actividad).getTime() : new Date(f.created_at).getTime()
+    })).find(i => {
+      if (!(tipoId === "servicios" ? i.subtipoServicio === servicio : obrasSimilares(i.obra, obra))) return false;
+      return ahora - i.tsActividad < ventanaMs;
+    });
+    if (!candidato) {
+      await submitFn();
+      setEnviando(false);
+      return;
+    }
+    if (cfg.preguntar) {
+      setEnviando(false);
       setDedupCandidate(candidato);
       setPendingSubmitFn(() => submitFn);
       setStep("dedupCheck");
     } else {
-      submitFn();
+      // Si el chofer ya era parte de esta incidencia (la reportó él mismo, o ya se había sumado
+      // antes), sí se le avisa que está reforzando la comunicación — puede estar insistiendo a
+      // propósito para que le respondan, y necesita saber que su insistencia quedó registrada en
+      // vez de sentir que no pasó nada. Si es la primera vez que ÉL toca este problema (aunque la
+      // incidencia ya exista por otro chofer), el refuerzo sigue siendo silencioso.
+      const yaEraSuyo = candidato.choferId === driver.id || candidato.afectados.includes(driver.nombre);
+      reforzarIncidencia(candidato, {
+        silencioso: !yaEraSuyo
+      });
+      setEnviando(false);
     }
   };
 
-  // Refuerza una incidencia existente sumando el chofer actual como otro afectado
-  const reforzarExistente = () => {
-    if (!dedupCandidate) return;
+  // Refuerza una incidencia existente sumando el chofer actual como otro afectado — recibe la
+  // incidencia como parámetro porque se usa tanto desde el botón "Es el mismo problema" (tipos que
+  // sí preguntan) como automáticamente desde checkAndSubmit (tipos que no preguntan). Para los
+  // tipos que no preguntan, el refuerzo es "silencioso": el chofer no tiene cómo saber si es el
+  // mismo problema de otro u uno nuevo, así que no tiene sentido avisarle que "se sumó a una
+  // incidencia existente" — su reporte debe sentirse exactamente igual que uno nuevo; recién se
+  // entera de que hay más choferes afectados cuando lo ve en "Estado de mis incidencias".
+  const reforzarIncidencia = (incidencia, {
+    silencioso = false
+  } = {}) => {
+    if (!incidencia) return;
     sbClient.rpc("reforzar_incidencia", {
-      p_incidencia_id: dedupCandidate.id,
+      p_incidencia_id: incidencia.id,
       p_chofer_id: driver.id
     }).then(({
       error
@@ -19125,8 +19228,12 @@ function ReporteIncidencias({
       if (error) console.error("No se pudo reforzar la incidencia:", error.message);
     });
     setIncidents(prev => prev.map(i => {
-      if (i.id !== dedupCandidate.id) return i;
-      const yaAfectado = (i.afectados || []).includes(driver.nombre);
+      if (i.id !== incidencia.id) return i;
+      // El contador de "choferes afectados" es para OTROS choferes que se suman — si quien refuerza
+      // es el mismo que la reportó originalmente (insistiendo), no se cuenta aparte: sigue siendo
+      // 1 solo chofer real, no 2.
+      const esElMismoQueReporto = i.choferId === driver.id;
+      const yaAfectado = esElMismoQueReporto || (i.afectados || []).includes(driver.nombre);
       const nuevosAfectados = yaAfectado ? i.afectados || [] : [...(i.afectados || []), driver.nombre];
       const msgRefuerzo = {
         rol: "Chofer",
@@ -19134,18 +19241,25 @@ function ReporteIncidencias({
         texto: `${driver.nombre} confirma el mismo problema.`,
         hora: hhmm()
       };
-      // Bump ts para que suba al inicio del buzón del AZT y revertir a "nueva" si estaba en atención
+      // Bump ts para que suba al inicio del buzón del AZT y revertir a "nueva" si estaba en atención.
+      // tsActividad también se actualiza (igual que hace reforzar_incidencia en la BD) para que la
+      // ventana de dedup de checkAndSubmit cuente desde este refuerzo, no desde el reporte original.
       return {
         ...i,
         afectados: nuevosAfectados,
         mensajes: [...(i.mensajes || []), msgRefuerzo],
         ts: Date.now(),
+        tsActividad: Date.now(),
         estado: i.estado === "atencion" ? "nueva" : i.estado
       };
     }));
     setPendingSubmitFn(null);
-    setDedupConfirmed(true);
-    setStep("dedupConfirmed");
+    if (silencioso) {
+      setStep("list");
+    } else {
+      setDedupConfirmed(true);
+      setStep("dedupConfirmed");
+    }
     setTipo(null);
     setObra("");
     setServicio("");
@@ -19154,6 +19268,7 @@ function ReporteIncidencias({
     setFallaMixer("");
     setFallaComent("");
   };
+  const reforzarExistente = () => reforzarIncidencia(dedupCandidate);
   const start = t => {
     setTipo(t);
     if (t.id === "servicios") {
@@ -19300,7 +19415,8 @@ function ReporteIncidencias({
       p_unidad: driver.unidad,
       p_obra: `Planta ${driver.planta}`,
       p_mensaje_inicial: detalle,
-      p_adjunto_path: adjuntoPath
+      p_adjunto_path: adjuntoPath,
+      p_subtipo_servicio: servicio
     });
     setEnviando(false);
     if (error) {
@@ -19486,20 +19602,36 @@ function ReporteIncidencias({
     value: hhmm()
   })), /*#__PURE__*/React.createElement("div", {
     className: "text-xs font-bold text-gray-600 mb-1"
-  }, "\xBFEn qu\xE9 obra est\xE1s?"), /*#__PURE__*/React.createElement(DropdownConOtro, {
-    options: obrasReales,
-    value: obra,
-    onChange: setObra,
-    placeholder: "Selecciona la obra"
+  }, "\xBFEn qu\xE9 obra est\xE1s?"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setObraModalAbierto(true),
+    className: "w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-base font-semibold text-left",
+    style: {
+      background: "white",
+      border: `1px solid ${obra ? AZUL : "#e6e8ee"}`,
+      color: obra ? AZUL : "#8a91a0"
+    }
+  }, obra || "Selecciona la obra", /*#__PURE__*/React.createElement(ChevronDown, {
+    size: 18,
+    color: obra ? AZUL : "#8a91a0"
+  })), obraModalAbierto &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(ModalElegirObra, {
+    obras: obrasReales,
+    onElegir: o => {
+      setObra(o);
+      setObraModalAbierto(false);
+    },
+    onClose: () => setObraModalAbierto(false)
   }), /*#__PURE__*/React.createElement("button", {
     onClick: submit,
-    disabled: !obra,
+    disabled: !obra || enviando,
     className: "w-full py-3.5 rounded-xl font-bold mt-4 disabled:opacity-40",
     style: {
       background: AMARILLO,
       color: AZUL
     }
-  }, "Enviar reporte")), step === "falla_rop" &&
+  }, enviando ? "Enviando…" : "Enviar reporte")), step === "falla_rop" &&
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
@@ -19810,7 +19942,7 @@ function ReporteIncidencias({
     className: "text-sm text-gray-500 mb-4"
   }, "Planta ", driver.planta), /*#__PURE__*/React.createElement("div", {
     className: "space-y-2"
-  }, SERVICIOS_PLANTA.map(s =>
+  }, SERVICIOS_PLANTA.filter(s => !s.deshabilitado).map(s =>
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("button", {
@@ -27656,73 +27788,6 @@ function Dropdown({
     size: 18,
     className: "absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none",
     color: value ? AZUL : "#8a91a0"
-  }));
-}
-/* Dropdown que permite escribir una obra libre si eligen "Otra…" */
-function DropdownConOtro({
-  options,
-  value,
-  onChange,
-  placeholder
-}) {
-  const [modoLibre, setModoLibre] = useState(false);
-  const [otra, setOtra] = useState("");
-  const opcionesFiltradas = options.filter(o => o !== "Otra…");
-  const seleccionSelect = modoLibre ? "Otra…" : opcionesFiltradas.includes(value) ? value : "";
-  const handleSelect = v => {
-    if (v === "Otra…") {
-      setModoLibre(true);
-      onChange(otra);
-    } else {
-      setModoLibre(false);
-      setOtra("");
-      onChange(v);
-    }
-  };
-  const handleOtra = v => {
-    setOtra(v);
-    onChange(v);
-  };
-  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
-    className: "space-y-2"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "relative"
-  }, /*#__PURE__*/React.createElement("select", {
-    value: seleccionSelect,
-    onChange: e => handleSelect(e.target.value),
-    className: "w-full appearance-none px-4 py-3.5 rounded-xl text-base font-semibold outline-none",
-    style: {
-      background: "white",
-      border: `1px solid ${value ? AZUL : "#e6e8ee"}`,
-      color: seleccionSelect ? AZUL : "#8a91a0"
-    }
-  }, /*#__PURE__*/React.createElement("option", {
-    value: ""
-  }, placeholder), opcionesFiltradas.map(o =>
-  /*#__PURE__*/
-  /*#__PURE__*/
-  React.createElement("option", {
-    key: o,
-    value: o
-  }, o)), /*#__PURE__*/React.createElement("option", {
-    value: "Otra\u2026"
-  }, "\u270F\uFE0F Otra\u2026 (escribir)")), /*#__PURE__*/React.createElement(ChevronDown, {
-    size: 18,
-    className: "absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none",
-    color: seleccionSelect ? AZUL : "#8a91a0"
-  })), modoLibre &&
-  /*#__PURE__*/
-  /*#__PURE__*/
-  React.createElement("input", {
-    value: otra,
-    onChange: e => handleOtra(e.target.value),
-    placeholder: "Escribe el nombre de la obra",
-    className: "w-full px-4 py-3 rounded-xl border text-base outline-none",
-    style: {
-      borderColor: otra ? AZUL : "#d5d9e4",
-      color: AZUL,
-      fontWeight: 600
-    }
   }));
 }
 /* Tarjeta grande para multi-select (Probeta, Slump) */
