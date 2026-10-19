@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-19T04:33:41.010Z */
+/* UniconApp — Bundle generado el 2026-10-19T04:39:02.374Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 19808 — CERO simplificaciones */
+/* Líneas originales del JSX: 19805 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -19175,10 +19175,7 @@ function ReporteIncidencias({
       afectados: f.afectados || [],
       choferId: f.chofer_id,
       chofer: f.chofer_nombre,
-      hora: new Date(f.created_at).toLocaleTimeString("es-PE", {
-        hour: "2-digit",
-        minute: "2-digit"
-      }),
+      hora: fechaHoraCorta(new Date(f.created_at).getTime()),
       tsActividad: f.ultima_actividad ? new Date(f.ultima_actividad).getTime() : new Date(f.created_at).getTime()
     })).find(i => {
       if (!(tipoId === "servicios" ? i.subtipoServicio === servicio : obrasSimilares(i.obra, obra))) return false;
@@ -20079,7 +20076,7 @@ function ReporteIncidencias({
     /*#__PURE__*/
     /*#__PURE__*/
     React.createElement(ReadRow, {
-      label: "Hora de registro",
+      label: "Fecha de registro",
       value: dedupCandidate.hora
     }), /*#__PURE__*/React.createElement(ReadRow, {
       label: "Choferes afectados",
