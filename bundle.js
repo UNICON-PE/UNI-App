@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-19T00:50:38.981Z */
+/* UniconApp — Bundle generado el 2026-10-19T00:53:43.815Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 19669 — CERO simplificaciones */
+/* Líneas originales del JSX: 19677 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -9763,9 +9763,17 @@ function ChoferApp({
   // mano en mano). Igual que con auxilios_lectura, Realtime puede quedar "SUBSCRIBED" sin entregar
   // el INSERT (o el chofer puede recién abrir la app después de que ya se envió) — por eso además
   // hay un sondeo periódico de respaldo que revisa si hay un envío abierto no visto todavía.
+  // El aviso debe salir UNA sola vez por envío, no en cada recarga/inicio de sesión mientras el AZT
+  // no lo retire — tallerVistoRef (en memoria) no alcanza porque se reinicia con cada recarga, así
+  // que el id ya visto se guarda también en localStorage (persiste entre sesiones en este
+  // dispositivo, igual que uni_ultimo_dni).
   const mostrarAvisoTaller = async fila => {
     if (!fila || tallerVistoRef.current.has(fila.id)) return;
     tallerVistoRef.current.add(fila.id);
+    try {
+      if (localStorage.getItem(`uni_taller_visto_${driverRef.current.unidad}`) === fila.id) return;
+      localStorage.setItem(`uni_taller_visto_${driverRef.current.unidad}`, fila.id);
+    } catch {}
     const {
       data: aztRows
     } = await sbClient.from("perfiles").select("nombre, telefono").eq("rol", "admin_zonal_transporte").eq("activo", true).or(`planta.ilike.%${driverRef.current.planta}%,planta.ilike.%Transversal%`);
