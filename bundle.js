@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-19T04:39:02.374Z */
+/* UniconApp — Bundle generado el 2026-10-19T06:19:30.120Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 19805 — CERO simplificaciones */
+/* Líneas originales del JSX: 19807 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -8839,10 +8839,6 @@ function UniconApp() {
         minute: "2-digit"
       }),
       ts: new Date(f.created_at).getTime(),
-      // Hora del ÚLTIMO movimiento (reporte original o el refuerzo más reciente) — es lo que usa
-      // checkAndSubmit para decidir si un reporte nuevo todavía se agrupa con esta incidencia, en
-      // vez de contar siempre desde el primer reporte (ver comentario en checkAndSubmit).
-      tsActividad: f.ultima_actividad ? new Date(f.ultima_actividad).getTime() : new Date(f.created_at).getTime(),
       // Hora en la que se resolvió (distinta de "hora", que es cuando se reportó) — para que el
       // buzón de Resueltas muestre y ordene por cuándo se cerró, no por cuándo llegó.
       horaResuelta: f.resuelta_en ? new Date(f.resuelta_en).toLocaleTimeString("es-PE", {
@@ -19077,7 +19073,19 @@ function ReporteIncidencias({
   const [dedupConfirmed, setDedupConfirmed] = useState(false); // mostrar mensaje de confirmación
   // "falla" es informativa (sin chat, su propio buzón en Fallas mecánicas) — no aparece en el
   // historial de incidencias del chofer, solo la confirmación de envío de la pantalla "falla_sent".
-  const mis = incidents.filter(i => i.tipo !== "falla" && (i.choferId === driver.id || (i.afectados || []).includes(driver.nombre)));
+  const mis = incidents.filter(i => i.tipo !== "falla" && (i.choferId === driver.id || (i.afectados || []).includes(driver.nombre)))
+  // Si el chofer se sumó a una incidencia ya existente (se empaquetó con la de otro), la hora que
+  // le debe figurar a ÉL es cuando reportó/confirmó el problema, no cuando se creó la incidencia
+  // originalmente — el empaquetado sigue siendo uno solo (mismo chat, mismo estado), solo cambia
+  // qué hora ve cada afectado en su propia tarjeta.
+  .map(i => {
+    if (i.choferId === driver.id) return i;
+    const miRefuerzo = (i.mensajes || []).find(m => m.rol === "Chofer" && m.texto === `${driver.nombre} confirma el mismo problema.`);
+    return miRefuerzo ? {
+      ...i,
+      hora: miRefuerzo.hora
+    } : i;
+  });
 
   // Al llegar desde la campanita (notificación de "en atención" o "resuelta"), asegura estar en
   // la lista, centra la tarjeta exacta y limpia el pedido después de un rato — así no vuelve a
@@ -19102,11 +19110,11 @@ function ReporteIncidencias({
   // exacto (columna ya existía en la BD para filtrar por subtipo, pero nunca se llegó a enviar desde
   // _doSubmitServicio) — así "almuerzo" no calza como duplicado de "baños".
   //
-  // La ventana se cuenta desde el ÚLTIMO movimiento de la incidencia (i.tsActividad, que se
-  // actualiza en la BD cada vez que alguien se suma — ver reforzar_incidencia), NO desde el primer
-  // reporte: si A reportó hace 3h pero B se sumó hace 10min, la incidencia sigue "viva" para
-  // agrupar — recién cuando pasa la ventana completa SIN que nadie se sume, el siguiente reporte
-  // abre una incidencia nueva e independiente (que a su vez empieza a agrupar desde cero).
+  // La ventana se cuenta desde el PRIMER reporte de la incidencia (created_at), no desde el último
+  // movimiento: si A reportó hace 31 minutos (pasada la ventana de 30 min de "retiro"), el siguiente
+  // reporte ya NO se agrupa con el de A aunque alguien lo haya reforzado hace 1 minuto — abre una
+  // incidencia nueva, que desde ese momento se vuelve el nuevo punto de partida y empieza a agrupar
+  // todo lo que llegue dentro de sus propios 30 minutos.
   //
   // "preguntar: false" (acceso, retiro, y el sub-servicio "almuerzo") hace que, si hay candidato,
   // el reporte se sume automáticamente sin mostrarle al chofer la pantalla de "¿es el mismo
@@ -19164,7 +19172,7 @@ function ReporteIncidencias({
     // ventana de "desactualizado" baja de varios segundos a lo que tarda esta sola consulta.
     const {
       data: filas
-    } = await sbClient.from("incidencias").select("id,tipo,planta,obra,subtipo_servicio,estado,afectados,chofer_id,chofer_nombre,created_at,ultima_actividad").eq("planta", driver.planta).eq("tipo", tipoId).neq("estado", "resuelta");
+    } = await sbClient.from("incidencias").select("id,tipo,planta,obra,subtipo_servicio,estado,afectados,chofer_id,chofer_nombre,created_at").eq("planta", driver.planta).eq("tipo", tipoId).neq("estado", "resuelta");
     const candidato = (filas || []).map(f => ({
       id: f.id,
       tipo: f.tipo,
@@ -19176,10 +19184,10 @@ function ReporteIncidencias({
       choferId: f.chofer_id,
       chofer: f.chofer_nombre,
       hora: fechaHoraCorta(new Date(f.created_at).getTime()),
-      tsActividad: f.ultima_actividad ? new Date(f.ultima_actividad).getTime() : new Date(f.created_at).getTime()
+      tsCreacion: new Date(f.created_at).getTime()
     })).find(i => {
       if (!(tipoId === "servicios" ? i.subtipoServicio === servicio : obrasSimilares(i.obra, obra))) return false;
-      return ahora - i.tsActividad < ventanaMs;
+      return ahora - i.tsCreacion < ventanaMs;
     });
     if (!candidato) {
       await submitFn();
@@ -19239,14 +19247,11 @@ function ReporteIncidencias({
         hora: hhmm()
       };
       // Bump ts para que suba al inicio del buzón del AZT y revertir a "nueva" si estaba en atención.
-      // tsActividad también se actualiza (igual que hace reforzar_incidencia en la BD) para que la
-      // ventana de dedup de checkAndSubmit cuente desde este refuerzo, no desde el reporte original.
       return {
         ...i,
         afectados: nuevosAfectados,
         mensajes: [...(i.mensajes || []), msgRefuerzo],
         ts: Date.now(),
-        tsActividad: Date.now(),
         estado: i.estado === "atencion" ? "nueva" : i.estado
       };
     }));
