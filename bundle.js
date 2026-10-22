@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-19T06:19:30.120Z */
+/* UniconApp — Bundle generado el 2026-10-22T17:02:33.000Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 19807 — CERO simplificaciones */
+/* Líneas originales del JSX: 21369 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -8501,6 +8501,146 @@ async function consultarPorLotes(tabla, avisoIds, tamanoLote = 300) {
 // validaciones de rol.
 const ROLES_CHOFER_SET = new Set(["chofer", "chom_lider", "chofer_operador_bomba", "operador_bomba", "ayudante_bomba_multitask", "auxiliar_tuberia"]);
 
+// ===== Encuestas de Gestión Humana (recordatorio programable dentro de la app) =====
+// El recordatorio evalúa TODAS las encuestas en estado "desplegada" (no una sola hardcodeada) —
+// así, cuando Gestión Humana cree y despliegue una segunda encuesta desde su panel, entra sola a
+// la misma cola sin tocar código.
+// Nunca se envía/muestra un recordatorio fuera de este horario (hora de Perú) — si "tocaba" justo
+// fuera de rango, se reevalúa solo la próxima vez que se abra la app, no hace falta ninguna cola de
+// reintentos aparte. Domingo: nunca se envía nada. Sábado: solo de 6am a 2pm (horario reducido).
+// Resto de la semana: 6am a 8pm.
+function dentroDeHorarioLaboral() {
+  const dia = diaSemanaLima(); // 0=domingo…6=sábado
+  if (dia === 0) return false;
+  const horaActual = horaActualLima();
+  if (dia === 6) return horaActual >= "06:00" && horaActual < "14:00";
+  return horaActual >= "06:00" && horaActual < "20:00";
+}
+
+// Helpers de fecha/hora en huso de Perú (America/Lima) usados por recordatorioEstaVencido para las
+// frecuencias "diaria"/"interdiaria"/"semanal", que se anclan a una hora del día puntual y no a un
+// simple conteo de milisegundos transcurridos.
+function horaActualLima() {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: "America/Lima",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  }).format(new Date()); // "HH:MM"
+}
+function diaSemanaLima() {
+  // 0=domingo…6=sábado, en huso de Lima.
+  return new Date(new Date().toLocaleString("en-US", {
+    timeZone: "America/Lima"
+  })).getDay();
+}
+function fechaLimaYMD(fecha) {
+  return new Date(fecha).toLocaleDateString("en-CA", {
+    timeZone: "America/Lima"
+  }); // "YYYY-MM-DD"
+}
+
+// Decide si a ESTE chofer (su fila de rh_encuesta_estado_usuario) ya le toca ver de nuevo el
+// recordatorio de una encuesta, según cómo la programó Gestión Humana (rh_encuesta_recordatorios).
+// Las 4 frecuencias fijas (cada_x_horas/diaria/interdiaria/semanal) reemplazan al antiguo campo
+// libre "cada X [unidad]" — ewq pidió opciones fijas para no tener que calcular equivalencias.
+function recordatorioEstaVencido(config, estadoUsuario) {
+  if (!config || !config.activo) return false;
+  if (estadoUsuario?.completada) return false;
+  const ultimoEnvio = estadoUsuario?.ultimo_recordatorio_en ? new Date(estadoUsuario.ultimo_recordatorio_en).getTime() : null;
+  if (!ultimoEnvio) {
+    // Nunca se le envió: para "único" respeta fecha_programada (null = inmediato); para
+    // "recurrente" el primer envío siempre es inmediato apenas se despliega.
+    if (config.tipo_envio === "unico" && config.fecha_programada) {
+      return Date.now() >= new Date(config.fecha_programada).getTime();
+    }
+    return true;
+  }
+  if (config.tipo_envio === "unico") return false; // ya se envió la única vez que correspondía
+  const horaActual = horaActualLima();
+  const horaEnvio = config.hora_envio || "09:00";
+  const hoyYMD = fechaLimaYMD(Date.now());
+  const ultimoYMD = fechaLimaYMD(ultimoEnvio);
+  switch (config.tipo_frecuencia) {
+    case "cada_x_horas":
+      {
+        const umbralMs = (config.horas_valor || 1) * 60 * 60 * 1000;
+        return Date.now() - ultimoEnvio >= umbralMs;
+      }
+    case "diaria":
+      if (hoyYMD === ultimoYMD) return false; // ya se envió hoy
+      return horaActual >= horaEnvio;
+    case "interdiaria":
+      {
+        const diasTranscurridos = Math.round((new Date(hoyYMD) - new Date(ultimoYMD)) / (24 * 60 * 60 * 1000));
+        if (diasTranscurridos < 2) return false;
+        return horaActual >= horaEnvio;
+      }
+    case "semanal":
+      if (hoyYMD === ultimoYMD) return false; // ya se envió hoy
+      if (diaSemanaLima() !== (config.dia_semana ?? 1)) return false;
+      return horaActual >= horaEnvio;
+    default:
+      return false;
+  }
+}
+
+// Gestión Humana elige a quién le llega cada ronda (qué plantas, qué posiciones) — null o array
+// vacío en cualquiera de los dos ejes significa "todos", para que las rondas ya creadas antes de
+// que existiera este control sigan yendo a todo el mundo sin que nadie tenga que reconfigurarlas.
+function audienciaIncluye(config, driver) {
+  const plantas = config.plantas_destino;
+  const roles = config.roles_destino;
+  if (plantas && plantas.length > 0 && !plantas.includes(driver.planta)) return false;
+  if (roles && roles.length > 0 && !roles.includes(driver.rol)) return false;
+  return true;
+}
+
+// Gestión Humana puede fijar una fecha de inicio/fin de vigencia por RONDA (cuándo se puede
+// completar esa aplicación) — null en cualquiera de las dos significa "sin restricción" en ese
+// extremo, para que las rondas ya creadas antes de que existiera este control sigan funcionando
+// igual que hoy.
+function rondaEnVigencia(ronda) {
+  const ahora = Date.now();
+  if (ronda.fecha_inicio && ahora < new Date(ronda.fecha_inicio).getTime()) return false;
+  if (ronda.fecha_fin && ahora > new Date(ronda.fecha_fin).getTime()) return false;
+  return true;
+}
+
+// Ramificación de preguntas: hoy la única condición posible depende de la categoría de ubicación
+// derivada de la planta de origen elegida (ver rh_planta_categoria) — no existe más "puesto"
+// porque todos los roles que hoy ven esta encuesta cuentan como un solo grupo.
+function preguntaEsVisible(pregunta, filtros) {
+  if (!pregunta.condicion) return true;
+  const valor = filtros[pregunta.condicion.dependeDe];
+  return (pregunta.condicion.opciones || []).includes(valor);
+}
+
+// Calcula el código visible (A1, B3...) de cada pregunta a partir del orden de aparición de su
+// "dimension" + el orden de la pregunta dentro de ella — nunca se guarda como string en la BD,
+// así nunca se puede desincronizar (fue justo el bug que tenían los documentos originales de esta
+// encuesta). Las preguntas de tipo "filtro_planta" quedan sin código, igual que en el original.
+function calcularCodigosEncuesta(preguntas) {
+  const letraPorDimension = {};
+  const contadorPorDimension = {};
+  let siguienteLetra = 65; // 'A'
+  return preguntas.map(p => {
+    if (p.tipo === "filtro_planta") return {
+      ...p,
+      codigo: null
+    };
+    if (!(p.dimension in letraPorDimension)) {
+      letraPorDimension[p.dimension] = String.fromCharCode(siguienteLetra++);
+      contadorPorDimension[p.dimension] = 0;
+    }
+    contadorPorDimension[p.dimension]++;
+    return {
+      ...p,
+      codigo: `${letraPorDimension[p.dimension]}${contadorPorDimension[p.dimension]}`
+    };
+  });
+}
+
 // Devuelve la fecha de "hoy" en horario de Perú (UTC-5, sin cambio de horario de verano) como
 // string YYYY-MM-DD, para usarla como clave del día en control_ajuste_mixer y en fecha_citacion.
 function fechaPeruHoy() {
@@ -9185,6 +9325,7 @@ const mapNotifDB = n => ({
   avisoId: n.aviso_id,
   incidenciaId: n.incidencia_id,
   auxilioId: n.auxilio_id,
+  rondaId: n.ronda_id,
   planta: n.avisos?.planta ?? null,
   hora: new Date(n.created_at).toLocaleTimeString("es-PE", {
     hour: "2-digit",
@@ -9274,7 +9415,7 @@ function NotifPanel({
   // original (Canal de Avisos, centrado y resaltado) — ver irANotificacion en ChoferApp.
   const abrirNotificacion = n => {
     marcarTodasLeidas();
-    onIrAMensaje?.(n.avisoId, n.incidenciaId, n.auxilioId);
+    onIrAMensaje?.(n.avisoId, n.incidenciaId, n.auxilioId, n.rondaId);
   };
   const iconOf = iconOfNotif;
   const colorOf = colorOfNotif;
@@ -9523,6 +9664,288 @@ function HerramientasPanel({
     className: "font-semibold text-sm text-gray-800"
   }, "Rituales de Liderazgo"))));
 }
+
+// Tarjeta NO bloqueante (a diferencia del aviso de pantalla completa de "reasignado") que
+// Gestión Humana programa con su propia imagen + frecuencia — "Ahora no" la cierra y pasa a la
+// siguiente de la cola si hay otra vencida; "Responder" abre el formulario completo.
+function RecordatorioEncuestaCard({
+  item,
+  onAhoraNo,
+  onResponder
+}) {
+  const imagenUrl = item.config?.imagen_path ? sbClient.storage.from("avisos").getPublicUrl(item.config.imagen_path).data.publicUrl : null;
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 z-[998] flex items-center justify-center p-6",
+    style: {
+      background: "rgba(0,26,110,0.55)"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "relative bg-white rounded-3xl max-w-sm w-full shadow-2xl overflow-hidden text-center"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: onAhoraNo,
+    className: "absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center z-10",
+    style: {
+      background: "rgba(255,255,255,0.9)"
+    }
+  }, /*#__PURE__*/React.createElement(X, {
+    size: 16,
+    color: AZUL
+  })), imagenUrl &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("img", {
+    src: imagenUrl,
+    alt: "",
+    className: "w-full h-auto block"
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "p-6"
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "text-lg font-black mb-2",
+    style: {
+      color: AZUL
+    }
+  }, item.config?.aviso_titulo || item.encuesta.nombre), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm text-gray-600 mb-5"
+  }, item.config?.aviso_descripcion || "Tu opinión nos ayuda a mejorar tus condiciones de trabajo. Toma solo unos minutos."), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2.5"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: onAhoraNo,
+    className: "flex-1 py-3 rounded-xl font-bold text-sm border",
+    style: {
+      borderColor: "#d5d9e4",
+      color: "#5c6070"
+    }
+  }, "Ahora no"), /*#__PURE__*/React.createElement("button", {
+    onClick: onResponder,
+    className: "flex-1 py-3 rounded-xl font-bold text-sm",
+    style: {
+      background: AMARILLO,
+      color: AZUL
+    }
+  }, "Responder")))));
+}
+
+// Formulario completo de la encuesta — llega acá siempre con una encuesta "desplegada" y aún no
+// completada (si no, ni siquiera se habría disparado el recordatorio que lo abrió). Primera
+// pregunta siempre "¿Cuál es tu planta de origen?" (sin preseleccionar nada, aunque el chofer ya
+// esté en el canal de una planta — no necesariamente es la suya de origen); el resto de preguntas
+// se filtra según la categoría de ubicación derivada de esa planta (rh_planta_categoria).
+function EncuestaResponder({
+  encuesta,
+  driver,
+  onCerrar,
+  onCompletada
+}) {
+  // Ya no se le pregunta al colaborador su planta de origen: Gestión Humana elige explícitamente a
+  // qué plantas/posiciones se le envía cada ronda (ver audienciaIncluye), así que la planta real de
+  // su perfil YA ES el mismo dato que se usó para decidir si le tocaba responder — no tiene sentido
+  // volver a pedírselo.
+  const [categoriasPorPlanta, setCategoriasPorPlanta] = useState({});
+  const [respuestas, setRespuestas] = useState({});
+  const [enviando, setEnviando] = useState(false);
+  const [enviado, setEnviado] = useState(false);
+  useEffect(() => {
+    sbClient.from("rh_planta_categoria").select("planta,categoria").then(({
+      data
+    }) => {
+      setCategoriasPorPlanta(Object.fromEntries((data || []).map(r => [r.planta, r.categoria])));
+    });
+  }, []);
+  const ubicacion = categoriasPorPlanta[driver.planta] || null;
+  const preguntasVisibles = encuesta.preguntas
+  // Defensivo: una encuesta creada antes de este cambio podría todavía tener una fila
+  // "filtro_planta" sin borrar si la migración que la quita aún no corrió.
+  .filter(p => p.tipo !== "filtro_planta").filter(p => preguntaEsVisible(p, {
+    ubicacion
+  }));
+  const faltanRespuestas = preguntasVisibles.some(p => !respuestas[p.id]);
+  const dimensionesEnOrden = [...new Set(preguntasVisibles.map(p => p.dimension))];
+  const enviar = async () => {
+    setEnviando(true);
+    const {
+      error
+    } = await sbClient.rpc("completar_encuesta_medicion", {
+      p_ronda_id: encuesta.rondaId,
+      p_planta_origen: driver.planta,
+      p_respuestas: preguntasVisibles.map(p => ({
+        pregunta_id: p.id,
+        valor: respuestas[p.id]
+      }))
+    });
+    setEnviando(false);
+    if (error) {
+      alert("No se pudo enviar la encuesta: " + error.message);
+      return;
+    }
+    setEnviado(true);
+  };
+  if (enviado) {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+      className: "fixed inset-0 flex items-center justify-center p-6 z-[999]",
+      style: {
+        background: AZUL
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center",
+      style: {
+        background: AMARILLO
+      }
+    }, /*#__PURE__*/React.createElement(Check, {
+      size: 32,
+      color: AZUL
+    })), /*#__PURE__*/React.createElement("h2", {
+      className: "text-xl font-black mb-2",
+      style: {
+        color: AZUL
+      }
+    }, "\xA1Gracias por tu respuesta!"), /*#__PURE__*/React.createElement("p", {
+      className: "text-sm text-gray-600 mb-6"
+    }, "Tu opini\xF3n ya qued\xF3 registrada."), /*#__PURE__*/React.createElement("button", {
+      onClick: onCompletada,
+      className: "w-full py-3 rounded-xl font-bold",
+      style: {
+        background: AZUL,
+        color: "white"
+      }
+    }, "Volver")));
+  }
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 z-[999] flex flex-col",
+    style: {
+      background: "rgb(246,248,252)"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2 px-3.5 py-2.5 text-white shrink-0",
+    style: {
+      background: AZUL
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "font-semibold flex-1 truncate"
+  }, encuesta.nombre), /*#__PURE__*/React.createElement("button", {
+    onClick: onCerrar,
+    className: "w-7 h-7 rounded-full flex items-center justify-center",
+    style: {
+      background: "rgba(255,255,255,.15)"
+    }
+  }, /*#__PURE__*/React.createElement(X, {
+    size: 16,
+    color: "white"
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 overflow-y-auto p-4"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "max-w-xl mx-auto"
+  }, (encuesta.titulo || encuesta.descripcion) &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "bg-white rounded-xl p-4 mb-5 shadow-sm",
+    style: {
+      border: "1px solid #e6e8ee"
+    }
+  }, encuesta.titulo &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("h3", {
+    className: "text-base font-extrabold mb-1",
+    style: {
+      color: AZUL
+    }
+  }, encuesta.titulo), encuesta.descripcion &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("p", {
+    className: "text-sm text-gray-600"
+  }, encuesta.descripcion)), dimensionesEnOrden.map(dim =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    key: dim,
+    className: "mb-5"
+  }, /*#__PURE__*/React.createElement("h4", {
+    className: "text-xs font-extrabold uppercase tracking-wide mb-2",
+    style: {
+      color: "#1a1d2e"
+    }
+  }, dim), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-3"
+  }, preguntasVisibles.filter(p => p.dimension === dim).map(p =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    key: p.id,
+    className: "bg-white rounded-xl p-3.5 shadow-sm",
+    style: {
+      border: "1px solid #e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-sm text-gray-800 mb-2.5"
+  }, p.codigo &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("b", {
+    style: {
+      color: AZUL
+    }
+  }, p.codigo, ". "), p.texto), p.tipo === "abierta" ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("textarea", {
+    value: respuestas[p.id] || "",
+    onChange: e => setRespuestas(r => ({
+      ...r,
+      [p.id]: e.target.value
+    })),
+    className: "w-full px-3 py-2 rounded-lg border text-sm",
+    style: {
+      borderColor: "#d5d9e4",
+      minHeight: 70
+    }
+  }) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "flex items-start gap-1"
+  }, (p.escala_opciones || []).map(op =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
+    key: op,
+    onClick: () => setRespuestas(r => ({
+      ...r,
+      [p.id]: op
+    })),
+    className: "flex-1 min-w-0 flex flex-col items-center gap-1.5 py-1 px-0.5"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-[10px] leading-tight text-center",
+    style: {
+      color: respuestas[p.id] === op ? AZUL : "#5c6070",
+      fontWeight: respuestas[p.id] === op ? 700 : 500
+    }
+  }, op), /*#__PURE__*/React.createElement("span", {
+    className: "w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center",
+    style: {
+      borderColor: respuestas[p.id] === op ? AZUL : "#c7cbd6"
+    }
+  }, respuestas[p.id] === op &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("span", {
+    className: "w-2 h-2 rounded-full",
+    style: {
+      background: AZUL
+    }
+  })))))))))), /*#__PURE__*/React.createElement("button", {
+    onClick: enviar,
+    disabled: faltanRespuestas || enviando,
+    className: "w-full py-3.5 rounded-xl font-bold disabled:opacity-40 mb-4",
+    style: {
+      background: AMARILLO,
+      color: AZUL
+    }
+  }, enviando ? "Enviando..." : "Enviar encuesta"))));
+}
 function ChoferApp({
   incidents,
   setIncidents,
@@ -9549,6 +9972,11 @@ function ChoferApp({
   });
   const [driver, setDriver] = useState(null);
   const misUnidadesPropias = useRef(new Set()); // mixers que el propio chofer acaba de editar desde su perfil, para no mostrarle "fuiste reasignado" por su propio cambio
+  // Se pone en true apenas se detecta que dieron de baja la cuenta (ver aplicarCambioDePerfil) —
+  // otros procesos en segundo plano (como el sondeo/Realtime de recordatorios de Medición Ritmo)
+  // lo consultan para dejar de disparar nada más, aunque el componente siga montado detrás de la
+  // pantalla de "Tu cuenta fue desactivada".
+  const cuentaDesactivadaRef = useRef(false);
   const tallerVistoRef = useRef(new Set()); // ids de mixers_taller ya mostrados en esta sesión, para no repetir la pantalla azul en cada sondeo ni duplicarla si Realtime y el sondeo detectan el mismo envío
   const [channel, setChannel] = useState(null); // avisos|finvuelta|bot|incidencias — null = sin canal elegido aún, para evitar montar el chat automáticamente al iniciar sesión
   const channelRef = useRef(channel); // espejo de "channel" para el canal de Realtime del badge (ver más abajo), que debe quedarse conectado toda la sesión sin reconectarse en cada cambio de pantalla
@@ -9585,6 +10013,12 @@ function ChoferApp({
   const [openHerramientas, setOpenHerramientas] = useState(false);
   const [toastNotif, setToastNotif] = useState(null); // burbuja efímera + sonido cuando llega una EN VIVO
   const [botDeepLink, setBotDeepLink] = useState(null); // ej. "op_unikin" — abre UNIBOT directo en esa opción (ver Bitácora personal)
+  // Cola de recordatorios de encuestas (Gestión Humana) vencidos y aún no completados por este
+  // chofer — se evalúa cada vez que se abre la app (ver efecto más abajo), no hay cron en este
+  // proyecto. "encuestaAbierta" controla la pantalla completa del formulario; mientras tanto solo
+  // se muestra la tarjeta no bloqueante del primero de la cola.
+  const [recordatoriosPendientes, setRecordatoriosPendientes] = useState([]);
+  const [encuestaAbierta, setEncuestaAbierta] = useState(null); // la encuesta (con preguntas) que se está respondiendo, o null
   const isDesktop = useIsDesktop();
   useMobileBackButton(isDesktop, mobileList, setMobileList);
   const ROLES_ADMIN_PANEL = ["jefe_planta", "despachador", "sgi", "supervisor_mantenimiento", "analista_mantenimiento", "admin_zonal_transporte", "trabajadora_social", "admin_transporte_bombas", "supervisor_bombas_jefe_ops", "gerente_transporte_distribucion", "jefe_transporte", "supervisor_transportes", "jefe_capacitacion", "administracion_personal", "mecanico_lider"];
@@ -9719,7 +10153,35 @@ function ChoferApp({
   useEffect(() => {
     driverRef.current = driver;
   }, [driver]);
-  // Escuchar cambios en tiempo real sobre el propio perfil (ej. reasignación de planta por AZT/Gestión Humana)
+  // Escuchar cambios en tiempo real sobre el propio perfil (ej. reasignación de planta, o que lo
+  // den de baja, por AZT/Gestión Humana).
+  const aplicarCambioDePerfil = nuevo => {
+    const actual = driverRef.current;
+    if (nuevo.activo === false) {
+      // Prioridad máxima: si lo dieron de baja, eso manda sin importar qué más haya cambiado a la
+      // vez (ej. Gestión Humana pudo haber tocado planta/unidad en el mismo guardado).
+      cuentaDesactivadaRef.current = true;
+      setReasignado({
+        desactivado: true
+      });
+    } else if (nuevo.planta !== actual.planta) {
+      setReasignado({
+        plantaNueva: nuevo.planta
+      });
+    } else if (nuevo.unidad !== actual.unidad) {
+      if (misUnidadesPropias.current.has(nuevo.unidad)) {
+        // El propio chofer editó su mixer desde su perfil hace un instante — no es una
+        // reasignación del AZT, así que no le mostramos el aviso de "fuiste reasignado".
+        misUnidadesPropias.current.delete(nuevo.unidad);
+      } else {
+        // El AZT reasignó el mixer desde "Gestión de choferes y obras" — avisamos igual que en
+        // una reasignación de planta para que el chofer vea reflejado el cambio de inmediato.
+        setReasignado({
+          unidadNueva: nuevo.unidad
+        });
+      }
+    }
+  };
   useEffect(() => {
     if (!driver || !driver.id) return;
     const canal = sbClient.channel(`perfil-${driver.id}`).on("postgres_changes", {
@@ -9727,33 +10189,21 @@ function ChoferApp({
       schema: "public",
       table: "perfiles",
       filter: `id=eq.${driver.id}`
-    }, payload => {
-      const nuevo = payload.new;
-      const actual = driverRef.current;
-      if (nuevo.planta !== actual.planta) {
-        setReasignado({
-          plantaNueva: nuevo.planta
-        });
-      } else if (nuevo.activo === false) {
-        setReasignado({
-          desactivado: true
-        });
-      } else if (nuevo.unidad !== actual.unidad) {
-        if (misUnidadesPropias.current.has(nuevo.unidad)) {
-          // El propio chofer editó su mixer desde su perfil hace un instante — no es una
-          // reasignación del AZT, así que no le mostramos el aviso de "fuiste reasignado".
-          misUnidadesPropias.current.delete(nuevo.unidad);
-        } else {
-          // El AZT reasignó el mixer desde "Gestión de choferes y obras" — avisamos igual que en
-          // una reasignación de planta para que el chofer vea reflejado el cambio de inmediato.
-          setReasignado({
-            unidadNueva: nuevo.unidad
-          });
-        }
-      }
-    }).subscribe();
+    }, payload => aplicarCambioDePerfil(payload.new)).subscribe();
+    // Sondeo periódico de respaldo: que lo den de baja (o lo reasignen) debe cortarle el acceso sí
+    // o sí, y Realtime en este proyecto no siempre entrega el evento aunque se vea "SUBSCRIBED"
+    // (mismo síntoma ya visto con avisos/auxilios_lectura) — con esto, aunque falle Realtime, el
+    // bloqueo llega como máximo a los pocos segundos en vez de depender de que recargue la app.
+    const intervalo = setInterval(() => {
+      sbClient.from("perfiles").select("activo,planta,unidad").eq("id", driver.id).maybeSingle().then(({
+        data
+      }) => {
+        if (data) aplicarCambioDePerfil(data);
+      });
+    }, 8000);
     return () => {
       sbClient.removeChannel(canal);
+      clearInterval(intervalo);
     };
   }, [driver?.id]);
 
@@ -9902,8 +10352,10 @@ function ChoferApp({
       });
       setNotifs(prev => [mapeada, ...prev]);
       // Burbuja + sonido interno solo en PC — en celular la única que debe sonar es la nativa del
-      // sistema (ver sw.js), que ahí SIEMPRE se muestra, tenga o no la app abierta.
-      if (!ES_MOVIL) {
+      // sistema (ver sw.js), que ahí SIEMPRE se muestra, tenga o no la app abierta. El recordatorio
+      // de encuestas es la excepción a propósito: solo debe quedar en la campanita para abrirla
+      // después, sin sonido ni burbuja en vivo (tampoco tiene push nativo, ver Edge Function).
+      if (!ES_MOVIL && mapeada.tipo !== "encuesta_recordatorio") {
         reproducirSonidoNotif();
         setToastNotif(mapeada);
       }
@@ -9949,11 +10401,39 @@ function ChoferApp({
     }).eq("id", id);
     if (error) console.error("No se pudo marcar la notificación como leída:", error.message);
   };
+  // Trae una ronda (aplicación concreta de una encuesta) + las preguntas de su encuesta (con el
+  // código A1/B3 ya calculado) para abrir el formulario completo — reutilizado tanto por el botón
+  // "Responder" de la tarjeta del recordatorio como por el clic en la notificación push (deep
+  // link). Valida que la encuesta siga desplegada Y que esta ronda puntual siga abierta — si
+  // Gestión Humana ya la finalizó o deshabilitó la encuesta entre que se envió el recordatorio y
+  // que lo tocaron, simplemente no abre nada.
+  const abrirEncuestaPorRondaId = async rondaId => {
+    const {
+      data: ronda
+    } = await sbClient.from("rh_encuesta_rondas").select("id,nombre,estado,encuesta_id,rh_encuestas(nombre,estado,titulo,descripcion)").eq("id", rondaId).maybeSingle();
+    if (!ronda || ronda.estado !== "abierta" || ronda.rh_encuestas?.estado !== "desplegada") return;
+    const {
+      data: preguntas
+    } = await sbClient.from("rh_encuesta_preguntas").select("*").eq("encuesta_id", ronda.encuesta_id).order("orden");
+    setEncuestaAbierta({
+      id: ronda.encuesta_id,
+      rondaId: ronda.id,
+      nombre: ronda.rh_encuestas.nombre,
+      titulo: ronda.rh_encuestas.titulo,
+      descripcion: ronda.rh_encuestas.descripcion,
+      preguntas: calcularCodigosEncuesta(preguntas || [])
+    });
+  };
   // Clic en una notificación puntual de la campanita: cierra el panel y navega directo al origen
-  // — Canal de Avisos (centrado y resaltado) para la mayoría, o Reportes de incidencia (resaltada
-  // con el mismo parpadeo que usa el buzón admin) cuando es sobre el estado de una incidencia.
-  const irANotificacion = (avisoId, incidenciaId) => {
+  // — Canal de Avisos (centrado y resaltado) para la mayoría, Reportes de incidencia (resaltada
+  // con el mismo parpadeo que usa el buzón admin) cuando es sobre el estado de una incidencia, o el
+  // formulario de la encuesta cuando es sobre un recordatorio de Gestión Humana.
+  const irANotificacion = (avisoId, incidenciaId, auxilioId, rondaId) => {
     setOpenNotif(false);
+    if (rondaId) {
+      abrirEncuestaPorRondaId(rondaId);
+      return;
+    }
     if (incidenciaId) {
       setChannel("incidencias");
       setMobileList(false);
@@ -9974,10 +10454,12 @@ function ChoferApp({
     const params = new URLSearchParams(window.location.search);
     const avisoIdUrl = params.get("avisoId");
     const incidenciaIdUrl = params.get("incidenciaId");
-    if (avisoIdUrl || incidenciaIdUrl) {
-      irANotificacion(avisoIdUrl, incidenciaIdUrl);
+    const rondaIdUrl = params.get("rondaId");
+    if (avisoIdUrl || incidenciaIdUrl || rondaIdUrl) {
+      irANotificacion(avisoIdUrl, incidenciaIdUrl, null, rondaIdUrl);
       params.delete("avisoId");
       params.delete("incidenciaId");
+      params.delete("rondaId");
       const query = params.toString();
       window.history.replaceState({}, "", window.location.pathname + (query ? "?" + query : ""));
     }
@@ -9985,11 +10467,121 @@ function ChoferApp({
   useEffect(() => {
     if (!driver?.id || !("serviceWorker" in navigator)) return;
     const onMensaje = e => {
-      if (e.data?.type === "ir-a-aviso") irANotificacion(e.data.avisoId, e.data.incidenciaId);
+      if (e.data?.type === "ir-a-aviso") irANotificacion(e.data.avisoId, e.data.incidenciaId, e.data.auxilioId, e.data.rondaId);
     };
     navigator.serviceWorker.addEventListener("message", onMensaje);
     return () => navigator.serviceWorker.removeEventListener("message", onMensaje);
   }, [driver?.id]);
+
+  // Recordatorios de encuestas de Gestión Humana: no hay ningún proceso programado (cron) en este
+  // proyecto, así que se evalúa cada vez que este chofer abre la app, Y TAMBIÉN cada cierto tiempo
+  // mientras la sigue teniendo abierta (ver el setInterval más abajo) — así, si Gestión Humana
+  // despliega una ronda nueva con envío inmediato, a quien ya tenía la app abierta le llega sin
+  // tener que recargar. El seguimiento es por ronda, no por encuesta: si Gestión Humana abre una
+  // ronda nueva ("Segunda evaluación"), se le vuelve a preguntar a todo el mundo sin importar si ya
+  // había respondido la ronda anterior. Si hay varias vencidas a la vez quedan en cola
+  // (recordatoriosPendientes) y se muestran una por una, nunca simultáneas — cada revisión solo
+  // agrega a la cola las rondas que todavía no estaban ahí (por ronda_id), para no reordenar ni
+  // duplicar lo que el chofer ya está viendo. Fuera de ventana de envío (domingos, o fuera de
+  // 6am-8pm entre semana / 6am-2pm sábados — ver dentroDeHorarioLaboral) se arma igual la cola para
+  // que ya esté lista, pero no se dispara el primer recordatorio hasta la próxima revisión dentro
+  // de horario.
+  const dispararRecordatorio = async item => {
+    if (item.estado) {
+      await sbClient.from("rh_encuesta_estado_usuario").update({
+        recordatorios_enviados: (item.estado.recordatorios_enviados || 0) + 1,
+        ultimo_recordatorio_en: new Date().toISOString()
+      }).eq("id", item.estado.id);
+    } else {
+      await sbClient.from("rh_encuesta_estado_usuario").insert({
+        ronda_id: item.ronda.id,
+        chofer_id: driver.id,
+        recordatorios_enviados: 1,
+        ultimo_recordatorio_en: new Date().toISOString()
+      });
+    }
+    await sbClient.from("notificaciones_personales").insert({
+      chofer_id: driver.id,
+      tipo: "encuesta_recordatorio",
+      texto: `📋 Tienes pendiente responder: ${item.encuesta.nombre}`,
+      ronda_id: item.ronda.id
+    });
+  };
+  useEffect(() => {
+    if (!driver?.id) return;
+    let vigente = true;
+    const revisarRecordatorios = async () => {
+      if (cuentaDesactivadaRef.current) return; // dado de baja: no seguir revisando ni disparando nada
+      const {
+        data: encuestas
+      } = await sbClient.from("rh_encuestas").select("id,nombre,estado").eq("estado", "desplegada");
+      if (!vigente || !encuestas || encuestas.length === 0) return;
+      const idsEncuestas = encuestas.map(e => e.id);
+      const {
+        data: rondas
+      } = await sbClient.from("rh_encuesta_rondas").select("*").in("encuesta_id", idsEncuestas).eq("estado", "abierta");
+      if (!vigente || !rondas || rondas.length === 0) return;
+      const idsRondas = rondas.map(r => r.id);
+      const [{
+        data: configs
+      }, {
+        data: estados
+      }] = await Promise.all([sbClient.from("rh_encuesta_recordatorios").select("*").in("ronda_id", idsRondas), sbClient.from("rh_encuesta_estado_usuario").select("*").eq("chofer_id", driver.id).in("ronda_id", idsRondas)]);
+      if (!vigente) return;
+      const estadoPorRonda = Object.fromEntries((estados || []).map(e => [e.ronda_id, e]));
+      // Por ronda, no solo las "vencidas" — un ítem ya disparado deja de ser vencido (ya se le
+      // envió) pero puede seguir mostrándose en pantalla, y necesita poder refrescar su config si
+      // Gestión Humana edita imagen/texto/audiencia/fechas después de armada la cola.
+      const itemPorRonda = Object.fromEntries(rondas.map(ronda => [ronda.id, {
+        encuesta: encuestas.find(e => e.id === ronda.encuesta_id),
+        ronda,
+        config: (configs || []).find(c => c.ronda_id === ronda.id),
+        estado: estadoPorRonda[ronda.id] || null
+      }]));
+      const vencidas = Object.values(itemPorRonda).filter(item => item.config && rondaEnVigencia(item.ronda) && audienciaIncluye(item.config, driver) && recordatorioEstaVencido(item.config, item.estado));
+      setRecordatoriosPendientes(prev => {
+        // Refresca en el mismo lugar los que ya estaban en cola (sin duplicar ni reordenar) y
+        // agrega al final los nuevos vencidos.
+        const actualizada = prev.map(p => itemPorRonda[p.ronda.id] || p);
+        const idsEnCola = new Set(prev.map(p => p.ronda.id));
+        const nuevas = vencidas.filter(v => !idsEnCola.has(v.ronda.id));
+        if (nuevas.length === 0) return actualizada;
+        if (prev.length === 0 && dentroDeHorarioLaboral()) dispararRecordatorio(nuevas[0]);
+        return [...actualizada, ...nuevas];
+      });
+    };
+    revisarRecordatorios();
+    // Tiempo real (igual que la reasignación de planta en perfiles): en cuanto Gestión Humana crea
+    // una ronda o guarda/edita su recordatorio, se re-evalúa sin esperar a que el chofer recargue —
+    // ambas tablas ya están agregadas a la publicación de Realtime desde la migración original. En
+    // la práctica el evento no siempre llega al toque (mismo síntoma ya visto con
+    // auxilios_lectura: se ve "SUBSCRIBED" pero tarda o no llega), así que el sondeo periódico de
+    // respaldo corre cada 8s — no cada minuto — para que la demora máxima real se sienta
+    // prácticamente inmediata aunque Realtime falle.
+    const canal = sbClient.channel(`encuesta-recordatorios-${driver.id}`).on("postgres_changes", {
+      event: "*",
+      schema: "public",
+      table: "rh_encuesta_rondas"
+    }, revisarRecordatorios).on("postgres_changes", {
+      event: "*",
+      schema: "public",
+      table: "rh_encuesta_recordatorios"
+    }, revisarRecordatorios).subscribe();
+    const intervalo = setInterval(revisarRecordatorios, 8000);
+    return () => {
+      vigente = false;
+      clearInterval(intervalo);
+      sbClient.removeChannel(canal);
+    };
+  }, [driver?.id]);
+  const recordatorioActivo = recordatoriosPendientes[0] || null;
+  const avanzarColaRecordatorios = () => {
+    setRecordatoriosPendientes(prev => {
+      const resto = prev.slice(1);
+      if (resto.length > 0 && dentroDeHorarioLaboral()) dispararRecordatorio(resto[0]);
+      return resto;
+    });
+  };
   const openChannel = id => {
     setChannel(id);
     setMobileList(false);
@@ -10271,9 +10863,27 @@ function ChoferApp({
     onClose: () => setToastNotif(null),
     onClick: n => {
       marcarNotifLeidaDB(n.id);
-      irANotificacion(n.avisoId, n.incidenciaId);
+      irANotificacion(n.avisoId, n.incidenciaId, n.auxilioId, n.rondaId);
     },
     incidents: incidents
+  }), recordatorioActivo && !encuestaAbierta &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(RecordatorioEncuestaCard, {
+    item: recordatorioActivo,
+    onAhoraNo: avanzarColaRecordatorios,
+    onResponder: () => abrirEncuestaPorRondaId(recordatorioActivo.ronda.id)
+  }), encuestaAbierta &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(EncuestaResponder, {
+    encuesta: encuestaAbierta,
+    driver: driver,
+    onCerrar: () => setEncuestaAbierta(null),
+    onCompletada: () => {
+      setRecordatoriosPendientes(prev => prev.filter(p => p.ronda.id !== encuestaAbierta.rondaId));
+      setEncuestaAbierta(null);
+    }
   }), showSidebar &&
   /*#__PURE__*/
   /*#__PURE__*/
@@ -16043,10 +16653,6 @@ function UniBot({
   const [unikinArbolStack, setUnikinArbolStack] = useState([]); // historial de nodos para "Volver"
   const [viewingPdf, setViewingPdf] = useState(null); // { name, url } del PDF abierto
   const scroller = useRef(null);
-  // SOLO PARA PRUEBA — permite simular "ahora" (hora Perú) para validar el vencimiento de la
-  // citación (1pm) y el cambio de "mañana" a "hoy" (medianoche) sin esperar a que llegue esa hora
-  // de verdad. null = usar la hora real. Ver vigenciaCitacion() y BarraSimularHora.
-  const [horaSimulada, setHoraSimulada] = useState(null);
   // Reporte de fin de vuelta (antes un canal aparte, ver FinDeVuelta — misma lógica/RPCs, ahora
   // recorrida como conversación): "fv" acumula las respuestas del reporte en curso; "fvInput" se
   // reutiliza para los dos pasos de texto libre (problema y comentario).
@@ -16408,7 +17014,7 @@ function UniBot({
       const excelReciente = (avisosPlanta || []).find(a => a.archivo_tipo === "archivo" && esArchivoExcel(a.archivo_nombre));
       // Captura (imagen) que SÍ contiene la fila de este chofer — ver capturaParaChofer.
       const capturaCitacion = capturaParaChofer((avisosPlanta || []).filter(a => a.archivo_tipo === "imagen"), driver.dni);
-      const ahoraEfectiva = horaSimulada || new Date();
+      const ahoraEfectiva = new Date();
       let resultado = null;
       let vigencia = null;
       if (excelReciente?.archivo_url) {
@@ -17059,7 +17665,7 @@ function UniBot({
           const excelReciente = (avisosPlanta || []).find(a => a.archivo_tipo === "archivo" && esArchivoExcel(a.archivo_nombre));
           // Captura (imagen) que SÍ contiene la fila de este chofer — ver capturaParaChofer.
           const capturaCitacion = capturaParaChofer((avisosPlanta || []).filter(a => a.archivo_tipo === "imagen"), driver.dni);
-          const ahoraEfectiva = horaSimulada || new Date();
+          const ahoraEfectiva = new Date();
           let resultado = null;
           let vigencia = null;
           if (excelReciente?.archivo_url) {
@@ -17654,56 +18260,6 @@ Por favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
   }, "UNIBOT"), /*#__PURE__*/React.createElement("div", {
     className: "text-[11px] text-green-600"
   }, "en l\xEDnea"))), /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center gap-1.5 px-2 py-1 border-b shrink-0 overflow-x-auto",
-    style: {
-      background: "#fef3c7",
-      borderColor: "#fde68a"
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "text-[10px] font-bold shrink-0",
-    style: {
-      color: "#92400e"
-    }
-  }, "\uD83D\uDD27 Prueba:"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => {
-      // 1:01pm del día AL QUE CORRESPONDE la citación (el día siguiente a cuando se
-      // publicó), no la 1:01pm de hoy — si se probara con la de hoy, casi nunca caería
-      // dentro de la ventana de vencimiento (esa sería una hora ANTES del día objetivo).
-      const ahoraPeru = new Date(Date.now() - 5 * 60 * 60 * 1000);
-      const siguiente1301Peru = new Date(Date.UTC(ahoraPeru.getUTCFullYear(), ahoraPeru.getUTCMonth(), ahoraPeru.getUTCDate() + 1, 13, 1, 0));
-      setHoraSimulada(new Date(siguiente1301Peru.getTime() + 5 * 60 * 60 * 1000));
-    },
-    className: "text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0",
-    style: {
-      background: "#fbbf24",
-      color: "#78350f"
-    }
-  }, "Simular 1:01pm (d\xEDa sig.)"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => {
-      const ahoraPeru = new Date(Date.now() - 5 * 60 * 60 * 1000);
-      const siguiente0100Peru = new Date(Date.UTC(ahoraPeru.getUTCFullYear(), ahoraPeru.getUTCMonth(), ahoraPeru.getUTCDate() + 1, 1, 0, 0));
-      setHoraSimulada(new Date(siguiente0100Peru.getTime() + 5 * 60 * 60 * 1000));
-    },
-    className: "text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0",
-    style: {
-      background: "#fbbf24",
-      color: "#78350f"
-    }
-  }, "Simular 1:00am (d\xEDa sig.)"), horaSimulada &&
-  /*#__PURE__*/
-  /*#__PURE__*/
-  React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
-    className: "text-[10px] shrink-0",
-    style: {
-      color: "#92400e"
-    }
-  }, "\u2192 ", new Date(horaSimulada.getTime() - 5 * 60 * 60 * 1000).toISOString().slice(0, 16).replace("T", " "), " (Per\xFA)"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setHoraSimulada(null),
-    className: "text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 underline",
-    style: {
-      color: "#78350f"
-    }
-  }, "Quitar"))), /*#__PURE__*/React.createElement("div", {
     ref: scroller,
     className: "flex-1 overflow-y-auto p-3 space-y-2"
   }, msgs.map(m => {
@@ -21316,12 +21872,2041 @@ function PerfilModal({
     className: "text-xs text-green-600 mt-1"
   }, mensaje))))));
 }
+
+// ===== Sistema de encuestas de Gestión Humana (tipo Alchemer/SurveyMonkey) =====
+// Lista de tarjetas estilo Alchemer (nombre, estado, estadísticas, menú ⋮ para
+// desplegar/deshabilitar/eliminar) — clic en la tarjeta abre EncuestaDetalle (pestañas).
+function EncuestasListado() {
+  const [encuestas, setEncuestas] = useState([]);
+  const [stats, setStats] = useState({}); // encuestaId -> { respuestas, ultimaRespuesta, promedioDia, tasaFinalizacion }
+  const [cargando, setCargando] = useState(true);
+  const [nuevoNombre, setNuevoNombre] = useState("");
+  const [guardando, setGuardando] = useState(false);
+  const [mensaje, setMensaje] = useState(null);
+  const [menuAbierto, setMenuAbierto] = useState(null); // id de la encuesta con el menú ⋮ abierto
+  const [encuestaAbierta, setEncuestaAbierta] = useState(null); // objeto encuesta, o null = lista
+  // Estadísticas tipo Alchemer para la tarjeta — se calculan con lo que ya se guarda hoy, sin
+  // columnas nuevas: respuestas y última fecha salen directo de rh_encuesta_respuestas (que ya
+  // trae encuesta_id denormalizado); la tasa de finalización es completadas/total de
+  // rh_encuesta_estado_usuario de TODAS las rondas de la encuesta (la mejor aproximación real a
+  // "cuántos de los que debían responder, ya respondieron").
+  const calcularStats = async encuestaId => {
+    const [{
+      count: totalRespuestas
+    }, {
+      data: ultima
+    }, {
+      data: rondas
+    }] = await Promise.all([sbClient.from("rh_encuesta_respuestas").select("id", {
+      count: "exact",
+      head: true
+    }).eq("encuesta_id", encuestaId), sbClient.from("rh_encuesta_respuestas").select("created_at").eq("encuesta_id", encuestaId).order("created_at", {
+      ascending: true
+    }).limit(1), sbClient.from("rh_encuesta_rondas").select("id").eq("encuesta_id", encuestaId)]);
+    const idsRondas = (rondas || []).map(r => r.id);
+    const {
+      data: estados
+    } = idsRondas.length ? await sbClient.from("rh_encuesta_estado_usuario").select("completada").in("ronda_id", idsRondas) : {
+      data: []
+    };
+    const {
+      data: ultimaFila
+    } = await sbClient.from("rh_encuesta_respuestas").select("created_at").eq("encuesta_id", encuestaId).order("created_at", {
+      ascending: false
+    }).limit(1).maybeSingle();
+    const dias = ultima?.[0] ? Math.max(1, Math.ceil((Date.now() - new Date(ultima[0].created_at).getTime()) / (24 * 60 * 60 * 1000))) : 1;
+    const totalEstados = (estados || []).length;
+    const completadas = (estados || []).filter(e => e.completada).length;
+    return {
+      respuestas: totalRespuestas || 0,
+      ultimaRespuesta: ultimaFila?.created_at || null,
+      promedioDia: (totalRespuestas || 0) / dias,
+      tasaFinalizacion: totalEstados ? Math.round(completadas / totalEstados * 100) : 0
+    };
+  };
+  const cargarEncuestas = async () => {
+    setCargando(true);
+    const {
+      data,
+      error
+    } = await sbClient.from("rh_encuestas").select("*").order("created_at");
+    if (error) {
+      setMensaje({
+        tipo: "error",
+        texto: error.message
+      });
+      setCargando(false);
+      return;
+    }
+    setEncuestas(data || []);
+    setCargando(false);
+    (data || []).forEach(async enc => {
+      const s = await calcularStats(enc.id);
+      setStats(prev => ({
+        ...prev,
+        [enc.id]: s
+      }));
+    });
+  };
+  useEffect(() => {
+    cargarEncuestas();
+  }, []);
+  useEffect(() => {
+    if (!mensaje) return;
+    const t = setTimeout(() => setMensaje(null), 5000);
+    return () => clearTimeout(t);
+  }, [mensaje]);
+  const crearEncuesta = async () => {
+    const nombre = nuevoNombre.trim();
+    if (!nombre) return;
+    setGuardando(true);
+    const slug = nombre.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") + "-" + Date.now().toString(36);
+    const {
+      data,
+      error
+    } = await sbClient.from("rh_encuestas").insert({
+      slug,
+      nombre
+    }).select().single();
+    setGuardando(false);
+    if (error) {
+      setMensaje({
+        tipo: "error",
+        texto: error.message
+      });
+      return;
+    }
+    setEncuestas(prev => [...prev, data]);
+    setNuevoNombre("");
+    setMensaje({
+      tipo: "ok",
+      texto: "Encuesta creada en borrador."
+    });
+  };
+  const cambiarEstado = async (encuesta, nuevoEstado) => {
+    setEncuestas(prev => prev.map(e => e.id === encuesta.id ? {
+      ...e,
+      estado: nuevoEstado
+    } : e)); // optimista
+    const {
+      error
+    } = await sbClient.from("rh_encuestas").update({
+      estado: nuevoEstado
+    }).eq("id", encuesta.id);
+    if (error) {
+      setMensaje({
+        tipo: "error",
+        texto: error.message
+      });
+      cargarEncuestas();
+    }
+  };
+  // Borra la encuesta completa (preguntas, rondas, recordatorios y respuestas caen en cascada por
+  // las FK "on delete cascade" ya definidas en la migración) — acción destructiva real, con
+  // confirmación explícita, mismo patrón que "dar de baja" en Gestión del Personal.
+  const borrarEncuesta = async encuesta => {
+    if (!window.confirm(`¿Borrar "${encuesta.nombre}" junto con todas sus preguntas, rondas y respuestas? Esto no se puede deshacer.`)) return;
+    setEncuestas(prev => prev.filter(e => e.id !== encuesta.id)); // optimista
+    const {
+      error
+    } = await sbClient.from("rh_encuestas").delete().eq("id", encuesta.id);
+    if (error) {
+      setMensaje({
+        tipo: "error",
+        texto: error.message
+      });
+      cargarEncuestas();
+    }
+  };
+  const ESTADO_LABEL = {
+    borrador: {
+      texto: "Borrador",
+      bg: "#f3f4f6",
+      color: "#4b5563"
+    },
+    desplegada: {
+      texto: "Desplegada",
+      bg: "#dcfce7",
+      color: "#166534"
+    },
+    deshabilitada: {
+      texto: "Deshabilitada",
+      bg: "#fee2e2",
+      color: "#991b1b"
+    }
+  };
+  if (encuestaAbierta) {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement(EncuestaDetalle, {
+      encuesta: encuestaAbierta,
+      onVolver: () => {
+        setEncuestaAbierta(null);
+        cargarEncuestas();
+      }
+    });
+  }
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 p-6 overflow-y-auto",
+    onClick: () => setMenuAbierto(null)
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between mb-4 flex-wrap gap-3"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
+    className: "text-xl font-bold",
+    style: {
+      color: AZUL
+    }
+  }, "Medici\xF3n Ritmo"), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm text-gray-500"
+  }, encuestas.length, " encuesta", encuestas.length === 1 ? "" : "s"))), mensaje &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: `text-sm rounded-lg px-3 py-2 mb-3 ${mensaje.tipo === "error" ? "bg-red-50 text-red-600" : "bg-green-50 text-green-700"}`
+  }, mensaje.texto), /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-xl p-3 mb-4 flex gap-2",
+    style: {
+      border: "1px solid #e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    value: nuevoNombre,
+    onChange: e => setNuevoNombre(e.target.value),
+    onKeyDown: e => e.key === "Enter" && crearEncuesta(),
+    placeholder: "Nombre de la nueva encuesta...",
+    className: "flex-1 px-3 py-2 rounded-lg border text-sm",
+    style: {
+      borderColor: "#d5d9e4"
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: crearEncuesta,
+    disabled: guardando || !nuevoNombre.trim(),
+    className: "px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-40",
+    style: {
+      background: AZUL,
+      color: "white"
+    }
+  }, "+ Nueva encuesta")), cargando ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "text-center py-12 text-gray-400 text-sm"
+  }, "Cargando...") :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "space-y-3"
+  }, encuestas.map(enc => {
+    const est = ESTADO_LABEL[enc.estado];
+    const s = stats[enc.id] || {};
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+      key: enc.id,
+      onClick: () => setEncuestaAbierta(enc),
+      className: "bg-white rounded-xl p-4 cursor-pointer hover:shadow-md transition-all relative",
+      style: {
+        border: "1px solid #e6e8ee",
+        borderLeft: "4px solid #f59e0b"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center justify-between mb-1"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center gap-2 min-w-0"
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: "#f59e0b"
+      }
+    }, "\u2605"), /*#__PURE__*/React.createElement("span", {
+      className: "font-semibold text-base text-gray-800 truncate"
+    }, enc.nombre)), /*#__PURE__*/React.createElement("button", {
+      onClick: e => {
+        e.stopPropagation();
+        setMenuAbierto(menuAbierto === enc.id ? null : enc.id);
+      },
+      className: "w-7 h-7 rounded-full flex items-center justify-center hover:bg-gray-100 text-gray-400 shrink-0",
+      style: {
+        fontSize: 18,
+        lineHeight: 1
+      }
+    }, "\u22EE")), /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center gap-2 mb-3 flex-wrap"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "text-[11px] font-bold px-2 py-0.5 rounded-full",
+      style: {
+        background: est.bg,
+        color: est.color
+      }
+    }, est.texto), s.ultimaRespuesta &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("span", {
+      className: "text-xs text-gray-400"
+    }, "\xDAltima respuesta: ", new Date(s.ultimaRespuesta).toLocaleString("es-PE"))), /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center gap-8"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "text-center"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "text-xl font-bold text-gray-800"
+    }, s.respuestas ?? "—"), /*#__PURE__*/React.createElement("div", {
+      className: "text-[11px] text-gray-400"
+    }, "Respuestas")), /*#__PURE__*/React.createElement("div", {
+      className: "text-center"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "text-xl font-bold text-gray-800"
+    }, s.promedioDia != null ? s.promedioDia.toFixed(2) : "—"), /*#__PURE__*/React.createElement("div", {
+      className: "text-[11px] text-gray-400"
+    }, "Prom. por d\xEDa")), /*#__PURE__*/React.createElement("div", {
+      className: "text-center"
+    }, /*#__PURE__*/React.createElement(GaugeDona, {
+      pct: s.tasaFinalizacion ?? 0
+    }), /*#__PURE__*/React.createElement("div", {
+      className: "text-[11px] text-gray-400 mt-1"
+    }, "Tasa de finalizaci\xF3n"))), menuAbierto === enc.id &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
+      onClick: e => e.stopPropagation(),
+      className: "absolute right-4 top-11 bg-white rounded-xl shadow-lg z-10 py-1 w-44",
+      style: {
+        border: "1px solid #e6e8ee"
+      }
+    }, enc.estado !== "desplegada" ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("button", {
+      onClick: () => {
+        cambiarEstado(enc, "desplegada");
+        setMenuAbierto(null);
+      },
+      className: "w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
+    }, "Desplegar") :
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("button", {
+      onClick: () => {
+        cambiarEstado(enc, "deshabilitada");
+        setMenuAbierto(null);
+      },
+      className: "w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
+    }, "Deshabilitar"), /*#__PURE__*/React.createElement("button", {
+      onClick: () => {
+        borrarEncuesta(enc);
+        setMenuAbierto(null);
+      },
+      className: "w-full text-left px-3 py-2 text-sm hover:bg-red-50",
+      style: {
+        color: "#991b1b"
+      }
+    }, "Eliminar")));
+  }), encuestas.length === 0 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "text-center py-12 text-gray-400 text-sm"
+  }, "A\xFAn no hay encuestas.")));
+}
+
+// Una encuesta se puede volver a aplicar varias veces en el tiempo sin duplicar sus preguntas —
+// cada aplicación es una "ronda" ("Primera evaluación", "Segunda evaluación"...), con su propio
+// recordatorio programado y sus propias respuestas, para poder comparar períodos después en el
+// dashboard. Al abrir una ronda nueva se finaliza automáticamente cualquier otra que siga abierta
+// (nunca hay dos corriendo a la vez) — así el seguimiento de "quién ya respondió" siempre es claro.
+const NOMBRES_ORDINALES = ["Primera", "Segunda", "Tercera", "Cuarta", "Quinta", "Sexta", "Séptima", "Octava", "Novena", "Décima"];
+function EncuestaRondas({
+  encuestaId,
+  tieneChecklist
+}) {
+  const [rondas, setRondas] = useState([]);
+  const [cargando, setCargando] = useState(true);
+  const [mensaje, setMensaje] = useState(null);
+  const [editandoId, setEditandoId] = useState(null);
+  const [vistaRecordatorio, setVistaRecordatorio] = useState(null); // { rondaId, nombre } o null
+  const cargarRondas = async () => {
+    setCargando(true);
+    const {
+      data,
+      error
+    } = await sbClient.from("rh_encuesta_rondas").select("*").eq("encuesta_id", encuestaId).order("created_at");
+    if (error) setMensaje({
+      tipo: "error",
+      texto: error.message
+    });else setRondas(data || []);
+    setCargando(false);
+  };
+  useEffect(() => {
+    cargarRondas();
+  }, [encuestaId]);
+  const nuevaRonda = async () => {
+    const abierta = rondas.find(r => r.estado === "abierta");
+    if (abierta) {
+      await sbClient.from("rh_encuesta_rondas").update({
+        estado: "finalizada",
+        finalizada_en: new Date().toISOString()
+      }).eq("id", abierta.id);
+    }
+    const siguienteNombre = NOMBRES_ORDINALES[rondas.length] ? `${NOMBRES_ORDINALES[rondas.length]} evaluación` : `Evaluación ${rondas.length + 1}`;
+    const {
+      data: nueva,
+      error
+    } = await sbClient.from("rh_encuesta_rondas").insert({
+      encuesta_id: encuestaId,
+      nombre: siguienteNombre
+    }).select().single();
+    if (error) {
+      setMensaje({
+        tipo: "error",
+        texto: error.message
+      });
+      return;
+    }
+    // Si esta encuesta tiene checklist de estandarización habilitado (hoy, solo Condiciones de
+    // Trabajo), cada ronda nueva abre también su checklist correspondiente, ligado al MISMO
+    // ronda_id — así ambos quedan referidos al mismo período sin ambigüedad.
+    if (tieneChecklist) {
+      const {
+        error: errorChecklist
+      } = await sbClient.from("rh_checklist_rondas").insert({
+        ronda_id: nueva.id
+      });
+      if (errorChecklist) console.error("No se pudo crear el checklist de esta ronda:", errorChecklist.message);
+    }
+    cargarRondas();
+  };
+  const finalizarRonda = async ronda => {
+    if (!window.confirm(`¿Finalizar "${ronda.nombre}"?\n\nAl finalizar, esta ronda deja de recibir respuestas y sus recordatorios dejan de enviarse — no se puede reabrir (si luego necesitas más respuestas, tendrías que crear una ronda nueva).\n\nSi solo quieres extender el plazo límite o cambiar la frecuencia de envío, no hace falta finalizar: puedes hacerlo desde "Recordatorio" en esta misma ronda.`)) return;
+    setRondas(prev => prev.map(r => r.id === ronda.id ? {
+      ...r,
+      estado: "finalizada"
+    } : r)); // optimista
+    const {
+      error
+    } = await sbClient.from("rh_encuesta_rondas").update({
+      estado: "finalizada",
+      finalizada_en: new Date().toISOString()
+    }).eq("id", ronda.id);
+    if (error) {
+      setMensaje({
+        tipo: "error",
+        texto: error.message
+      });
+      cargarRondas();
+    }
+  };
+  const renombrar = async (ronda, nuevoNombre) => {
+    setRondas(prev => prev.map(r => r.id === ronda.id ? {
+      ...r,
+      nombre: nuevoNombre
+    } : r));
+    await sbClient.from("rh_encuesta_rondas").update({
+      nombre: nuevoNombre
+    }).eq("id", ronda.id);
+  };
+  if (vistaRecordatorio) {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement(ProgramarRecordatorio, {
+      rondaId: vistaRecordatorio.rondaId,
+      nombre: vistaRecordatorio.nombre,
+      tieneChecklist: tieneChecklist,
+      onVolver: () => setVistaRecordatorio(null)
+    });
+  }
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    className: "p-6"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between mb-4 flex-wrap gap-3"
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "text-xl font-bold",
+    style: {
+      color: AZUL
+    }
+  }, "Rondas"), /*#__PURE__*/React.createElement("button", {
+    onClick: nuevaRonda,
+    className: "px-4 py-2 rounded-lg text-sm font-semibold",
+    style: {
+      background: AZUL,
+      color: "white"
+    }
+  }, "+ Nueva ronda")), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm text-gray-500 mb-4"
+  }, "Cada ronda es una aplicaci\xF3n independiente de la encuesta \u2014 se puede comparar una contra otra en el dashboard. El nombre se puede editar (ej. poner el per\xEDodo exacto)."), mensaje &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: `text-sm rounded-lg px-3 py-2 mb-3 ${mensaje.tipo === "error" ? "bg-red-50 text-red-600" : "bg-green-50 text-green-700"}`
+  }, mensaje.texto), cargando ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "text-center py-12 text-gray-400 text-sm"
+  }, "Cargando...") :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "space-y-2 max-w-2xl"
+  }, rondas.map(ronda =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    key: ronda.id,
+    className: "bg-white rounded-xl p-3.5 flex items-center justify-between flex-wrap gap-2",
+    style: {
+      border: "1px solid #e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2 min-w-0 flex-1"
+  }, editandoId === ronda.id ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("input", {
+    autoFocus: true,
+    defaultValue: ronda.nombre,
+    onBlur: e => {
+      renombrar(ronda, e.target.value.trim() || ronda.nombre);
+      setEditandoId(null);
+    },
+    onKeyDown: e => e.key === "Enter" && e.target.blur(),
+    className: "text-sm font-semibold px-2 py-1 rounded-lg border",
+    style: {
+      borderColor: "#d5d9e4"
+    }
+  }) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
+    onClick: () => setEditandoId(ronda.id),
+    className: "font-semibold text-sm text-gray-800 truncate hover:underline"
+  }, ronda.nombre), /*#__PURE__*/React.createElement("span", {
+    className: "text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0",
+    style: {
+      background: ronda.estado === "abierta" ? "#dcfce7" : "#f3f4f6",
+      color: ronda.estado === "abierta" ? "#166534" : "#4b5563"
+    }
+  }, ronda.estado === "abierta" ? "Abierta" : "Finalizada")), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2 shrink-0"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setVistaRecordatorio({
+      rondaId: ronda.id,
+      nombre: ronda.nombre
+    }),
+    className: "text-xs font-semibold px-2.5 py-1.5 rounded-lg border",
+    style: {
+      borderColor: "#d5d9e4",
+      color: AZUL
+    }
+  }, "Recordatorio"), ronda.estado === "abierta" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
+    onClick: () => finalizarRonda(ronda),
+    className: "text-xs font-bold px-2.5 py-1.5 rounded-lg",
+    style: {
+      background: "#fee2e2",
+      color: "#991b1b"
+    }
+  }, "Finalizar")))), rondas.length === 0 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "text-center py-12 text-gray-400 text-sm"
+  }, "A\xFAn no hay rondas \u2014 crea la primera para empezar a recibir respuestas.")));
+}
+
+// Navegador de respuestas individuales de una ronda (estilo Alchemer): lista con buscador, clic en
+// una fila abre esa respuesta completa con Anterior/Siguiente para recorrerlas una por una, y
+// exportación a Excel con una columna por pregunta. Las respuestas son anónimas (no hay nombre de
+// quién respondió) — el "ID" es solo un número de orden calculado acá, no se guarda en la BD.
+function EncuestaRespuestas({
+  rondaId,
+  encuestaId,
+  nombre,
+  onVolver
+}) {
+  const [respuestas, setRespuestas] = useState([]);
+  const [preguntas, setPreguntas] = useState([]);
+  const [cargando, setCargando] = useState(true);
+  const [busqueda, setBusqueda] = useState("");
+  const [detalles, setDetalles] = useState({}); // respuesta_id -> [{pregunta_id, valor}]
+  const [seleccionIdx, setSeleccionIdx] = useState(null);
+  const [exportando, setExportando] = useState(false);
+  useEffect(() => {
+    (async () => {
+      setCargando(true);
+      const [{
+        data: resp
+      }, {
+        data: preg
+      }] = await Promise.all([sbClient.from("rh_encuesta_respuestas").select("*").eq("ronda_id", rondaId).order("created_at"), sbClient.from("rh_encuesta_preguntas").select("*").eq("encuesta_id", encuestaId).order("orden")]);
+      setRespuestas((resp || []).map((r, i) => ({
+        ...r,
+        numero: i + 1
+      })));
+      setPreguntas(calcularCodigosEncuesta(preg || []).filter(p => p.tipo !== "filtro_planta"));
+      setCargando(false);
+    })();
+  }, [rondaId, encuestaId]);
+  const respuestasFiltradas = respuestas.filter(r => {
+    const b = busqueda.trim().toLowerCase();
+    if (!b) return true;
+    return String(r.numero).includes(b) || (r.planta_origen || "").toLowerCase().includes(b);
+  });
+  const cargarDetalle = async respuestaId => {
+    if (detalles[respuestaId]) return;
+    const {
+      data
+    } = await sbClient.from("rh_encuesta_respuesta_detalle").select("pregunta_id,valor").eq("respuesta_id", respuestaId);
+    setDetalles(d => ({
+      ...d,
+      [respuestaId]: data || []
+    }));
+  };
+  const abrir = idx => {
+    setSeleccionIdx(idx);
+    cargarDetalle(respuestasFiltradas[idx].id);
+  };
+  const exportarExcel = async () => {
+    setExportando(true);
+    const {
+      data: todoDetalle
+    } = await sbClient.from("rh_encuesta_respuesta_detalle").select("respuesta_id,pregunta_id,valor").in("respuesta_id", respuestas.map(r => r.id));
+    const wb = new ExcelJS.Workbook();
+    const sheet = wb.addWorksheet("Respuestas");
+    sheet.addRow(["ID", "Fecha completada", "Planta de origen", ...preguntas.map(p => `${p.codigo ? p.codigo + ". " : ""}${p.texto}`)]);
+    respuestas.forEach(r => {
+      const porPregunta = Object.fromEntries((todoDetalle || []).filter(d => d.respuesta_id === r.id).map(d => [d.pregunta_id, d.valor]));
+      sheet.addRow([r.numero, new Date(r.created_at).toLocaleString("es-PE"), r.planta_origen, ...preguntas.map(p => porPregunta[p.id] || "")]);
+    });
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${nombre.replace(/[^\wáéíóúñÁÉÍÓÚÑ ]/g, "").trim().slice(0, 60)}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setExportando(false);
+  };
+  if (cargando) return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 p-6 text-center text-gray-400 text-sm"
+  }, "Cargando...");
+  if (seleccionIdx != null) {
+    const r = respuestasFiltradas[seleccionIdx];
+    const det = detalles[r.id] || [];
+    const valorDe = pid => det.find(d => d.pregunta_id === pid)?.valor || "—";
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+      className: "flex-1 p-6 overflow-y-auto"
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: () => setSeleccionIdx(null),
+      className: "flex items-center gap-1 text-sm font-semibold mb-3",
+      style: {
+        color: AZUL
+      }
+    }, /*#__PURE__*/React.createElement(ChevronLeft, {
+      size: 16
+    }), " Volver a la lista"), /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center justify-between mb-4 flex-wrap gap-2"
+    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
+      className: "text-lg font-bold",
+      style: {
+        color: AZUL
+      }
+    }, "Respuesta #", r.numero), /*#__PURE__*/React.createElement("p", {
+      className: "text-xs text-gray-500"
+    }, "Completada: ", new Date(r.created_at).toLocaleString("es-PE"), " \xB7 Planta: ", r.planta_origen || "—")), /*#__PURE__*/React.createElement("div", {
+      className: "flex gap-2"
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: () => abrir(seleccionIdx - 1),
+      disabled: seleccionIdx === 0,
+      className: "text-xs font-semibold px-3 py-1.5 rounded-lg border disabled:opacity-30",
+      style: {
+        borderColor: "#d5d9e4",
+        color: AZUL
+      }
+    }, "\u2190 Anterior"), /*#__PURE__*/React.createElement("button", {
+      onClick: () => abrir(seleccionIdx + 1),
+      disabled: seleccionIdx === respuestasFiltradas.length - 1,
+      className: "text-xs font-semibold px-3 py-1.5 rounded-lg border disabled:opacity-30",
+      style: {
+        borderColor: "#d5d9e4",
+        color: AZUL
+      }
+    }, "Siguiente \u2192"))), /*#__PURE__*/React.createElement("div", {
+      className: "space-y-3 max-w-2xl"
+    }, preguntas.map(p =>
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
+      key: p.id,
+      className: "bg-white rounded-xl p-3 shadow-sm",
+      style: {
+        border: "1px solid #e6e8ee"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "text-xs font-bold text-gray-500 mb-1"
+    }, p.codigo ? p.codigo + ". " : "", p.texto), /*#__PURE__*/React.createElement("div", {
+      className: "text-sm text-gray-800"
+    }, valorDe(p.id))))));
+  }
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 p-6 overflow-y-auto"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: onVolver,
+    className: "flex items-center gap-1 text-sm font-semibold mb-3",
+    style: {
+      color: AZUL
+    }
+  }, /*#__PURE__*/React.createElement(ChevronLeft, {
+    size: 16
+  }), " Volver a rondas"), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between mb-4 flex-wrap gap-3"
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "text-xl font-bold",
+    style: {
+      color: AZUL
+    }
+  }, "Respuestas \u2014 ", nombre), /*#__PURE__*/React.createElement("button", {
+    onClick: exportarExcel,
+    disabled: exportando || respuestas.length === 0,
+    className: "flex items-center gap-2 text-sm px-3 py-2 rounded-lg border font-semibold disabled:opacity-40",
+    style: {
+      borderColor: "#d5d9e4",
+      color: AZUL
+    }
+  }, /*#__PURE__*/React.createElement(FileText, {
+    size: 16
+  }), " ", exportando ? "Exportando..." : "Exportar a Excel")), /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-xl p-2.5 mb-4 flex items-center gap-2 max-w-sm",
+    style: {
+      border: "1px solid #e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement(Search, {
+    size: 15,
+    className: "text-gray-400 shrink-0"
+  }), /*#__PURE__*/React.createElement("input", {
+    value: busqueda,
+    onChange: e => setBusqueda(e.target.value),
+    placeholder: "Buscar por ID o planta...",
+    className: "flex-1 text-sm outline-none"
+  })), respuestas.length === 0 ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "text-center py-12 text-gray-400 text-sm"
+  }, "A\xFAn no hay respuestas en esta ronda.") :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "bg-white rounded-xl overflow-hidden",
+    style: {
+      border: "1px solid #e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("table", {
+    className: "w-full text-sm"
+  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", {
+    className: "text-left text-xs text-gray-400 uppercase",
+    style: {
+      borderBottom: "1px solid #e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("th", {
+    className: "px-3 py-2"
+  }, "ID"), /*#__PURE__*/React.createElement("th", {
+    className: "px-3 py-2"
+  }, "Fecha completada"), /*#__PURE__*/React.createElement("th", {
+    className: "px-3 py-2"
+  }, "Planta de origen"))), /*#__PURE__*/React.createElement("tbody", null, respuestasFiltradas.map((r, idx) =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("tr", {
+    key: r.id,
+    onClick: () => abrir(idx),
+    className: "cursor-pointer hover:bg-gray-50",
+    style: {
+      borderBottom: "1px solid #f0f2f6"
+    }
+  }, /*#__PURE__*/React.createElement("td", {
+    className: "px-3 py-2 font-semibold",
+    style: {
+      color: AZUL
+    }
+  }, r.numero), /*#__PURE__*/React.createElement("td", {
+    className: "px-3 py-2 text-gray-600"
+  }, new Date(r.created_at).toLocaleString("es-PE")), /*#__PURE__*/React.createElement("td", {
+    className: "px-3 py-2 text-gray-600"
+  }, r.planta_origen || "—"))))), respuestasFiltradas.length === 0 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "text-center py-8 text-gray-400 text-sm"
+  }, "Sin resultados para \"", busqueda, "\".")));
+}
+
+// Resultados del checklist de estandarización para UNA ronda puntual (solo aplica a encuestas con
+// tiene_checklist, hoy solo Condiciones de Trabajo). Sin ítems/respuestas todavía — queda lista
+// para cuando ewq comparta el contenido real del checklist.
+function ChecklistResultadosRonda({
+  rondaId
+}) {
+  const [checklistRonda, setChecklistRonda] = useState(undefined); // undefined = cargando, null = no existe
+  const [respuestas, setRespuestas] = useState([]);
+  useEffect(() => {
+    (async () => {
+      const {
+        data: cr
+      } = await sbClient.from("rh_checklist_rondas").select("*").eq("ronda_id", rondaId).maybeSingle();
+      setChecklistRonda(cr || null);
+      if (cr) {
+        const {
+          data
+        } = await sbClient.from("rh_checklist_respuestas").select("*").eq("checklist_ronda_id", cr.id).order("completada_en");
+        setRespuestas(data || []);
+      }
+    })();
+  }, [rondaId]);
+  if (checklistRonda === undefined) return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    className: "p-6 text-center text-gray-400 text-sm"
+  }, "Cargando...");
+  if (!checklistRonda) return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    className: "p-6 text-center text-gray-400 text-sm"
+  }, "Esta ronda no tiene checklist de estandarizaci\xF3n.");
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    className: "p-6"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "text-base font-bold mb-3",
+    style: {
+      color: AZUL
+    }
+  }, "Checklist de estandarizaci\xF3n"), respuestas.length === 0 ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "text-center py-10 text-gray-400 text-sm"
+  }, "A\xFAn no hay respuestas de checklist en esta ronda.") :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "bg-white rounded-xl overflow-hidden max-w-xl",
+    style: {
+      border: "1px solid #e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("table", {
+    className: "w-full text-sm"
+  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", {
+    className: "text-left text-xs text-gray-400 uppercase",
+    style: {
+      borderBottom: "1px solid #e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("th", {
+    className: "px-3 py-2"
+  }, "Planta"), /*#__PURE__*/React.createElement("th", {
+    className: "px-3 py-2"
+  }, "Completado"))), /*#__PURE__*/React.createElement("tbody", null, respuestas.map(r =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("tr", {
+    key: r.id,
+    style: {
+      borderBottom: "1px solid #f0f2f6"
+    }
+  }, /*#__PURE__*/React.createElement("td", {
+    className: "px-3 py-2 font-semibold",
+    style: {
+      color: AZUL
+    }
+  }, r.planta), /*#__PURE__*/React.createElement("td", {
+    className: "px-3 py-2 text-gray-600"
+  }, new Date(r.completada_en).toLocaleString("es-PE"))))))));
+}
+
+// Pestaña "Resultados": lista de rondas de la encuesta, clic en una abre EncuestaRespuestas (y,
+// para la encuesta con checklist, un toggle para ver también los resultados del checklist de esa
+// misma ronda). El Excel general arma un solo workbook con una hoja por ronda.
+function EncuestaResultadosTab({
+  encuesta
+}) {
+  const [rondas, setRondas] = useState([]);
+  const [cargando, setCargando] = useState(true);
+  const [rondaAbierta, setRondaAbierta] = useState(null); // { id, nombre } o null
+  const [subVista, setSubVista] = useState("encuesta"); // "encuesta" | "checklist"
+  const [exportandoTodo, setExportandoTodo] = useState(false);
+  useEffect(() => {
+    sbClient.from("rh_encuesta_rondas").select("*").eq("encuesta_id", encuesta.id).order("created_at").then(({
+      data
+    }) => {
+      setRondas(data || []);
+      setCargando(false);
+    });
+  }, [encuesta.id]);
+  const exportarTodo = async () => {
+    setExportandoTodo(true);
+    const {
+      data: preguntasRaw
+    } = await sbClient.from("rh_encuesta_preguntas").select("*").eq("encuesta_id", encuesta.id).order("orden");
+    const preguntas = calcularCodigosEncuesta(preguntasRaw || []).filter(p => p.tipo !== "filtro_planta");
+    const wb = new ExcelJS.Workbook();
+    for (const ronda of rondas) {
+      const {
+        data: resp
+      } = await sbClient.from("rh_encuesta_respuestas").select("*").eq("ronda_id", ronda.id).order("created_at");
+      const idsResp = (resp || []).map(r => r.id);
+      const {
+        data: detalle
+      } = idsResp.length ? await sbClient.from("rh_encuesta_respuesta_detalle").select("respuesta_id,pregunta_id,valor").in("respuesta_id", idsResp) : {
+        data: []
+      };
+      const sheet = wb.addWorksheet(ronda.nombre.slice(0, 31));
+      sheet.addRow(["ID", "Fecha completada", "Planta de origen", ...preguntas.map(p => `${p.codigo ? p.codigo + ". " : ""}${p.texto}`)]);
+      (resp || []).forEach((r, i) => {
+        const porPregunta = Object.fromEntries((detalle || []).filter(d => d.respuesta_id === r.id).map(d => [d.pregunta_id, d.valor]));
+        sheet.addRow([i + 1, new Date(r.created_at).toLocaleString("es-PE"), r.planta_origen, ...preguntas.map(p => porPregunta[p.id] || "")]);
+      });
+    }
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${encuesta.nombre.replace(/[^\wáéíóúñÁÉÍÓÚÑ ]/g, "").trim().slice(0, 60)} - todas las rondas.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setExportandoTodo(false);
+  };
+  if (rondaAbierta) {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+      className: "flex flex-col h-full"
+    }, encuesta.tiene_checklist &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
+      className: "flex gap-1 px-6 pt-4 shrink-0"
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: () => setSubVista("encuesta"),
+      className: "px-3 py-1.5 rounded-lg text-xs font-bold",
+      style: {
+        background: subVista === "encuesta" ? AZUL : "white",
+        color: subVista === "encuesta" ? "white" : "#374151",
+        border: `1px solid ${subVista === "encuesta" ? AZUL : "#e6e8ee"}`
+      }
+    }, "Resultados de la encuesta"), /*#__PURE__*/React.createElement("button", {
+      onClick: () => setSubVista("checklist"),
+      className: "px-3 py-1.5 rounded-lg text-xs font-bold",
+      style: {
+        background: subVista === "checklist" ? AZUL : "white",
+        color: subVista === "checklist" ? "white" : "#374151",
+        border: `1px solid ${subVista === "checklist" ? AZUL : "#e6e8ee"}`
+      }
+    }, "Resultados del checklist")), /*#__PURE__*/React.createElement("div", {
+      className: "flex-1 overflow-y-auto"
+    }, subVista === "encuesta" ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement(EncuestaRespuestas, {
+      rondaId: rondaAbierta.id,
+      encuestaId: encuesta.id,
+      nombre: rondaAbierta.nombre,
+      onVolver: () => setRondaAbierta(null)
+    }) :
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement(ChecklistResultadosRonda, {
+      rondaId: rondaAbierta.id
+    })));
+  }
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    className: "p-6"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between mb-4 flex-wrap gap-3"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm text-gray-500"
+  }, "Elige una ronda para ver sus respuestas individuales."), /*#__PURE__*/React.createElement("button", {
+    onClick: exportarTodo,
+    disabled: exportandoTodo || rondas.length === 0,
+    className: "flex items-center gap-2 text-sm px-3 py-2 rounded-lg border font-semibold disabled:opacity-40",
+    style: {
+      borderColor: "#d5d9e4",
+      color: AZUL
+    }
+  }, /*#__PURE__*/React.createElement(FileText, {
+    size: 16
+  }), " ", exportandoTodo ? "Exportando..." : "Excel general (todas las rondas)")), cargando ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "text-center py-12 text-gray-400 text-sm"
+  }, "Cargando...") :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "space-y-2 max-w-2xl"
+  }, rondas.map(ronda =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    key: ronda.id,
+    onClick: () => setRondaAbierta(ronda),
+    className: "bg-white rounded-xl p-3.5 flex items-center justify-between cursor-pointer hover:bg-gray-50",
+    style: {
+      border: "1px solid #e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "font-semibold text-sm text-gray-800"
+  }, ronda.nombre), /*#__PURE__*/React.createElement("span", {
+    className: "text-[11px] font-bold px-2 py-0.5 rounded-full",
+    style: {
+      background: ronda.estado === "abierta" ? "#dcfce7" : "#f3f4f6",
+      color: ronda.estado === "abierta" ? "#166534" : "#4b5563"
+    }
+  }, ronda.estado === "abierta" ? "Abierta" : "Finalizada"))), rondas.length === 0 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "text-center py-12 text-gray-400 text-sm"
+  }, "A\xFAn no hay rondas.")));
+}
+
+// Gauge circular simple (SVG puro, sin librería nueva) para la tasa de finalización de la tarjeta
+// estilo Alchemer.
+function GaugeDona({
+  pct,
+  size = 60
+}) {
+  const r = (size - 8) / 2;
+  const c = 2 * Math.PI * r;
+  const offset = c * (1 - pct / 100);
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("svg", {
+    width: size,
+    height: size,
+    viewBox: `0 0 ${size} ${size}`
+  }, /*#__PURE__*/React.createElement("circle", {
+    cx: size / 2,
+    cy: size / 2,
+    r: r,
+    fill: "none",
+    stroke: "#e6e8ee",
+    strokeWidth: "6"
+  }), /*#__PURE__*/React.createElement("circle", {
+    cx: size / 2,
+    cy: size / 2,
+    r: r,
+    fill: "none",
+    stroke: AZUL,
+    strokeWidth: "6",
+    strokeDasharray: c,
+    strokeDashoffset: offset,
+    strokeLinecap: "round",
+    transform: `rotate(-90 ${size / 2} ${size / 2})`
+  }), /*#__PURE__*/React.createElement("text", {
+    x: "50%",
+    y: "50%",
+    textAnchor: "middle",
+    dy: "0.35em",
+    fontSize: size * 0.22,
+    fontWeight: "700",
+    fill: AZUL
+  }, pct, "%"));
+}
+
+// Detalle de una encuesta: header + 4 pestañas (Diseño / Programación de envío / Resultados /
+// Dashboard) — reemplaza la navegación anterior basada en botones sueltos por fila.
+function EncuestaDetalle({
+  encuesta,
+  onVolver
+}) {
+  const [tab, setTab] = useState("diseno");
+  const TABS = [{
+    id: "diseno",
+    label: "Diseño"
+  }, {
+    id: "envio",
+    label: "Programación de envío"
+  }, {
+    id: "resultados",
+    label: "Resultados"
+  }, {
+    id: "dashboard",
+    label: "Dashboard"
+  }];
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 flex flex-col overflow-hidden"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "px-6 pt-4 shrink-0"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: onVolver,
+    className: "flex items-center gap-1 text-sm font-semibold mb-2",
+    style: {
+      color: AZUL
+    }
+  }, /*#__PURE__*/React.createElement(ChevronLeft, {
+    size: 16
+  }), " Volver a Medici\xF3n Ritmo"), /*#__PURE__*/React.createElement("h2", {
+    className: "text-xl font-bold mb-3",
+    style: {
+      color: AZUL
+    }
+  }, encuesta.nombre), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-1 border-b",
+    style: {
+      borderColor: "#e6e8ee"
+    }
+  }, TABS.map(t =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
+    key: t.id,
+    onClick: () => setTab(t.id),
+    className: "px-4 py-2 text-sm font-semibold",
+    style: {
+      color: tab === t.id ? AZUL : "#6b7280",
+      borderBottom: tab === t.id ? `2px solid ${AZUL}` : "2px solid transparent"
+    }
+  }, t.label)))), /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 overflow-y-auto"
+  }, tab === "diseno" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(EncuestaPreguntasEditor, {
+    encuestaId: encuesta.id
+  }), tab === "envio" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(EncuestaRondas, {
+    encuestaId: encuesta.id,
+    tieneChecklist: encuesta.tiene_checklist
+  }), tab === "resultados" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(EncuestaResultadosTab, {
+    encuesta: encuesta
+  }), tab === "dashboard" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "p-10 text-center text-gray-400 text-sm"
+  }, "\uD83D\uDCCA Dashboard \u2014 pr\xF3ximamente.")));
+}
+
+// Editor de preguntas: dimension como combobox (dimensiones ya usadas en ESTA encuesta + opción
+// de escribir una nueva) en vez de texto libre sin sugerencias — para no reintroducir el mismo
+// tipo de inconsistencia que tenían los documentos originales de la encuesta sembrada. La pregunta
+// de tipo "filtro_planta" (si existe) no muestra controles de borrar — es infraestructura fija.
+function EncuestaPreguntasEditor({
+  encuestaId
+}) {
+  const [preguntas, setPreguntas] = useState([]);
+  const [cargando, setCargando] = useState(true);
+  const [mensaje, setMensaje] = useState(null);
+  // Título/descripción que ve el chofer antes de las preguntas (EncuestaResponder) — a diferencia
+  // del título/descripción del AVISO (eso vive por ronda, en ProgramarRecordatorio), esto es fijo
+  // para toda la encuesta sin importar la ronda.
+  const [encuestaInfo, setEncuestaInfo] = useState({
+    titulo: "",
+    descripcion: ""
+  });
+  useEffect(() => {
+    sbClient.from("rh_encuestas").select("titulo,descripcion").eq("id", encuestaId).single().then(({
+      data
+    }) => {
+      if (data) setEncuestaInfo({
+        titulo: data.titulo || "",
+        descripcion: data.descripcion || ""
+      });
+    });
+  }, [encuestaId]);
+  const guardarInfoEncuesta = async campo => {
+    await sbClient.from("rh_encuestas").update({
+      [campo]: encuestaInfo[campo] || null
+    }).eq("id", encuestaId);
+  };
+  const cargarPreguntas = async () => {
+    setCargando(true);
+    const {
+      data,
+      error
+    } = await sbClient.from("rh_encuesta_preguntas").select("*").eq("encuesta_id", encuestaId).order("orden");
+    if (error) setMensaje({
+      tipo: "error",
+      texto: error.message
+    });else setPreguntas(calcularCodigosEncuesta(data || []));
+    setCargando(false);
+  };
+  useEffect(() => {
+    cargarPreguntas();
+  }, [encuestaId]);
+  const dimensionesUsadas = [...new Set(preguntas.filter(p => p.tipo !== "filtro_planta").map(p => p.dimension))];
+  const actualizarCampo = async (id, campo, valor) => {
+    setPreguntas(prev => prev.map(p => p.id === id ? {
+      ...p,
+      [campo]: valor
+    } : p));
+    const {
+      error
+    } = await sbClient.from("rh_encuesta_preguntas").update({
+      [campo]: valor
+    }).eq("id", id);
+    if (error) {
+      setMensaje({
+        tipo: "error",
+        texto: error.message
+      });
+      cargarPreguntas();
+    }
+  };
+  const actualizarCondicion = async (id, dependeDe, opciones) => {
+    const condicion = dependeDe ? {
+      dependeDe,
+      opciones
+    } : null;
+    await actualizarCampo(id, "condicion", condicion);
+  };
+  const borrarPregunta = async id => {
+    setPreguntas(prev => prev.filter(p => p.id !== id)); // optimista
+    const {
+      error
+    } = await sbClient.from("rh_encuesta_preguntas").delete().eq("id", id);
+    if (error) {
+      setMensaje({
+        tipo: "error",
+        texto: error.message
+      });
+      cargarPreguntas();
+    }
+  };
+  const ESCALA_DEFAULT = ["Totalmente en desacuerdo", "En desacuerdo", "Ni de acuerdo ni en desacuerdo", "De acuerdo", "Totalmente de acuerdo", "N/A"];
+  const moverOpcion = (p, idx, dir) => {
+    const arr = [...(p.escala_opciones || [])];
+    const j = idx + dir;
+    if (j < 0 || j >= arr.length) return;
+    [arr[idx], arr[j]] = [arr[j], arr[idx]];
+    actualizarCampo(p.id, "escala_opciones", arr);
+  };
+  const quitarOpcion = (p, idx) => {
+    actualizarCampo(p.id, "escala_opciones", (p.escala_opciones || []).filter((_, i) => i !== idx));
+  };
+  const agregarOpcion = p => {
+    actualizarCampo(p.id, "escala_opciones", [...(p.escala_opciones || []), "Nueva opción"]);
+  };
+  const cambiarTipo = (p, nuevoTipo) => {
+    actualizarCampo(p.id, "tipo", nuevoTipo);
+    if (nuevoTipo === "escala" && !(p.escala_opciones && p.escala_opciones.length)) {
+      actualizarCampo(p.id, "escala_opciones", ESCALA_DEFAULT);
+    }
+  };
+  const agregarPregunta = async dimension => {
+    const maxOrden = preguntas.reduce((m, p) => Math.max(m, p.orden), 0);
+    const nueva = {
+      encuesta_id: encuestaId,
+      dimension,
+      tipo: "escala",
+      texto: "Nueva pregunta — edítala aquí",
+      condicion: null,
+      escala_opciones: ESCALA_DEFAULT,
+      orden: maxOrden + 1
+    };
+    const {
+      data,
+      error
+    } = await sbClient.from("rh_encuesta_preguntas").insert(nueva).select().single();
+    if (error) {
+      setMensaje({
+        tipo: "error",
+        texto: error.message
+      });
+      return;
+    }
+    cargarPreguntas();
+  };
+  const UBICACIONES = [{
+    v: "provincia",
+    l: "Provincia"
+  }, {
+    v: "mineria",
+    l: "Minería"
+  }, {
+    v: "canteras",
+    l: "Canteras"
+  }];
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    className: "p-6"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-xl p-4 max-w-3xl mb-4",
+    style: {
+      border: "1px solid #e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    className: "text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1"
+  }, "T\xEDtulo y descripci\xF3n de la encuesta"), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-gray-400 mb-2"
+  }, "Se muestran al chofer antes de las preguntas, para explicar de qu\xE9 trata esta encuesta."), /*#__PURE__*/React.createElement("input", {
+    value: encuestaInfo.titulo,
+    onChange: e => setEncuestaInfo(i => ({
+      ...i,
+      titulo: e.target.value
+    })),
+    onBlur: () => guardarInfoEncuesta("titulo"),
+    placeholder: "T\xEDtulo (ej. Medici\xF3n de Condiciones de Trabajo)",
+    className: "w-full px-2.5 py-1.5 rounded-lg border text-sm mb-1.5",
+    style: {
+      borderColor: "#d5d9e4"
+    }
+  }), /*#__PURE__*/React.createElement("textarea", {
+    value: encuestaInfo.descripcion,
+    onChange: e => setEncuestaInfo(i => ({
+      ...i,
+      descripcion: e.target.value
+    })),
+    onBlur: () => guardarInfoEncuesta("descripcion"),
+    placeholder: "Descripci\xF3n breve de qu\xE9 trata y para qu\xE9 sirve esta encuesta",
+    className: "w-full px-2.5 py-1.5 rounded-lg border text-sm",
+    style: {
+      borderColor: "#d5d9e4",
+      minHeight: 60
+    }
+  })), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm text-gray-500 mb-4"
+  }, "Los c\xF3digos (A1, B3...) se calculan solos seg\xFAn el orden \u2014 no se editan a mano. A qui\xE9n se le env\xEDa (plantas/posiciones) se configura en \"Recordatorio\" dentro de cada ronda, en la pesta\xF1a \"Programaci\xF3n de env\xEDo\"."), mensaje &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: `text-sm rounded-lg px-3 py-2 mb-3 ${mensaje.tipo === "error" ? "bg-red-50 text-red-600" : "bg-green-50 text-green-700"}`
+  }, mensaje.texto), cargando ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "text-center py-12 text-gray-400 text-sm"
+  }, "Cargando...") :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "space-y-5 max-w-3xl"
+  }, dimensionesUsadas.map(dim =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    key: dim
+  }, /*#__PURE__*/React.createElement("h4", {
+    className: "text-xs font-extrabold uppercase tracking-wide mb-2",
+    style: {
+      color: "#1a1d2e"
+    }
+  }, dim), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-2"
+  }, preguntas.filter(p => p.dimension === dim).map(p =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    key: p.id,
+    className: "bg-white rounded-xl p-3 flex gap-3",
+    style: {
+      border: "1px solid #e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-xs font-bold shrink-0 w-7 pt-2",
+    style: {
+      color: AZUL
+    }
+  }, p.codigo), /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 min-w-0 space-y-2"
+  }, /*#__PURE__*/React.createElement("textarea", {
+    value: p.texto,
+    onChange: e => setPreguntas(prev => prev.map(x => x.id === p.id ? {
+      ...x,
+      texto: e.target.value
+    } : x)),
+    onBlur: e => actualizarCampo(p.id, "texto", e.target.value),
+    className: "w-full px-2.5 py-1.5 rounded-lg border text-sm",
+    style: {
+      borderColor: "#d5d9e4",
+      minHeight: 50
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2 flex-wrap items-center text-xs"
+  }, /*#__PURE__*/React.createElement("select", {
+    value: p.tipo,
+    onChange: e => cambiarTipo(p, e.target.value),
+    className: "rounded-lg border px-2 py-1",
+    style: {
+      borderColor: "#d5d9e4"
+    }
+  }, /*#__PURE__*/React.createElement("option", {
+    value: "escala"
+  }, "Escala"), /*#__PURE__*/React.createElement("option", {
+    value: "abierta"
+  }, "Abierta")), /*#__PURE__*/React.createElement("select", {
+    value: p.condicion?.dependeDe || "",
+    onChange: e => actualizarCondicion(p.id, e.target.value || null, p.condicion?.opciones || []),
+    className: "rounded-lg border px-2 py-1",
+    style: {
+      borderColor: "#d5d9e4"
+    }
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "Siempre visible"), /*#__PURE__*/React.createElement("option", {
+    value: "ubicacion"
+  }, "Si ubicaci\xF3n es...")), p.condicion?.dependeDe === "ubicacion" && UBICACIONES.map(u =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("label", {
+    key: u.v,
+    className: "flex items-center gap-1"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "checkbox",
+    checked: (p.condicion?.opciones || []).includes(u.v),
+    onChange: () => {
+      const actuales = p.condicion?.opciones || [];
+      const nuevas = actuales.includes(u.v) ? actuales.filter(x => x !== u.v) : [...actuales, u.v];
+      actualizarCondicion(p.id, "ubicacion", nuevas);
+    }
+  }), " ", u.l))), p.tipo === "escala" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "rounded-lg p-2 mt-1",
+    style: {
+      background: "#f6f8fc"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] font-bold text-gray-400 uppercase mb-1"
+  }, "Opciones de la escala (de arriba hacia abajo = de izquierda a derecha al mostrarse)"), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-1"
+  }, (p.escala_opciones || []).map((op, i) =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    key: i,
+    className: "flex items-center gap-1"
+  }, /*#__PURE__*/React.createElement("input", {
+    value: op,
+    onChange: e => {
+      const nuevas = [...(p.escala_opciones || [])];
+      nuevas[i] = e.target.value;
+      setPreguntas(prev => prev.map(x => x.id === p.id ? {
+        ...x,
+        escala_opciones: nuevas
+      } : x));
+    },
+    onBlur: () => actualizarCampo(p.id, "escala_opciones", p.escala_opciones),
+    className: "flex-1 px-2 py-1 rounded-lg border text-xs",
+    style: {
+      borderColor: "#d5d9e4"
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: () => moverOpcion(p, i, -1),
+    disabled: i === 0,
+    className: "w-5 h-5 flex items-center justify-center disabled:opacity-30"
+  }, /*#__PURE__*/React.createElement(ChevronUp, {
+    size: 12,
+    color: "#5c6070"
+  })), /*#__PURE__*/React.createElement("button", {
+    onClick: () => moverOpcion(p, i, 1),
+    disabled: i === (p.escala_opciones || []).length - 1,
+    className: "w-5 h-5 flex items-center justify-center disabled:opacity-30"
+  }, /*#__PURE__*/React.createElement(ChevronDown, {
+    size: 12,
+    color: "#5c6070"
+  })), /*#__PURE__*/React.createElement("button", {
+    onClick: () => quitarOpcion(p, i),
+    className: "w-5 h-5 flex items-center justify-center"
+  }, /*#__PURE__*/React.createElement(X, {
+    size: 12,
+    color: "#dc2626"
+  }))))), /*#__PURE__*/React.createElement("button", {
+    onClick: () => agregarOpcion(p),
+    className: "text-xs font-bold mt-1",
+    style: {
+      color: AZUL
+    }
+  }, "+ Agregar opci\xF3n"))), /*#__PURE__*/React.createElement("button", {
+    onClick: () => borrarPregunta(p.id),
+    className: "shrink-0 w-6 h-6 rounded-full flex items-center justify-center hover:bg-red-50"
+  }, /*#__PURE__*/React.createElement(X, {
+    size: 14,
+    color: "#dc2626"
+  })))), /*#__PURE__*/React.createElement("button", {
+    onClick: () => agregarPregunta(dim),
+    className: "text-xs font-bold mt-1.5",
+    style: {
+      color: AZUL
+    }
+  }, "+ Agregar pregunta a \"", dim, "\"")))), /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-xl p-3",
+    style: {
+      border: "1px dashed #d5d9e4"
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    placeholder: "Nombre de una dimensi\xF3n nueva + Enter para agregar su primera pregunta",
+    onKeyDown: e => {
+      if (e.key === "Enter" && e.target.value.trim()) {
+        agregarPregunta(e.target.value.trim());
+        e.target.value = "";
+      }
+    },
+    className: "w-full px-2.5 py-1.5 rounded-lg border text-sm",
+    style: {
+      borderColor: "#d5d9e4"
+    }
+  }))));
+}
+
+// Convierte un ISO guardado (UTC) al formato que espera un <input type="datetime-local">
+// ("YYYY-MM-DDTHH:mm" en hora LOCAL del navegador) — si se usa directamente el ISO (que está en
+// UTC) el valor mostrado queda corrido por el offset de huso horario, y cada vez que Gestión
+// Humana elige una fecha/hora en el selector nativo el recuadro termina mostrando otra distinta
+// a la elegida.
+function isoADatetimeLocal(iso) {
+  const d = new Date(iso);
+  const pad = n => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// Mismo problema que isoADatetimeLocal pero para <input type="date"> (vigencia de la encuesta y
+// del checklist — ahí solo importa el día, no la hora).
+function isoADateLocal(iso) {
+  const d = new Date(iso);
+  const pad = n => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+// Un <input type="date"> solo entrega "YYYY-MM-DD" — para que un rango de fechas incluya el día
+// completo, el inicio se ancla a las 00:00 y el fin/cierre a las 23:59:59 (ambos en hora local).
+function fechaInicioDelDia(ymd) {
+  return ymd ? new Date(`${ymd}T00:00:00`).toISOString() : null;
+}
+function fechaFinDelDia(ymd) {
+  return ymd ? new Date(`${ymd}T23:59:59`).toISOString() : null;
+}
+
+// Pantalla de programación del recordatorio — replica el mockup ya compartido: Paso 1 (tipo de
+// envío) → Paso 2 (parámetros según la elección) + imagen (bucket "avisos", mismo patrón que el
+// Canal de Avisos) + toggle para pausar sin borrar la programación.
+function ProgramarRecordatorio({
+  rondaId,
+  nombre,
+  tieneChecklist,
+  onVolver
+}) {
+  const [config, setConfig] = useState(null);
+  const [ronda, setRonda] = useState(null); // { fecha_inicio, fecha_fin } de rh_encuesta_rondas
+  const [checklistRonda, setChecklistRonda] = useState(undefined); // undefined=sin cargar, null=no existe, {...}=existe
+  const [cargando, setCargando] = useState(true);
+  const [guardando, setGuardando] = useState(false);
+  const [mensaje, setMensaje] = useState(null);
+  const [subiendoImagen, setSubiendoImagen] = useState(false);
+  // Estado de UI aparte (no inferido de si los arrays están vacíos): justo al pasar a "elegir
+  // específicos" los arrays todavía están vacíos (nada marcado aún), y si el modo se infiriera de
+  // su longitud volvería a mostrarse "Todos" de inmediato.
+  const [audienciaPersonalizada, setAudienciaPersonalizada] = useState(false);
+  const fileInputRef = useRef(null);
+  useEffect(() => {
+    (async () => {
+      const [{
+        data
+      }, {
+        data: rondaData
+      }] = await Promise.all([sbClient.from("rh_encuesta_recordatorios").select("*").eq("ronda_id", rondaId).maybeSingle(), sbClient.from("rh_encuesta_rondas").select("fecha_inicio,fecha_fin").eq("id", rondaId).single()]);
+      setConfig(data || {
+        ronda_id: rondaId,
+        imagen_path: null,
+        aviso_titulo: "",
+        aviso_descripcion: "",
+        tipo_envio: "unico",
+        fecha_programada: null,
+        tipo_frecuencia: "diaria",
+        horas_valor: 2,
+        hora_envio: "09:00",
+        dia_semana: 1,
+        activo: true,
+        plantas_destino: null,
+        roles_destino: null
+      });
+      setAudienciaPersonalizada(!!(data?.plantas_destino?.length || data?.roles_destino?.length));
+      setRonda(rondaData || {
+        fecha_inicio: null,
+        fecha_fin: null
+      });
+      if (tieneChecklist) {
+        const {
+          data: cr
+        } = await sbClient.from("rh_checklist_rondas").select("*").eq("ronda_id", rondaId).maybeSingle();
+        setChecklistRonda(cr || null);
+      }
+      setCargando(false);
+    })();
+  }, [rondaId]);
+  const guardar = async () => {
+    setGuardando(true);
+    const payload = {
+      ronda_id: rondaId,
+      imagen_path: config.imagen_path,
+      aviso_titulo: config.aviso_titulo || null,
+      aviso_descripcion: config.aviso_descripcion || null,
+      tipo_envio: config.tipo_envio,
+      fecha_programada: config.tipo_envio === "unico" ? config.fecha_programada : null,
+      tipo_frecuencia: config.tipo_envio === "recurrente" ? config.tipo_frecuencia : null,
+      horas_valor: config.tipo_envio === "recurrente" && config.tipo_frecuencia === "cada_x_horas" ? config.horas_valor : null,
+      hora_envio: config.tipo_envio === "recurrente" && config.tipo_frecuencia !== "cada_x_horas" ? config.hora_envio : null,
+      dia_semana: config.tipo_envio === "recurrente" && config.tipo_frecuencia === "semanal" ? config.dia_semana : null,
+      activo: config.activo,
+      plantas_destino: config.plantas_destino && config.plantas_destino.length ? config.plantas_destino : null,
+      roles_destino: config.roles_destino && config.roles_destino.length ? config.roles_destino : null
+    };
+    const {
+      data,
+      error
+    } = config.id ? await sbClient.from("rh_encuesta_recordatorios").update(payload).eq("id", config.id).select().single() : await sbClient.from("rh_encuesta_recordatorios").insert(payload).select().single();
+    if (error) {
+      setGuardando(false);
+      setMensaje({
+        tipo: "error",
+        texto: error.message
+      });
+      return;
+    }
+    setConfig(data);
+    const {
+      error: errorRonda
+    } = await sbClient.from("rh_encuesta_rondas").update({
+      fecha_inicio: ronda.fecha_inicio || null,
+      fecha_fin: ronda.fecha_fin || null
+    }).eq("id", rondaId);
+    let errorChecklist = null;
+    if (tieneChecklist && checklistRonda) {
+      ({
+        error: errorChecklist
+      } = await sbClient.from("rh_checklist_rondas").update({
+        fecha_fin: checklistRonda.fecha_fin || null,
+        fecha_cierre: checklistRonda.fecha_cierre || null
+      }).eq("id", checklistRonda.id));
+    }
+    setGuardando(false);
+    const errorExtra = errorRonda || errorChecklist;
+    setMensaje(errorExtra ? {
+      tipo: "error",
+      texto: "Se guardó el recordatorio, pero hubo un error con la vigencia: " + errorExtra.message
+    } : {
+      tipo: "ok",
+      texto: "Programación guardada."
+    });
+  };
+  const subirImagen = async file => {
+    setSubiendoImagen(true);
+    const path = `encuestas/${rondaId}-${Date.now()}-${file.name}`;
+    const {
+      error
+    } = await sbClient.storage.from("avisos").upload(path, file);
+    setSubiendoImagen(false);
+    if (error) {
+      setMensaje({
+        tipo: "error",
+        texto: error.message
+      });
+      return;
+    }
+    setConfig(c => ({
+      ...c,
+      imagen_path: path
+    }));
+  };
+  if (cargando || !config) return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 p-6 text-center text-gray-400 text-sm"
+  }, "Cargando...");
+  const imagenUrl = config.imagen_path ? sbClient.storage.from("avisos").getPublicUrl(config.imagen_path).data.publicUrl : null;
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    className: "p-6"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: onVolver,
+    className: "flex items-center gap-1 text-sm font-semibold mb-3",
+    style: {
+      color: AZUL
+    }
+  }, /*#__PURE__*/React.createElement(ChevronLeft, {
+    size: 16
+  }), " Volver a rondas"), /*#__PURE__*/React.createElement("h2", {
+    className: "text-xl font-bold mb-4",
+    style: {
+      color: AZUL
+    }
+  }, "Recordatorio \u2014 ", nombre), mensaje &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: `text-sm rounded-lg px-3 py-2 mb-3 ${mensaje.tipo === "error" ? "bg-red-50 text-red-600" : "bg-green-50 text-green-700"}`
+  }, mensaje.texto), /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-xl p-4 max-w-lg mb-4",
+    style: {
+      border: "1px solid #e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    className: "text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1"
+  }, "Vigencia de la encuesta"), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-gray-400 mb-1.5"
+  }, "Fechas en las que los choferes pueden completar esta ronda. Vac\xEDo = sin restricci\xF3n."), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-4 flex-wrap text-sm"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
+    className: "block text-xs text-gray-500 mb-1"
+  }, "Fecha de inicio"), /*#__PURE__*/React.createElement("input", {
+    type: "date",
+    value: ronda.fecha_inicio ? isoADateLocal(ronda.fecha_inicio) : "",
+    onChange: e => setRonda(r => ({
+      ...r,
+      fecha_inicio: fechaInicioDelDia(e.target.value)
+    })),
+    className: "rounded-lg border px-2 py-1",
+    style: {
+      borderColor: "#d5d9e4"
+    }
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
+    className: "block text-xs text-gray-500 mb-1"
+  }, "Fecha de fin"), /*#__PURE__*/React.createElement("input", {
+    type: "date",
+    value: ronda.fecha_fin ? isoADateLocal(ronda.fecha_fin) : "",
+    onChange: e => setRonda(r => ({
+      ...r,
+      fecha_fin: fechaFinDelDia(e.target.value)
+    })),
+    className: "rounded-lg border px-2 py-1",
+    style: {
+      borderColor: "#d5d9e4"
+    }
+  })))), tieneChecklist &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "bg-white rounded-xl p-4 max-w-lg mb-4",
+    style: {
+      border: "1px solid #e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    className: "text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1"
+  }, "Checklist de estandarizaci\xF3n (Trabajadoras Sociales)"), checklistRonda === null ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("p", {
+    className: "text-xs text-gray-400"
+  }, "Esta ronda no tiene un checklist ligado.") :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-gray-400 mb-1.5"
+  }, "Esta ronda abri\xF3 autom\xE1ticamente un checklist que completan las Trabajadoras Sociales por planta, ligado al mismo per\xEDodo. Vac\xEDo = sin restricci\xF3n."), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-4 flex-wrap text-sm"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
+    className: "block text-xs text-gray-500 mb-1"
+  }, "Fecha de fin"), /*#__PURE__*/React.createElement("input", {
+    type: "date",
+    value: checklistRonda.fecha_fin ? isoADateLocal(checklistRonda.fecha_fin) : "",
+    onChange: e => setChecklistRonda(c => ({
+      ...c,
+      fecha_fin: fechaFinDelDia(e.target.value)
+    })),
+    className: "rounded-lg border px-2 py-1",
+    style: {
+      borderColor: "#d5d9e4"
+    }
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
+    className: "block text-xs text-gray-500 mb-1"
+  }, "Fecha de cierre"), /*#__PURE__*/React.createElement("input", {
+    type: "date",
+    value: checklistRonda.fecha_cierre ? isoADateLocal(checklistRonda.fecha_cierre) : "",
+    onChange: e => setChecklistRonda(c => ({
+      ...c,
+      fecha_cierre: fechaFinDelDia(e.target.value)
+    })),
+    className: "rounded-lg border px-2 py-1",
+    style: {
+      borderColor: "#d5d9e4"
+    }
+  }))))), /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-xl p-4 max-w-lg space-y-4",
+    style: {
+      border: "1px solid #e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "text-xs font-bold text-gray-500 uppercase tracking-wide"
+  }, "Imagen (opcional)"), /*#__PURE__*/React.createElement("input", {
+    type: "file",
+    ref: fileInputRef,
+    accept: "image/*",
+    className: "hidden",
+    onChange: e => e.target.files[0] && subirImagen(e.target.files[0])
+  }), imagenUrl &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("img", {
+    src: imagenUrl,
+    alt: "",
+    className: "w-full h-32 object-cover rounded-lg mt-1.5 mb-1.5"
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: () => fileInputRef.current?.click(),
+    disabled: subiendoImagen,
+    className: "text-xs font-semibold px-3 py-1.5 rounded-lg border mt-1.5",
+    style: {
+      borderColor: "#d5d9e4",
+      color: AZUL
+    }
+  }, subiendoImagen ? "Subiendo..." : imagenUrl ? "Cambiar imagen" : "Subir imagen")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5"
+  }, "T\xEDtulo y descripci\xF3n del aviso"), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-gray-400 mb-1.5"
+  }, "Lo que ve el chofer en la ventanita del recordatorio. Vac\xEDo = usa el texto por defecto."), /*#__PURE__*/React.createElement("input", {
+    value: config.aviso_titulo || "",
+    onChange: e => setConfig(c => ({
+      ...c,
+      aviso_titulo: e.target.value
+    })),
+    placeholder: "Vac\xEDo = usa el nombre de la encuesta",
+    className: "w-full px-2.5 py-1.5 rounded-lg border text-sm mb-1.5",
+    style: {
+      borderColor: "#d5d9e4"
+    }
+  }), /*#__PURE__*/React.createElement("textarea", {
+    value: config.aviso_descripcion || "",
+    onChange: e => setConfig(c => ({
+      ...c,
+      aviso_descripcion: e.target.value
+    })),
+    placeholder: "Tu opini\xF3n nos ayuda a mejorar tus condiciones de trabajo. Toma solo unos minutos.",
+    className: "w-full px-2.5 py-1.5 rounded-lg border text-sm",
+    style: {
+      borderColor: "#d5d9e4",
+      minHeight: 50
+    }
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5"
+  }, "\xBFA qui\xE9n se le env\xEDa?"), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-4 text-sm mb-2"
+  }, /*#__PURE__*/React.createElement("label", {
+    className: "flex items-center gap-1.5"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "radio",
+    checked: !audienciaPersonalizada,
+    onChange: () => {
+      setAudienciaPersonalizada(false);
+      setConfig(c => ({
+        ...c,
+        plantas_destino: null,
+        roles_destino: null
+      }));
+    }
+  }), " Todos los operarios"), /*#__PURE__*/React.createElement("label", {
+    className: "flex items-center gap-1.5"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "radio",
+    checked: audienciaPersonalizada,
+    onChange: () => setAudienciaPersonalizada(true)
+  }), " Elegir plantas/posiciones espec\xEDficas")), audienciaPersonalizada &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "grid grid-cols-2 gap-3 bg-gray-50 rounded-lg p-3 mb-2"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] font-bold text-gray-400 uppercase mb-1"
+  }, "Plantas"), /*#__PURE__*/React.createElement("div", {
+    className: "max-h-32 overflow-y-auto space-y-0.5"
+  }, PLANTAS_TODAS.filter(p => p !== "Transversal").map(p =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("label", {
+    key: p,
+    className: "flex items-center gap-1.5 text-xs"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "checkbox",
+    checked: (config.plantas_destino || []).includes(p),
+    onChange: () => setConfig(c => {
+      const actuales = c.plantas_destino || [];
+      return {
+        ...c,
+        plantas_destino: actuales.includes(p) ? actuales.filter(x => x !== p) : [...actuales, p]
+      };
+    })
+  }), " ", p)))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] font-bold text-gray-400 uppercase mb-1"
+  }, "Posiciones"), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-0.5"
+  }, Object.entries(CARGOS_CHOFER_MAP).map(([codigo, label]) =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("label", {
+    key: codigo,
+    className: "flex items-center gap-1.5 text-xs"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "checkbox",
+    checked: (config.roles_destino || []).includes(codigo),
+    onChange: () => setConfig(c => {
+      const actuales = c.roles_destino || [];
+      return {
+        ...c,
+        roles_destino: actuales.includes(codigo) ? actuales.filter(x => x !== codigo) : [...actuales, codigo]
+      };
+    })
+  }), " ", label)))))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5"
+  }, "Paso 1: Tipo de env\xEDo"), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-4 text-sm"
+  }, /*#__PURE__*/React.createElement("label", {
+    className: "flex items-center gap-1.5"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "radio",
+    checked: config.tipo_envio === "unico",
+    onChange: () => setConfig(c => ({
+      ...c,
+      tipo_envio: "unico"
+    }))
+  }), " \xDAnica vez"), /*#__PURE__*/React.createElement("label", {
+    className: "flex items-center gap-1.5"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "radio",
+    checked: config.tipo_envio === "recurrente",
+    onChange: () => setConfig(c => ({
+      ...c,
+      tipo_envio: "recurrente"
+    }))
+  }), " Recurrente"))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1.5"
+  }, "Paso 2: Par\xE1metros"), config.tipo_envio === "unico" ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "flex gap-4 text-sm items-center"
+  }, /*#__PURE__*/React.createElement("label", {
+    className: "flex items-center gap-1.5"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "radio",
+    checked: !config.fecha_programada,
+    onChange: () => setConfig(c => ({
+      ...c,
+      fecha_programada: null
+    }))
+  }), " Inmediato"), /*#__PURE__*/React.createElement("label", {
+    className: "flex items-center gap-1.5"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "radio",
+    checked: !!config.fecha_programada,
+    onChange: () => setConfig(c => ({
+      ...c,
+      fecha_programada: c.fecha_programada || new Date().toISOString()
+    }))
+  }), " Programar"), config.fecha_programada &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("input", {
+    type: "datetime-local",
+    value: isoADatetimeLocal(config.fecha_programada),
+    onChange: e => setConfig(c => ({
+      ...c,
+      fecha_programada: new Date(e.target.value).toISOString()
+    })),
+    className: "rounded-lg border px-2 py-1 text-sm",
+    style: {
+      borderColor: "#d5d9e4"
+    }
+  })) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "space-y-2 text-sm"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2 items-center flex-wrap"
+  }, /*#__PURE__*/React.createElement("select", {
+    value: config.tipo_frecuencia || "diaria",
+    onChange: e => setConfig(c => ({
+      ...c,
+      tipo_frecuencia: e.target.value
+    })),
+    className: "rounded-lg border px-2 py-1",
+    style: {
+      borderColor: "#d5d9e4"
+    }
+  }, /*#__PURE__*/React.createElement("option", {
+    value: "cada_x_horas"
+  }, "Cada X horas"), /*#__PURE__*/React.createElement("option", {
+    value: "diaria"
+  }, "Diariamente"), /*#__PURE__*/React.createElement("option", {
+    value: "interdiaria"
+  }, "Interdiariamente (cada 2 d\xEDas)"), /*#__PURE__*/React.createElement("option", {
+    value: "semanal"
+  }, "Semanalmente")), config.tipo_frecuencia === "cada_x_horas" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", null, "cada"), /*#__PURE__*/React.createElement("select", {
+    value: config.horas_valor || 2,
+    onChange: e => setConfig(c => ({
+      ...c,
+      horas_valor: parseInt(e.target.value, 10)
+    })),
+    className: "rounded-lg border px-2 py-1",
+    style: {
+      borderColor: "#d5d9e4"
+    }
+  }, [1, 2, 3, 4].map(h =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("option", {
+    key: h,
+    value: h
+  }, h))), /*#__PURE__*/React.createElement("span", null, "horas")), config.tipo_frecuencia === "semanal" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", null, "el"), /*#__PURE__*/React.createElement("select", {
+    value: config.dia_semana ?? 1,
+    onChange: e => setConfig(c => ({
+      ...c,
+      dia_semana: parseInt(e.target.value, 10)
+    })),
+    className: "rounded-lg border px-2 py-1",
+    style: {
+      borderColor: "#d5d9e4"
+    }
+  }, DIAS_SEMANA.map((d, i) =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("option", {
+    key: i,
+    value: i
+  }, d)))), (config.tipo_frecuencia === "diaria" || config.tipo_frecuencia === "interdiaria" || config.tipo_frecuencia === "semanal") &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", null, "a las"), /*#__PURE__*/React.createElement("input", {
+    type: "time",
+    value: config.hora_envio || "09:00",
+    onChange: e => setConfig(c => ({
+      ...c,
+      hora_envio: e.target.value
+    })),
+    className: "rounded-lg border px-2 py-1",
+    style: {
+      borderColor: "#d5d9e4"
+    }
+  }))))), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs",
+    style: {
+      color: "#9199ac"
+    }
+  }, "Los domingos no se env\xEDa ning\xFAn recordatorio. Los s\xE1bados solo se env\xEDa entre 6:00 a. m. y 2:00 p. m."), /*#__PURE__*/React.createElement("label", {
+    className: "flex items-center gap-2 text-sm"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "checkbox",
+    checked: config.activo,
+    onChange: e => setConfig(c => ({
+      ...c,
+      activo: e.target.checked
+    }))
+  }), " Programaci\xF3n activa"), /*#__PURE__*/React.createElement("button", {
+    onClick: guardar,
+    disabled: guardando,
+    className: "w-full py-2.5 rounded-xl font-bold text-sm disabled:opacity-40",
+    style: {
+      background: AMARILLO,
+      color: AZUL
+    }
+  }, guardando ? "Guardando..." : "Guardar programación")));
+}
 function GestionHumanaPanel({
   setRole
 }) {
   // Formatea un número de teléfono en grupos de 3 dígitos para visualización (ej. "987 654 321")
   // El valor guardado internamente siempre queda sin espacios.
   const formatTelefono = val => (val || "").replace(/\D/g, "").slice(0, 15).replace(/(\d{3})(?=\d)/g, "$1 ");
+  const [section, setSection] = useState("personal"); // "personal" | "encuestas"
   const [personal, setPersonal] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filtroPlanta, setFiltroPlanta] = useState("Todas");
@@ -21997,20 +24582,35 @@ function GestionHumanaPanel({
     className: "text-[11px] text-gray-400"
   }, "Panel administrativo"))), /*#__PURE__*/React.createElement("div", {
     className: "flex-1 p-2"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center gap-3 px-3 py-3 rounded-xl",
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setSection("personal"),
+    className: "w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left",
     style: {
-      background: "#EEF1FA"
+      background: section === "personal" ? "#EEF1FA" : "transparent"
     }
   }, /*#__PURE__*/React.createElement(Users, {
     size: 18,
-    color: AZUL
+    color: section === "personal" ? AZUL : "#9ca3af"
   }), /*#__PURE__*/React.createElement("span", {
     className: "text-sm font-semibold",
     style: {
-      color: AZUL
+      color: section === "personal" ? AZUL : "#374151"
     }
-  }, "Gesti\xF3n del Personal"))), /*#__PURE__*/React.createElement("button", {
+  }, "Gesti\xF3n del Personal")), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setSection("encuestas"),
+    className: "w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left mt-1",
+    style: {
+      background: section === "encuestas" ? "#EEF1FA" : "transparent"
+    }
+  }, /*#__PURE__*/React.createElement(ListChecks, {
+    size: 18,
+    color: section === "encuestas" ? AZUL : "#9ca3af"
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "text-sm font-semibold",
+    style: {
+      color: section === "encuestas" ? AZUL : "#374151"
+    }
+  }, "Medici\xF3n Ritmo"))), /*#__PURE__*/React.createElement("button", {
     onClick: async () => {
       // Hay que esperar a que signOut() termine de limpiar la sesión ANTES de volver a
       // "chofer": si no, ChoferApp se monta de inmediato y su restauración automática de
@@ -22026,8 +24626,14 @@ function GestionHumanaPanel({
     }
   }, /*#__PURE__*/React.createElement(LogOut, {
     size: 16
-  }), " Cerrar sesi\xF3n")), /*#__PURE__*/React.createElement("div", {
-    className: "flex-1 p-6 overflow-y-auto"
+  }), " Cerrar sesi\xF3n")), section === "encuestas" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(EncuestasListado, null), /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 p-6 overflow-y-auto",
+    style: {
+      display: section === "personal" ? undefined : "none"
+    }
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between mb-4 flex-wrap gap-3"
   }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
@@ -23107,6 +25713,186 @@ function HerramientasCanalAvisos({
     }
   }, "\uD83D\uDCCB Subir citaci\xF3n"));
 }
+
+// Checklist de estandarización — herramienta dentro del perfil de la Trabajadora Social (igual que
+// Bitácora personal del chofer), ligada 1:1 a la ronda ABIERTA de la encuesta de Condiciones de
+// Trabajo (mismo ronda_id, ver EncuestaRondas.nuevaRonda) para que sus resultados correspondan sin
+// ambigüedad al mismo período. El contenido (ítems) todavía no existe — se siembra en una vuelta
+// siguiente, igual que se hizo con la encuesta.
+function ChecklistEstandarizacion({
+  admin
+}) {
+  const [checklistRonda, setChecklistRonda] = useState(null); // { id, items: [...] } o null
+  const [cargando, setCargando] = useState(true);
+  const [planta, setPlanta] = useState((admin?.plantas || [])[0] || "");
+  const [respuestas, setRespuestas] = useState({});
+  const [enviando, setEnviando] = useState(false);
+  const [enviado, setEnviado] = useState(false);
+  useEffect(() => {
+    (async () => {
+      setCargando(true);
+      const {
+        data: encuesta
+      } = await sbClient.from("rh_encuestas").select("id,estado").eq("tiene_checklist", true).eq("estado", "desplegada").maybeSingle();
+      if (!encuesta) {
+        setCargando(false);
+        return;
+      }
+      const {
+        data: ronda
+      } = await sbClient.from("rh_encuesta_rondas").select("id").eq("encuesta_id", encuesta.id).eq("estado", "abierta").maybeSingle();
+      if (!ronda) {
+        setCargando(false);
+        return;
+      }
+      const [{
+        data: cr
+      }, {
+        data: items
+      }] = await Promise.all([sbClient.from("rh_checklist_rondas").select("*").eq("ronda_id", ronda.id).maybeSingle(), sbClient.from("rh_checklist_items").select("*").eq("encuesta_id", encuesta.id).order("orden")]);
+      // fecha_cierre (si está fijada) es el corte duro para llenar el checklist, aunque la ronda
+      // siga técnicamente "abierta" del lado de la encuesta.
+      const vigente = cr && (!cr.fecha_cierre || Date.now() <= new Date(cr.fecha_cierre).getTime());
+      setChecklistRonda(vigente ? {
+        ...cr,
+        items: items || []
+      } : null);
+      setCargando(false);
+    })();
+  }, []);
+  const dimensionesEnOrden = [...new Set((checklistRonda?.items || []).map(i => i.dimension))];
+  const OPCIONES = ["Cumple", "No cumple", "N/A"];
+  const enviar = async () => {
+    setEnviando(true);
+    const {
+      data: resp,
+      error
+    } = await sbClient.from("rh_checklist_respuestas").upsert({
+      checklist_ronda_id: checklistRonda.id,
+      trabajadora_social_id: admin.id,
+      planta,
+      completada_en: new Date().toISOString()
+    }, {
+      onConflict: "checklist_ronda_id,trabajadora_social_id"
+    }).select().single();
+    if (!error) {
+      await sbClient.from("rh_checklist_respuesta_detalle").delete().eq("respuesta_id", resp.id);
+      await sbClient.from("rh_checklist_respuesta_detalle").insert((checklistRonda.items || []).map(i => ({
+        respuesta_id: resp.id,
+        item_id: i.id,
+        valor: respuestas[i.id] || null
+      })));
+    }
+    setEnviando(false);
+    if (!error) setEnviado(true);
+  };
+  if (cargando) return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 p-6 text-center text-gray-400 text-sm"
+  }, "Cargando...");
+  if (!checklistRonda || checklistRonda.estado !== "abierta") {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+      className: "p-6 max-w-md mx-auto text-center text-gray-400 text-sm"
+    }, "No hay un checklist abierto en este momento.");
+  }
+  if (!checklistRonda.items.length) {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+      className: "p-6 max-w-md mx-auto text-center text-gray-400 text-sm"
+    }, "A\xFAn no hay un checklist configurado para esta ronda.");
+  }
+  if (enviado) {
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+      className: "p-6 max-w-md mx-auto text-center"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center",
+      style: {
+        background: AMARILLO
+      }
+    }, /*#__PURE__*/React.createElement(Check, {
+      size: 32,
+      color: AZUL
+    })), /*#__PURE__*/React.createElement("h2", {
+      className: "text-lg font-black mb-2",
+      style: {
+        color: AZUL
+      }
+    }, "\xA1Checklist guardado!"), /*#__PURE__*/React.createElement("p", {
+      className: "text-sm text-gray-600"
+    }, "Puedes volver a entrar y guardarlo de nuevo mientras siga abierto."));
+  }
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    className: "p-4 max-w-2xl mx-auto overflow-y-auto"
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "text-lg font-bold mb-3",
+    style: {
+      color: AZUL
+    }
+  }, "Checklist de estandarizaci\xF3n"), /*#__PURE__*/React.createElement("div", {
+    className: "mb-4"
+  }, /*#__PURE__*/React.createElement("label", {
+    className: "text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1"
+  }, "Planta"), /*#__PURE__*/React.createElement("select", {
+    value: planta,
+    onChange: e => setPlanta(e.target.value),
+    className: "rounded-lg border px-2 py-1.5 text-sm",
+    style: {
+      borderColor: "#d5d9e4"
+    }
+  }, (admin?.plantas || []).map(p =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("option", {
+    key: p,
+    value: p
+  }, p)))), dimensionesEnOrden.map(dim =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    key: dim,
+    className: "mb-4"
+  }, /*#__PURE__*/React.createElement("h4", {
+    className: "text-xs font-extrabold uppercase tracking-wide mb-2",
+    style: {
+      color: "#1a1d2e"
+    }
+  }, dim), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-2"
+  }, checklistRonda.items.filter(i => i.dimension === dim).map(i =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    key: i.id,
+    className: "bg-white rounded-xl p-3 shadow-sm",
+    style: {
+      border: "1px solid #e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-sm text-gray-800 mb-2"
+  }, i.texto), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-1.5"
+  }, OPCIONES.map(op =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
+    key: op,
+    onClick: () => setRespuestas(r => ({
+      ...r,
+      [i.id]: op
+    })),
+    className: "px-3 py-1.5 rounded-full text-xs font-bold",
+    style: {
+      background: respuestas[i.id] === op ? AZUL : "#eef1f6",
+      color: respuestas[i.id] === op ? "white" : "#5c6070"
+    }
+  }, op)))))))), /*#__PURE__*/React.createElement("button", {
+    onClick: enviar,
+    disabled: enviando || !planta,
+    className: "w-full py-3 rounded-xl font-bold disabled:opacity-40",
+    style: {
+      background: AMARILLO,
+      color: AZUL
+    }
+  }, enviando ? "Guardando..." : "Guardar checklist"));
+}
 function AztPanel({
   incidents,
   setIncidents,
@@ -23795,6 +26581,10 @@ function AztPanel({
   // el panel para nada, así que no ven ninguna sección al entrar (ni avisos, ni incidencias, ni
   // ninguna de las opt-in de abajo).
   const ROLES_SIN_CANAL = new Set(["jefe_capacitacion", "administracion_personal", "mecanico_lider"]);
+  // Herramienta de Trabajadora Social: checklist de estandarización por planta, ligado a cada
+  // ronda de la encuesta "Condiciones de Trabajo" (ver EncuestaRondas.nuevaRonda) — mismo patrón
+  // que el resto de secciones opt-in por rol.
+  const ROLES_CON_CHECKLIST_ESTANDARIZACION = new Set(["trabajadora_social"]);
   // Mantenimiento solo gestiona auxilios mecánicos: no publica avisos ni atiende incidencias de
   // planta, así que esas dos secciones (antes visibles para todos los cargos administrativos)
   // se ocultan específicamente para ese rol.
@@ -23828,6 +26618,12 @@ function AztPanel({
     icon: Wrench,
     sub: "Buzón de auxilios reportados",
     badge: auxNoLeidos
+  }] : []), ...(ROLES_CON_CHECKLIST_ESTANDARIZACION.has(admin?.rol) ? [{
+    id: "checklist_estandarizacion",
+    label: "Checklist de estandarización",
+    icon: ListChecks,
+    sub: "Por planta, por ronda de la encuesta",
+    badge: 0
   }] : [])];
   const showSidebar = isDesktop || mobileList;
   const showMain = isDesktop || !mobileList;
@@ -24853,6 +27649,11 @@ function AztPanel({
     onLecturaCambiada: cargarAuxPreview,
     irAAuxilioId: irAAuxilioId,
     setIrAAuxilioId: setIrAAuxilioId
+  }), section === "checklist_estandarizacion" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(ChecklistEstandarizacion, {
+    admin: admin
   })), selected &&
   /*#__PURE__*/
   /*#__PURE__*/
