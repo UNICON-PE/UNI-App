@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-22T17:02:33.000Z */
+/* UniconApp — Bundle generado el 2026-10-22T21:17:37.819Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 21369 — CERO simplificaciones */
+/* Líneas originales del JSX: 21770 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -8607,13 +8607,38 @@ function rondaEnVigencia(ronda) {
   return true;
 }
 
-// Ramificación de preguntas: hoy la única condición posible depende de la categoría de ubicación
-// derivada de la planta de origen elegida (ver rh_planta_categoria) — no existe más "puesto"
-// porque todos los roles que hoy ven esta encuesta cuentan como un solo grupo.
+// Ramificación de preguntas — condicion.cargo: lista de cargos del perfil (árbol organigrama, ver
+// más abajo y el panel de audiencia en EncuestaPreguntasEditor). condicion.reglas: lógica estilo
+// Alchemer — lista de { preguntaId, opciones }, cada una exige que la respuesta YA DADA a esa
+// pregunta anterior (filtros.respuestas[preguntaId]) esté entre sus opciones; todas las reglas
+// deben cumplirse (Y, no O). Si no hay condicion, o condicion.cargo/condicion.reglas vienen vacíos,
+// la pregunta es visible para todos. Compatible con la forma vieja {dependeDe, opciones} (incluye
+// "ubicacion", ya sin UI para crearla pero todavía soportada si quedó guardada de antes).
 function preguntaEsVisible(pregunta, filtros) {
-  if (!pregunta.condicion) return true;
-  const valor = filtros[pregunta.condicion.dependeDe];
-  return (pregunta.condicion.opciones || []).includes(valor);
+  const condicion = pregunta.condicion;
+  if (!condicion) return true;
+  const cargoFiltro = condicion.cargo || (condicion.dependeDe === "cargo" ? condicion.opciones : null);
+  if (cargoFiltro && cargoFiltro.length && !cargoFiltro.includes(filtros.cargo)) return false;
+  if (condicion.dependeDe && condicion.dependeDe !== "cargo") {
+    if (!(condicion.opciones || []).includes(filtros[condicion.dependeDe])) return false;
+  }
+  if (condicion.reglas && condicion.reglas.length) {
+    for (const regla of condicion.reglas) {
+      if (!(regla.opciones || []).includes(filtros.respuestas?.[regla.preguntaId])) return false;
+    }
+  }
+  return true;
+}
+
+// Formato corto para el "tiempo promedio de resolución" de la tarjeta de encuesta (minutos/horas/
+// días según corresponda) — null (sin respuestas todavía para comparar) se muestra como "—".
+function formatDuracionCorta(ms) {
+  if (ms == null) return "—";
+  const minutos = ms / 60000;
+  if (minutos < 60) return `${Math.max(1, Math.round(minutos))} min`;
+  const horas = minutos / 60;
+  if (horas < 48) return `${horas.toFixed(1)} h`;
+  return `${(horas / 24).toFixed(1)} días`;
 }
 
 // Calcula el código visible (A1, B3...) de cada pregunta a partir del orden de aparición de su
@@ -8624,19 +8649,24 @@ function calcularCodigosEncuesta(preguntas) {
   const letraPorDimension = {};
   const contadorPorDimension = {};
   let siguienteLetra = 65; // 'A'
+  let contadorSueltas = 0;
   return preguntas.map(p => {
     if (p.tipo === "filtro_planta") return {
       ...p,
       codigo: null
     };
-    if (!(p.dimension in letraPorDimension)) {
-      letraPorDimension[p.dimension] = String.fromCharCode(siguienteLetra++);
-      contadorPorDimension[p.dimension] = 0;
+    // Una pregunta "suelta" (dimension null) es su propia categoría de 1 — con una clave única por
+    // pregunta, no "null" compartido, porque dos sueltas no contiguas no deberían numerarse como si
+    // fueran parte de un mismo bloque (ver EncuestaPreguntasEditor/EncuestaResponder).
+    const clave = p.dimension != null ? p.dimension : `__suelta_${contadorSueltas++}`;
+    if (!(clave in letraPorDimension)) {
+      letraPorDimension[clave] = String.fromCharCode(siguienteLetra++);
+      contadorPorDimension[clave] = 0;
     }
-    contadorPorDimension[p.dimension]++;
+    contadorPorDimension[clave]++;
     return {
       ...p,
-      codigo: `${letraPorDimension[p.dimension]}${contadorPorDimension[p.dimension]}`
+      codigo: `${letraPorDimension[clave]}${contadorPorDimension[clave]}`
     };
   });
 }
@@ -9756,10 +9786,27 @@ function EncuestaResponder({
   // Defensivo: una encuesta creada antes de este cambio podría todavía tener una fila
   // "filtro_planta" sin borrar si la migración que la quita aún no corrió.
   .filter(p => p.tipo !== "filtro_planta").filter(p => preguntaEsVisible(p, {
-    ubicacion
+    ubicacion,
+    cargo: driver.rol,
+    respuestas
   }));
-  const faltanRespuestas = preguntasVisibles.some(p => !respuestas[p.id]);
-  const dimensionesEnOrden = [...new Set(preguntasVisibles.map(p => p.dimension))];
+  const faltanRespuestas = preguntasVisibles.some(p => p.obligatoria && !respuestas[p.id]);
+  // Agrupa por categoría (dimension) en bloques CONTIGUOS según el orden real — una pregunta
+  // "suelta" (dimension null, ver EncuestaPreguntasEditor) es su propio bloque sin encabezado.
+  // No se puede agrupar con un simple Set+filter por nombre de categoría porque eso juntaría
+  // preguntas sueltas no contiguas entre sí, rompiendo el orden real si hay varias intercaladas.
+  const bloquesVisibles = [];
+  for (const p of preguntasVisibles) {
+    const ultimo = bloquesVisibles[bloquesVisibles.length - 1];
+    if (p.dimension && ultimo && ultimo.dimension === p.dimension) {
+      ultimo.preguntas.push(p);
+    } else {
+      bloquesVisibles.push({
+        dimension: p.dimension || null,
+        preguntas: [p]
+      });
+    }
+  }
   const enviar = async () => {
     setEnviando(true);
     const {
@@ -9857,20 +9904,23 @@ function EncuestaResponder({
   /*#__PURE__*/
   React.createElement("p", {
     className: "text-sm text-gray-600"
-  }, encuesta.descripcion)), dimensionesEnOrden.map(dim =>
+  }, encuesta.descripcion)), bloquesVisibles.map((bloque, i) =>
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
-    key: dim,
+    key: i,
     className: "mb-5"
-  }, /*#__PURE__*/React.createElement("h4", {
+  }, bloque.dimension &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("h4", {
     className: "text-xs font-extrabold uppercase tracking-wide mb-2",
     style: {
       color: "#1a1d2e"
     }
-  }, dim), /*#__PURE__*/React.createElement("div", {
+  }, bloque.dimension), /*#__PURE__*/React.createElement("div", {
     className: "space-y-3"
-  }, preguntasVisibles.filter(p => p.dimension === dim).map(p =>
+  }, bloque.preguntas.map(p =>
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
@@ -9888,7 +9938,14 @@ function EncuestaResponder({
     style: {
       color: AZUL
     }
-  }, p.codigo, ". "), p.texto), p.tipo === "abierta" ?
+  }, p.codigo, ". "), p.texto, p.obligatoria &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("span", {
+    style: {
+      color: "#dc2626"
+    }
+  }, " *")), p.tipo === "abierta" ?
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("textarea", {
@@ -21400,6 +21457,153 @@ const CARGO_LABEL = {
   gestion_humana: "Gestión Humana"
 };
 const CARGO_CODE = Object.fromEntries(Object.entries(CARGO_LABEL).map(([k, v]) => [v, k]));
+
+// Organigrama por gerencia/área/cargo — estructura fija según definió ewq el 2026-10-22, reutilizada
+// por distintas pantallas de Medición Ritmo (ver cargosDeNodo/estadoNodo/NodoOrganigrama más abajo).
+// "admin_transporte_bombas" y "gestion_humana" (el cargo genérico) TODAVÍA no tienen una gerencia
+// asignada explícitamente — ewq pidió sacarlos del árbol por ahora en vez de dejarlos en un bucket
+// "Otros" (2026-10-22), pendiente de decidir dónde ubicarlos.
+const ORGANIGRAMA = [{
+  id: "gerencia_transporte",
+  label: "Gerencia de Transporte y Distribución",
+  children: [{
+    id: "gerente_transporte_distribucion",
+    label: "Gerente de Transporte y Distribución",
+    cargos: ["gerente_transporte_distribucion"]
+  }, {
+    id: "transporte",
+    label: "Transporte",
+    children: [{
+      id: "jefe_transporte",
+      label: CARGO_LABEL.jefe_transporte,
+      cargos: ["jefe_transporte"]
+    }, {
+      id: "admin_zonal_transporte",
+      label: CARGO_LABEL.admin_zonal_transporte,
+      cargos: ["admin_zonal_transporte"]
+    }, {
+      id: "supervisor_transportes",
+      label: CARGO_LABEL.supervisor_transportes,
+      cargos: ["supervisor_transportes"]
+    }, {
+      id: "chofer",
+      label: CARGO_LABEL.chofer,
+      cargos: ["chofer"]
+    }, {
+      id: "chom_lider",
+      label: CARGO_LABEL.chom_lider,
+      cargos: ["chom_lider"]
+    }]
+  }, {
+    id: "bombas",
+    label: "Bombas",
+    children: [{
+      id: "supervisor_bombas_jefe_ops",
+      label: CARGO_LABEL.supervisor_bombas_jefe_ops,
+      cargos: ["supervisor_bombas_jefe_ops"]
+    }, {
+      id: "chofer_operador_bomba",
+      label: CARGO_LABEL.chofer_operador_bomba,
+      cargos: ["chofer_operador_bomba"]
+    }, {
+      id: "operador_bomba",
+      label: CARGO_LABEL.operador_bomba,
+      cargos: ["operador_bomba"]
+    }, {
+      id: "ayudante_bomba_multitask",
+      label: CARGO_LABEL.ayudante_bomba_multitask,
+      cargos: ["ayudante_bomba_multitask"]
+    }, {
+      id: "auxiliar_tuberia",
+      label: CARGO_LABEL.auxiliar_tuberia,
+      cargos: ["auxiliar_tuberia"]
+    }]
+  }, {
+    id: "distribucion_sac",
+    label: "Distribución y SAC",
+    children: [{
+      id: "despachador",
+      label: CARGO_LABEL.despachador,
+      cargos: ["despachador"]
+    }]
+  }, {
+    id: "mantenimiento_transporte",
+    label: "Mantenimiento",
+    children: [{
+      id: "supervisor_mantenimiento",
+      label: CARGO_LABEL.supervisor_mantenimiento,
+      cargos: ["supervisor_mantenimiento"]
+    }, {
+      id: "analista_mantenimiento",
+      label: CARGO_LABEL.analista_mantenimiento,
+      cargos: ["analista_mantenimiento"]
+    }, {
+      id: "mecanico_lider",
+      label: CARGO_LABEL.mecanico_lider,
+      cargos: ["mecanico_lider"]
+    }]
+  }]
+}, {
+  id: "gestion_humana_ger",
+  label: "Gestión Humana",
+  children: [{
+    id: "relaciones_bienestar",
+    label: "Relaciones Laborales y Bienestar Social",
+    children: [{
+      id: "relaciones_laborales",
+      label: "Relaciones Laborales",
+      cargos: []
+    }, {
+      id: "bienestar_social",
+      label: CARGO_LABEL.trabajadora_social,
+      cargos: ["trabajadora_social"]
+    }]
+  }, {
+    id: "hr_bp_talento",
+    label: "HR Business Partner Staff y Gestión del Talento",
+    children: [{
+      id: "jefe_capacitacion",
+      label: CARGO_LABEL.jefe_capacitacion,
+      cargos: ["jefe_capacitacion"]
+    }]
+  }, {
+    id: "administracion_personal_area",
+    label: "Administración de Personal",
+    cargos: ["administracion_personal"]
+  }]
+}, {
+  id: "qhsec_sostenibilidad",
+  label: "Gerencia de QHSEC y Sostenibilidad",
+  children: [{
+    id: "sgi_area",
+    label: "SGI",
+    cargos: ["sgi"]
+  }]
+}, {
+  id: "gerencia_operaciones",
+  label: "Gerencia de Operaciones",
+  children: [{
+    id: "jefe_planta_area",
+    label: "Jefe de Planta",
+    cargos: ["jefe_planta"]
+  }]
+}];
+// Junta recursivamente todos los códigos de cargo bajo un nodo (sea hoja o rama).
+function cargosDeNodo(nodo) {
+  if (nodo.children) return nodo.children.flatMap(cargosDeNodo);
+  return nodo.cargos || [];
+}
+const TODOS_LOS_CARGOS_ORGANIGRAMA = ORGANIGRAMA.flatMap(cargosDeNodo);
+// Estado de un nodo según cuántos de sus cargos están en el set de seleccionados — para pintar el
+// checkbox como lleno/vacío/a medias (tri-estado).
+function estadoNodo(nodo, seleccionados) {
+  const propios = cargosDeNodo(nodo);
+  if (propios.length === 0) return "ninguno";
+  const marcados = propios.filter(c => seleccionados.has(c)).length;
+  if (marcados === 0) return "ninguno";
+  if (marcados === propios.length) return "todos";
+  return "parcial";
+}
 const TURNO_LABEL = {
   dia: "Día",
   noche: "Noche"
@@ -21892,36 +22096,38 @@ function EncuestasListado() {
   // "cuántos de los que debían responder, ya respondieron").
   const calcularStats = async encuestaId => {
     const [{
-      count: totalRespuestas
-    }, {
-      data: ultima
-    }, {
       data: rondas
-    }] = await Promise.all([sbClient.from("rh_encuesta_respuestas").select("id", {
-      count: "exact",
-      head: true
-    }).eq("encuesta_id", encuestaId), sbClient.from("rh_encuesta_respuestas").select("created_at").eq("encuesta_id", encuestaId).order("created_at", {
+    }, {
+      data: respuestas
+    }] = await Promise.all([sbClient.from("rh_encuesta_rondas").select("id,created_at").eq("encuesta_id", encuestaId).order("created_at", {
       ascending: true
-    }).limit(1), sbClient.from("rh_encuesta_rondas").select("id").eq("encuesta_id", encuestaId)]);
-    const idsRondas = (rondas || []).map(r => r.id);
+    }), sbClient.from("rh_encuesta_respuestas").select("ronda_id,created_at").eq("encuesta_id", encuestaId)]);
+    const listaRondas = rondas || [];
+    const rondaPorId = Object.fromEntries(listaRondas.map(r => [r.id, r]));
+    // "Tiempo promedio de resolución": cuánto tarda en promedio una respuesta en llegar desde que
+    // se abrió SU ronda (no desde el inicio de la encuesta) — cada respuesta se compara contra la
+    // fecha de creación de su propia ronda.
+    const deltasMs = (respuestas || []).map(r => {
+      const ronda = rondaPorId[r.ronda_id];
+      if (!ronda) return null;
+      return new Date(r.created_at).getTime() - new Date(ronda.created_at).getTime();
+    }).filter(ms => ms != null && ms >= 0);
+    const tiempoPromedioResolucionMs = deltasMs.length ? deltasMs.reduce((a, b) => a + b, 0) / deltasMs.length : null;
+    // "% de cumplimiento" solo de la ÚLTIMA ronda (la más reciente), no acumulado de todas — así
+    // refleja qué tan bien está yendo la aplicación vigente, sin que rondas viejas ya cerradas
+    // infle o desinfle el número.
+    const ultimaRonda = listaRondas[listaRondas.length - 1] || null;
     const {
-      data: estados
-    } = idsRondas.length ? await sbClient.from("rh_encuesta_estado_usuario").select("completada").in("ronda_id", idsRondas) : {
+      data: estadosUltimaRonda
+    } = ultimaRonda ? await sbClient.from("rh_encuesta_estado_usuario").select("completada").eq("ronda_id", ultimaRonda.id) : {
       data: []
     };
-    const {
-      data: ultimaFila
-    } = await sbClient.from("rh_encuesta_respuestas").select("created_at").eq("encuesta_id", encuestaId).order("created_at", {
-      ascending: false
-    }).limit(1).maybeSingle();
-    const dias = ultima?.[0] ? Math.max(1, Math.ceil((Date.now() - new Date(ultima[0].created_at).getTime()) / (24 * 60 * 60 * 1000))) : 1;
-    const totalEstados = (estados || []).length;
-    const completadas = (estados || []).filter(e => e.completada).length;
+    const totalUltima = (estadosUltimaRonda || []).length;
+    const completadasUltima = (estadosUltimaRonda || []).filter(e => e.completada).length;
     return {
-      respuestas: totalRespuestas || 0,
-      ultimaRespuesta: ultimaFila?.created_at || null,
-      promedioDia: (totalRespuestas || 0) / dias,
-      tasaFinalizacion: totalEstados ? Math.round(completadas / totalEstados * 100) : 0
+      numRondas: listaRondas.length,
+      tiempoPromedioResolucionMs,
+      tasaFinalizacion: totalUltima ? Math.round(completadasUltima / totalUltima * 100) : 0
     };
   };
   const cargarEncuestas = async () => {
@@ -22132,32 +22338,27 @@ function EncuestasListado() {
         background: est.bg,
         color: est.color
       }
-    }, est.texto), s.ultimaRespuesta &&
-    /*#__PURE__*/
-    /*#__PURE__*/
-    React.createElement("span", {
-      className: "text-xs text-gray-400"
-    }, "\xDAltima respuesta: ", new Date(s.ultimaRespuesta).toLocaleString("es-PE"))), /*#__PURE__*/React.createElement("div", {
+    }, est.texto)), /*#__PURE__*/React.createElement("div", {
       className: "flex items-center gap-8"
     }, /*#__PURE__*/React.createElement("div", {
       className: "text-center"
     }, /*#__PURE__*/React.createElement("div", {
       className: "text-xl font-bold text-gray-800"
-    }, s.respuestas ?? "—"), /*#__PURE__*/React.createElement("div", {
+    }, s.numRondas ?? "—"), /*#__PURE__*/React.createElement("div", {
       className: "text-[11px] text-gray-400"
-    }, "Respuestas")), /*#__PURE__*/React.createElement("div", {
+    }, "Rondas")), /*#__PURE__*/React.createElement("div", {
       className: "text-center"
     }, /*#__PURE__*/React.createElement("div", {
       className: "text-xl font-bold text-gray-800"
-    }, s.promedioDia != null ? s.promedioDia.toFixed(2) : "—"), /*#__PURE__*/React.createElement("div", {
+    }, formatDuracionCorta(s.tiempoPromedioResolucionMs)), /*#__PURE__*/React.createElement("div", {
       className: "text-[11px] text-gray-400"
-    }, "Prom. por d\xEDa")), /*#__PURE__*/React.createElement("div", {
+    }, "Tiempo prom. de resoluci\xF3n")), /*#__PURE__*/React.createElement("div", {
       className: "text-center"
     }, /*#__PURE__*/React.createElement(GaugeDona, {
       pct: s.tasaFinalizacion ?? 0
     }), /*#__PURE__*/React.createElement("div", {
       className: "text-[11px] text-gray-400 mt-1"
-    }, "Tasa de finalizaci\xF3n"))), menuAbierto === enc.id &&
+    }, "Cumplimiento (\xFAltima ronda)"))), menuAbierto === enc.id &&
     /*#__PURE__*/
     /*#__PURE__*/
     React.createElement("div", {
@@ -22986,16 +23187,104 @@ function EncuestaDetalle({
   }, "\uD83D\uDCCA Dashboard \u2014 pr\xF3ximamente.")));
 }
 
-// Editor de preguntas: dimension como combobox (dimensiones ya usadas en ESTA encuesta + opción
-// de escribir una nueva) en vez de texto libre sin sugerencias — para no reintroducir el mismo
-// tipo de inconsistencia que tenían los documentos originales de la encuesta sembrada. La pregunta
-// de tipo "filtro_planta" (si existe) no muestra controles de borrar — es infraestructura fija.
+// Casilla de 3 estados (lleno/a medias/vacío) para el árbol del organigrama — un <input
+// type="checkbox"> nativo no pinta bien el estado "a medias" sin manipular el DOM a mano
+// (indeterminate), así que se dibuja a mano con los mismos colores que el resto de checkboxes.
+function CasillaTriEstado({
+  estado,
+  onClick
+}) {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: onClick,
+    className: "w-4 h-4 rounded flex items-center justify-center shrink-0",
+    style: {
+      background: estado === "ninguno" ? "white" : AZUL,
+      border: `1.5px solid ${estado === "ninguno" ? "#c7cbd6" : AZUL}`
+    }
+  }, estado === "todos" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(Check, {
+    size: 11,
+    color: "white"
+  }), estado === "parcial" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "w-2 h-0.5",
+    style: {
+      background: "white"
+    }
+  }));
+}
+
+// Un nodo del organigrama (rama o puesto final) — marcar una rama selecciona/deselecciona de un
+// jalón todos los puestos que tiene debajo (así se arma rápido), y cada puesto suelto se puede
+// destildar aparte sin tocar el resto de su rama.
+function NodoOrganigrama({
+  nodo,
+  nivel,
+  seleccionados,
+  onToggle
+}) {
+  const estado = estadoNodo(nodo, seleccionados);
+  const sinCargos = cargosDeNodo(nodo).length === 0;
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginLeft: nivel * 16
+    }
+  }, /*#__PURE__*/React.createElement("label", {
+    className: "flex items-center gap-2 py-1 text-sm",
+    style: {
+      opacity: sinCargos ? 0.5 : 1,
+      cursor: sinCargos ? "default" : "pointer"
+    }
+  }, !sinCargos &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(CasillaTriEstado, {
+    estado: estado,
+    onClick: () => onToggle(nodo)
+  }), sinCargos &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("span", {
+    className: "w-4 h-4 shrink-0"
+  }), /*#__PURE__*/React.createElement("span", {
+    className: nodo.children ? "font-semibold" : "",
+    style: {
+      color: "#1a1d2e"
+    }
+  }, nodo.label, sinCargos && " (sin cargos asignados aún)")), nodo.children && nodo.children.map(hijo =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(NodoOrganigrama, {
+    key: hijo.id,
+    nodo: hijo,
+    nivel: nivel + 1,
+    seleccionados: seleccionados,
+    onToggle: onToggle
+  })));
+}
+
+// Editor de preguntas, estilo SurveyMonkey: cada pregunta se expande a un editor con pestañas
+// (Editar/Opciones/Lógica/Mover) con Guardar/Cancelar explícitos — nada se escribe en la base
+// hasta que se presiona Guardar (o Mover pregunta, que aplica directo porque es una acción
+// estructural, no un borrador de contenido). Categoría (dimension) es opcional — una pregunta
+// "suelta" (dimension null) no lleva encabezado; si se arma una categoría, se recomienda (no se
+// obliga) al menos 2 preguntas, pensando en que el dashboard de resultados las agrupe por categoría.
 function EncuestaPreguntasEditor({
   encuestaId
 }) {
   const [preguntas, setPreguntas] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [mensaje, setMensaje] = useState(null);
+  const [editando, setEditando] = useState(null); // id de la pregunta en edición, o null
+  const [tabActiva, setTabActiva] = useState("editar"); // editar | opciones | logica | mover
+  const [draft, setDraft] = useState(null); // borrador de la pregunta en edición — nada se guarda hasta Guardar/Mover
+  const [creandoCategoria, setCreandoCategoria] = useState(false); // true = mostrar el campo de texto para el nombre de la categoría nueva
+  const [nombreCategoriaNueva, setNombreCategoriaNueva] = useState("");
   // Título/descripción que ve el chofer antes de las preguntas (EncuestaResponder) — a diferencia
   // del título/descripción del AVISO (eso vive por ronda, en ProgramarRecordatorio), esto es fijo
   // para toda la encuesta sin importar la ronda.
@@ -23024,42 +23313,42 @@ function EncuestaPreguntasEditor({
       data,
       error
     } = await sbClient.from("rh_encuesta_preguntas").select("*").eq("encuesta_id", encuestaId).order("orden");
+    let resultado = [];
     if (error) setMensaje({
       tipo: "error",
       texto: error.message
-    });else setPreguntas(calcularCodigosEncuesta(data || []));
+    });else {
+      resultado = calcularCodigosEncuesta(data || []);
+      setPreguntas(resultado);
+    }
     setCargando(false);
+    return resultado;
   };
   useEffect(() => {
     cargarPreguntas();
   }, [encuestaId]);
-  const dimensionesUsadas = [...new Set(preguntas.filter(p => p.tipo !== "filtro_planta").map(p => p.dimension))];
-  const actualizarCampo = async (id, campo, valor) => {
-    setPreguntas(prev => prev.map(p => p.id === id ? {
-      ...p,
-      [campo]: valor
-    } : p));
-    const {
-      error
-    } = await sbClient.from("rh_encuesta_preguntas").update({
-      [campo]: valor
-    }).eq("id", id);
-    if (error) {
-      setMensaje({
-        tipo: "error",
-        texto: error.message
-      });
-      cargarPreguntas();
-    }
+  const dimensionesUsadas = [...new Set(preguntas.filter(p => p.tipo !== "filtro_planta").map(p => p.dimension))].filter(Boolean);
+  const ESCALA_DEFAULT = ["Totalmente en desacuerdo", "En desacuerdo", "Ni de acuerdo ni en desacuerdo", "De acuerdo", "Totalmente de acuerdo", "N/A"];
+  const cerrarEdicion = () => {
+    setEditando(null);
+    setDraft(null);
   };
-  const actualizarCondicion = async (id, dependeDe, opciones) => {
-    const condicion = dependeDe ? {
-      dependeDe,
-      opciones
-    } : null;
-    await actualizarCampo(id, "condicion", condicion);
+  const abrirEdicion = p => {
+    const idx = preguntas.findIndex(x => x.id === p.id);
+    setEditando(p.id);
+    setTabActiva("editar");
+    setDraft({
+      texto: p.texto,
+      tipo: p.tipo,
+      escala_opciones: p.escala_opciones || [],
+      obligatoria: !!p.obligatoria,
+      reglas: p.condicion?.reglas || [],
+      moverCategoria: p.dimension || "__suelta__",
+      moverDespuesDe: idx > 0 ? preguntas[idx - 1].id : "__inicio__"
+    });
   };
   const borrarPregunta = async id => {
+    if (editando === id) cerrarEdicion();
     setPreguntas(prev => prev.filter(p => p.id !== id)); // optimista
     const {
       error
@@ -23072,41 +23361,21 @@ function EncuestaPreguntasEditor({
       cargarPreguntas();
     }
   };
-  const ESCALA_DEFAULT = ["Totalmente en desacuerdo", "En desacuerdo", "Ni de acuerdo ni en desacuerdo", "De acuerdo", "Totalmente de acuerdo", "N/A"];
-  const moverOpcion = (p, idx, dir) => {
-    const arr = [...(p.escala_opciones || [])];
-    const j = idx + dir;
-    if (j < 0 || j >= arr.length) return;
-    [arr[idx], arr[j]] = [arr[j], arr[idx]];
-    actualizarCampo(p.id, "escala_opciones", arr);
-  };
-  const quitarOpcion = (p, idx) => {
-    actualizarCampo(p.id, "escala_opciones", (p.escala_opciones || []).filter((_, i) => i !== idx));
-  };
-  const agregarOpcion = p => {
-    actualizarCampo(p.id, "escala_opciones", [...(p.escala_opciones || []), "Nueva opción"]);
-  };
-  const cambiarTipo = (p, nuevoTipo) => {
-    actualizarCampo(p.id, "tipo", nuevoTipo);
-    if (nuevoTipo === "escala" && !(p.escala_opciones && p.escala_opciones.length)) {
-      actualizarCampo(p.id, "escala_opciones", ESCALA_DEFAULT);
-    }
-  };
   const agregarPregunta = async dimension => {
     const maxOrden = preguntas.reduce((m, p) => Math.max(m, p.orden), 0);
-    const nueva = {
+    const {
+      data,
+      error
+    } = await sbClient.from("rh_encuesta_preguntas").insert({
       encuesta_id: encuestaId,
       dimension,
       tipo: "escala",
       texto: "Nueva pregunta — edítala aquí",
       condicion: null,
       escala_opciones: ESCALA_DEFAULT,
+      obligatoria: false,
       orden: maxOrden + 1
-    };
-    const {
-      data,
-      error
-    } = await sbClient.from("rh_encuesta_preguntas").insert(nueva).select().single();
+    }).select().single();
     if (error) {
       setMensaje({
         tipo: "error",
@@ -23114,18 +23383,464 @@ function EncuestaPreguntasEditor({
       });
       return;
     }
+    // Si la categoría ya existía, reacomoda para que la nueva quede justo después de la última
+    // pregunta de esa misma categoría — si no, los bloques dejan de ser contiguos y el encabezado
+    // de esa categoría termina repetido más abajo en la lista.
+    let ultimoIdx = -1;
+    preguntas.forEach((p, i) => {
+      if (dimension && p.dimension === dimension) ultimoIdx = i;
+    });
+    if (dimension && ultimoIdx !== -1 && ultimoIdx < preguntas.length - 1) {
+      const reordenadas = [...preguntas.slice(0, ultimoIdx + 1), data, ...preguntas.slice(ultimoIdx + 1)];
+      await Promise.all(reordenadas.map((p, i) => sbClient.from("rh_encuesta_preguntas").update({
+        orden: i + 1
+      }).eq("id", p.id)));
+    }
+    const recargadas = await cargarPreguntas();
+    const fresca = recargadas.find(p => p.id === data.id);
+    if (fresca) abrirEdicion(fresca);
+  };
+  const cambiarTipoDraft = nuevoTipo => setDraft(d => ({
+    ...d,
+    tipo: nuevoTipo,
+    escala_opciones: nuevoTipo === "escala" && !(d.escala_opciones && d.escala_opciones.length) ? ESCALA_DEFAULT : d.escala_opciones
+  }));
+  const moverOpcionDraft = (idx, dir) => setDraft(d => {
+    const arr = [...d.escala_opciones];
+    const j = idx + dir;
+    if (j < 0 || j >= arr.length) return d;
+    [arr[idx], arr[j]] = [arr[j], arr[idx]];
+    return {
+      ...d,
+      escala_opciones: arr
+    };
+  });
+  const quitarOpcionDraft = idx => setDraft(d => ({
+    ...d,
+    escala_opciones: d.escala_opciones.filter((_, i) => i !== idx)
+  }));
+  const agregarOpcionDraft = () => setDraft(d => ({
+    ...d,
+    escala_opciones: [...d.escala_opciones, "Nueva opción"]
+  }));
+  const agregarReglaDraft = () => setDraft(d => ({
+    ...d,
+    reglas: [...d.reglas, {
+      preguntaId: "",
+      opciones: []
+    }]
+  }));
+  const quitarReglaDraft = i => setDraft(d => ({
+    ...d,
+    reglas: d.reglas.filter((_, j) => j !== i)
+  }));
+  const cambiarReglaPreguntaDraft = (i, preguntaId) => setDraft(d => ({
+    ...d,
+    reglas: d.reglas.map((r, j) => j === i ? {
+      preguntaId,
+      opciones: []
+    } : r)
+  }));
+  const toggleReglaOpcionDraft = (i, opcion) => setDraft(d => ({
+    ...d,
+    reglas: d.reglas.map((r, j) => {
+      if (j !== i) return r;
+      const tiene = r.opciones.includes(opcion);
+      return {
+        ...r,
+        opciones: tiene ? r.opciones.filter(o => o !== opcion) : [...r.opciones, opcion]
+      };
+    })
+  }));
+  const guardarDraft = async () => {
+    const reglasLimpias = draft.reglas.filter(r => r.preguntaId && r.opciones.length > 0);
+    const payload = {
+      texto: draft.texto,
+      tipo: draft.tipo,
+      escala_opciones: draft.escala_opciones,
+      obligatoria: draft.obligatoria,
+      condicion: reglasLimpias.length ? {
+        reglas: reglasLimpias
+      } : null
+    };
+    const {
+      error
+    } = await sbClient.from("rh_encuesta_preguntas").update(payload).eq("id", editando);
+    if (error) {
+      setMensaje({
+        tipo: "error",
+        texto: error.message
+      });
+      return;
+    }
+    setPreguntas(prev => calcularCodigosEncuesta(prev.map(p => p.id === editando ? {
+      ...p,
+      ...payload
+    } : p)));
+    cerrarEdicion();
+  };
+  const moverPregunta = async () => {
+    const p = preguntas.find(x => x.id === editando);
+    const destino = draft.moverCategoria === "__suelta__" ? null : draft.moverCategoria;
+    const resto = preguntas.filter(x => x.id !== editando);
+    const idx = draft.moverDespuesDe === "__inicio__" ? 0 : resto.findIndex(x => x.id === draft.moverDespuesDe) + 1;
+    const reordenadas = [...resto.slice(0, idx), {
+      ...p,
+      dimension: destino
+    }, ...resto.slice(idx)];
+    cerrarEdicion();
+    await Promise.all(reordenadas.map((x, i) => sbClient.from("rh_encuesta_preguntas").update({
+      orden: i + 1,
+      ...(x.id === p.id ? {
+        dimension: destino
+      } : {})
+    }).eq("id", x.id)));
     cargarPreguntas();
   };
-  const UBICACIONES = [{
-    v: "provincia",
-    l: "Provincia"
-  }, {
-    v: "mineria",
-    l: "Minería"
-  }, {
-    v: "canteras",
-    l: "Canteras"
-  }];
+  // Agrupa en bloques CONTIGUOS según el orden real — una pregunta "suelta" (dimension null) es su
+  // propio bloque sin encabezado. No se puede agrupar con Set+filter por nombre de categoría
+  // porque eso juntaría preguntas sueltas no contiguas entre sí, rompiendo el orden real.
+  const bloques = [];
+  preguntas.forEach(p => {
+    if (p.tipo === "filtro_planta") return;
+    const ultimo = bloques[bloques.length - 1];
+    if (p.dimension && ultimo && ultimo.dimension === p.dimension) {
+      ultimo.preguntas.push(p);
+    } else {
+      bloques.push({
+        dimension: p.dimension || null,
+        preguntas: [p]
+      });
+    }
+  });
+  const TABS = [["editar", "Editar"], ["opciones", "Opciones"], ["logica", "Lógica"], ["mover", "Mover"]];
+  const renderPregunta = p => {
+    if (p.id !== editando) return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+      key: p.id,
+      className: "bg-white rounded-xl p-3 flex gap-3 items-start",
+      style: {
+        border: "1px solid #e6e8ee"
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "text-xs font-bold shrink-0 w-7 pt-0.5",
+      style: {
+        color: AZUL
+      }
+    }, p.codigo), /*#__PURE__*/React.createElement("div", {
+      className: "flex-1 min-w-0"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "text-sm text-gray-800"
+    }, p.texto, p.obligatoria &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("span", {
+      style: {
+        color: "#dc2626"
+      }
+    }, " *")), /*#__PURE__*/React.createElement("div", {
+      className: "text-[11px] text-gray-400 mt-0.5 mb-1"
+    }, p.tipo === "escala" ? "Escala" : "Abierta", p.condicion?.reglas?.length ? ` · ${p.condicion.reglas.length} lógica(s)` : ""), p.tipo === "escala" &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
+      className: "flex flex-wrap gap-1"
+    }, (p.escala_opciones || []).map((op, i) =>
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("span", {
+      key: i,
+      className: "text-[10px] px-1.5 py-0.5 rounded",
+      style: {
+        background: "#f6f8fc",
+        color: "#5c6070"
+      }
+    }, op)))), /*#__PURE__*/React.createElement("button", {
+      onClick: () => abrirEdicion(p),
+      className: "shrink-0 text-xs font-semibold px-2 py-1 rounded-lg border",
+      style: {
+        borderColor: "#d5d9e4",
+        color: AZUL
+      }
+    }, "Editar"), /*#__PURE__*/React.createElement("button", {
+      onClick: () => borrarPregunta(p.id),
+      className: "shrink-0 w-6 h-6 rounded-full flex items-center justify-center hover:bg-red-50"
+    }, /*#__PURE__*/React.createElement(X, {
+      size: 14,
+      color: "#dc2626"
+    })));
+    const preguntaActual = preguntas.find(x => x.id === editando);
+    const preguntasAnteriores = preguntas.filter(q => q.tipo === "escala" && q.id !== editando && (q.orden ?? 0) < (preguntaActual?.orden ?? 0));
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+      key: p.id,
+      className: "bg-white rounded-xl p-3",
+      style: {
+        border: `2px solid ${AZUL}`
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex gap-3 text-xs font-semibold mb-3 border-b",
+      style: {
+        borderColor: "#e6e8ee"
+      }
+    }, TABS.map(([key, label]) =>
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("button", {
+      key: key,
+      onClick: () => setTabActiva(key),
+      className: "px-1 pb-1.5",
+      style: {
+        borderBottom: tabActiva === key ? `2px solid ${AZUL}` : "2px solid transparent",
+        color: tabActiva === key ? AZUL : "#9aa0b0"
+      }
+    }, label))), tabActiva === "editar" &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
+      className: "space-y-2"
+    }, /*#__PURE__*/React.createElement("textarea", {
+      value: draft.texto,
+      onChange: e => setDraft(d => ({
+        ...d,
+        texto: e.target.value
+      })),
+      className: "w-full px-2.5 py-1.5 rounded-lg border text-sm",
+      style: {
+        borderColor: "#d5d9e4",
+        minHeight: 50
+      }
+    }), /*#__PURE__*/React.createElement("select", {
+      value: draft.tipo,
+      onChange: e => cambiarTipoDraft(e.target.value),
+      className: "rounded-lg border px-2 py-1 text-xs",
+      style: {
+        borderColor: "#d5d9e4"
+      }
+    }, /*#__PURE__*/React.createElement("option", {
+      value: "escala"
+    }, "Escala"), /*#__PURE__*/React.createElement("option", {
+      value: "abierta"
+    }, "Abierta")), draft.tipo === "escala" &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
+      className: "rounded-lg p-2 mt-1",
+      style: {
+        background: "#f6f8fc"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "text-[10px] font-bold text-gray-400 uppercase mb-1"
+    }, "Opciones de la escala (de arriba hacia abajo = de izquierda a derecha al mostrarse)"), /*#__PURE__*/React.createElement("div", {
+      className: "space-y-1"
+    }, draft.escala_opciones.map((op, i) =>
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
+      key: i,
+      className: "flex items-center gap-1"
+    }, /*#__PURE__*/React.createElement("input", {
+      value: op,
+      onChange: e => setDraft(d => {
+        const nuevas = [...d.escala_opciones];
+        nuevas[i] = e.target.value;
+        return {
+          ...d,
+          escala_opciones: nuevas
+        };
+      }),
+      className: "flex-1 px-2 py-1 rounded-lg border text-xs",
+      style: {
+        borderColor: "#d5d9e4"
+      }
+    }), /*#__PURE__*/React.createElement("button", {
+      onClick: () => moverOpcionDraft(i, -1),
+      disabled: i === 0,
+      className: "w-5 h-5 flex items-center justify-center disabled:opacity-30"
+    }, /*#__PURE__*/React.createElement(ChevronUp, {
+      size: 12,
+      color: "#5c6070"
+    })), /*#__PURE__*/React.createElement("button", {
+      onClick: () => moverOpcionDraft(i, 1),
+      disabled: i === draft.escala_opciones.length - 1,
+      className: "w-5 h-5 flex items-center justify-center disabled:opacity-30"
+    }, /*#__PURE__*/React.createElement(ChevronDown, {
+      size: 12,
+      color: "#5c6070"
+    })), /*#__PURE__*/React.createElement("button", {
+      onClick: () => quitarOpcionDraft(i),
+      className: "w-5 h-5 flex items-center justify-center"
+    }, /*#__PURE__*/React.createElement(X, {
+      size: 12,
+      color: "#dc2626"
+    }))))), /*#__PURE__*/React.createElement("button", {
+      onClick: agregarOpcionDraft,
+      className: "text-xs font-bold mt-1",
+      style: {
+        color: AZUL
+      }
+    }, "+ Agregar opci\xF3n"))), tabActiva === "opciones" &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+      className: "flex items-center gap-2 text-sm"
+    }, /*#__PURE__*/React.createElement("input", {
+      type: "checkbox",
+      checked: draft.obligatoria,
+      onChange: e => setDraft(d => ({
+        ...d,
+        obligatoria: e.target.checked
+      }))
+    }), " Pregunta obligatoria")), tabActiva === "logica" &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
+      className: "text-xs text-gray-400 mb-2"
+    }, "Solo aparece si se cumplen TODAS estas condiciones. Sin ninguna agregada, aparece para todos."), draft.reglas.map((regla, i) =>
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
+      key: i,
+      className: "border rounded-lg p-2 mb-2",
+      style: {
+        background: "#f6f8fc",
+        borderColor: "#d5d9e4"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center gap-1 mb-1.5"
+    }, /*#__PURE__*/React.createElement("select", {
+      value: regla.preguntaId,
+      onChange: e => cambiarReglaPreguntaDraft(i, e.target.value),
+      className: "flex-1 min-w-0 text-xs rounded-lg border px-2 py-1",
+      style: {
+        borderColor: "#d5d9e4"
+      }
+    }, /*#__PURE__*/React.createElement("option", {
+      value: ""
+    }, "Selecciona una pregunta..."), preguntasAnteriores.map(q =>
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("option", {
+      key: q.id,
+      value: q.id
+    }, q.codigo, ". ", q.texto))), /*#__PURE__*/React.createElement("button", {
+      onClick: () => quitarReglaDraft(i),
+      className: "shrink-0 w-5 h-5 flex items-center justify-center"
+    }, /*#__PURE__*/React.createElement(X, {
+      size: 12,
+      color: "#dc2626"
+    }))), regla.preguntaId &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
+      className: "flex flex-wrap gap-2"
+    }, (preguntas.find(q => q.id === regla.preguntaId)?.escala_opciones || []).map(op =>
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("label", {
+      key: op,
+      className: "flex items-center gap-1 text-xs"
+    }, /*#__PURE__*/React.createElement("input", {
+      type: "checkbox",
+      checked: regla.opciones.includes(op),
+      onChange: () => toggleReglaOpcionDraft(i, op)
+    }), " ", op))))), preguntasAnteriores.length > 0 ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("button", {
+      onClick: agregarReglaDraft,
+      className: "text-xs font-bold",
+      style: {
+        color: AZUL
+      }
+    }, "+ Agregar regla") :
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("p", {
+      className: "text-xs text-gray-400"
+    }, "No hay preguntas de tipo Escala antes de esta para usar como condici\xF3n.")), tabActiva === "mover" &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
+      className: "space-y-2"
+    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+      className: "text-[10px] font-bold text-gray-400 uppercase mb-1"
+    }, "Categor\xEDa destino"), /*#__PURE__*/React.createElement("select", {
+      value: draft.moverCategoria,
+      onChange: e => setDraft(d => ({
+        ...d,
+        moverCategoria: e.target.value
+      })),
+      className: "w-full text-xs rounded-lg border px-2 py-1",
+      style: {
+        borderColor: "#d5d9e4"
+      }
+    }, /*#__PURE__*/React.createElement("option", {
+      value: "__suelta__"
+    }, "\u2014 Sin categor\xEDa (pregunta suelta) \u2014"), dimensionesUsadas.map(dim =>
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("option", {
+      key: dim,
+      value: dim
+    }, dim)))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+      className: "text-[10px] font-bold text-gray-400 uppercase mb-1"
+    }, "Posici\xF3n"), /*#__PURE__*/React.createElement("select", {
+      value: draft.moverDespuesDe,
+      onChange: e => setDraft(d => ({
+        ...d,
+        moverDespuesDe: e.target.value
+      })),
+      className: "w-full text-xs rounded-lg border px-2 py-1",
+      style: {
+        borderColor: "#d5d9e4"
+      }
+    }, /*#__PURE__*/React.createElement("option", {
+      value: "__inicio__"
+    }, "Al principio de todo"), preguntas.filter(x => x.id !== editando).map(x =>
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("option", {
+      key: x.id,
+      value: x.id
+    }, "Despu\xE9s de ", x.codigo, ". ", (x.texto || "").slice(0, 40)))))), tabActiva === "mover" ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
+      className: "flex gap-2 mt-3"
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: moverPregunta,
+      className: "flex-1 py-2 rounded-lg font-bold text-sm",
+      style: {
+        background: AMARILLO,
+        color: AZUL
+      }
+    }, "Mover pregunta"), /*#__PURE__*/React.createElement("button", {
+      onClick: cerrarEdicion,
+      className: "flex-1 py-2 rounded-lg font-bold text-sm border",
+      style: {
+        borderColor: "#d5d9e4",
+        color: "#5c6070"
+      }
+    }, "Cancelar")) :
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
+      className: "flex gap-2 mt-3"
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: guardarDraft,
+      className: "flex-1 py-2 rounded-lg font-bold text-sm",
+      style: {
+        background: AMARILLO,
+        color: AZUL
+      }
+    }, "Guardar"), /*#__PURE__*/React.createElement("button", {
+      onClick: cerrarEdicion,
+      className: "flex-1 py-2 rounded-lg font-bold text-sm border",
+      style: {
+        borderColor: "#d5d9e4",
+        color: "#5c6070"
+      }
+    }, "Cancelar")));
+  };
   return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "p-6"
   }, /*#__PURE__*/React.createElement("div", {
@@ -23160,11 +23875,9 @@ function EncuestaPreguntasEditor({
     className: "w-full px-2.5 py-1.5 rounded-lg border text-sm",
     style: {
       borderColor: "#d5d9e4",
-      minHeight: 60
+      minHeight: 160
     }
-  })), /*#__PURE__*/React.createElement("p", {
-    className: "text-sm text-gray-500 mb-4"
-  }, "Los c\xF3digos (A1, B3...) se calculan solos seg\xFAn el orden \u2014 no se editan a mano. A qui\xE9n se le env\xEDa (plantas/posiciones) se configura en \"Recordatorio\" dentro de cada ronda, en la pesta\xF1a \"Programaci\xF3n de env\xEDo\"."), mensaje &&
+  })), mensaje &&
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
@@ -23179,173 +23892,100 @@ function EncuestaPreguntasEditor({
   /*#__PURE__*/
   React.createElement("div", {
     className: "space-y-5 max-w-3xl"
-  }, dimensionesUsadas.map(dim =>
+  }, bloques.map((bloque, bi) =>
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
-    key: dim
-  }, /*#__PURE__*/React.createElement("h4", {
+    key: bi
+  }, bloque.dimension &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("h4", {
     className: "text-xs font-extrabold uppercase tracking-wide mb-2",
     style: {
       color: "#1a1d2e"
     }
-  }, dim), /*#__PURE__*/React.createElement("div", {
+  }, bloque.dimension), bloque.dimension && bloque.preguntas.length === 1 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("p", {
+    className: "text-[11px] text-gray-400 mb-1"
+  }, "Recomendado: al menos 2 preguntas por categor\xEDa (o b\xF3rrala y d\xE9jala como pregunta suelta)."), /*#__PURE__*/React.createElement("div", {
     className: "space-y-2"
-  }, preguntas.filter(p => p.dimension === dim).map(p =>
+  }, bloque.preguntas.map(renderPregunta)), bloque.dimension &&
   /*#__PURE__*/
   /*#__PURE__*/
-  React.createElement("div", {
-    key: p.id,
-    className: "bg-white rounded-xl p-3 flex gap-3",
-    style: {
-      border: "1px solid #e6e8ee"
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "text-xs font-bold shrink-0 w-7 pt-2",
-    style: {
-      color: AZUL
-    }
-  }, p.codigo), /*#__PURE__*/React.createElement("div", {
-    className: "flex-1 min-w-0 space-y-2"
-  }, /*#__PURE__*/React.createElement("textarea", {
-    value: p.texto,
-    onChange: e => setPreguntas(prev => prev.map(x => x.id === p.id ? {
-      ...x,
-      texto: e.target.value
-    } : x)),
-    onBlur: e => actualizarCampo(p.id, "texto", e.target.value),
-    className: "w-full px-2.5 py-1.5 rounded-lg border text-sm",
-    style: {
-      borderColor: "#d5d9e4",
-      minHeight: 50
-    }
-  }), /*#__PURE__*/React.createElement("div", {
-    className: "flex gap-2 flex-wrap items-center text-xs"
-  }, /*#__PURE__*/React.createElement("select", {
-    value: p.tipo,
-    onChange: e => cambiarTipo(p, e.target.value),
-    className: "rounded-lg border px-2 py-1",
-    style: {
-      borderColor: "#d5d9e4"
-    }
-  }, /*#__PURE__*/React.createElement("option", {
-    value: "escala"
-  }, "Escala"), /*#__PURE__*/React.createElement("option", {
-    value: "abierta"
-  }, "Abierta")), /*#__PURE__*/React.createElement("select", {
-    value: p.condicion?.dependeDe || "",
-    onChange: e => actualizarCondicion(p.id, e.target.value || null, p.condicion?.opciones || []),
-    className: "rounded-lg border px-2 py-1",
-    style: {
-      borderColor: "#d5d9e4"
-    }
-  }, /*#__PURE__*/React.createElement("option", {
-    value: ""
-  }, "Siempre visible"), /*#__PURE__*/React.createElement("option", {
-    value: "ubicacion"
-  }, "Si ubicaci\xF3n es...")), p.condicion?.dependeDe === "ubicacion" && UBICACIONES.map(u =>
-  /*#__PURE__*/
-  /*#__PURE__*/
-  React.createElement("label", {
-    key: u.v,
-    className: "flex items-center gap-1"
-  }, /*#__PURE__*/React.createElement("input", {
-    type: "checkbox",
-    checked: (p.condicion?.opciones || []).includes(u.v),
-    onChange: () => {
-      const actuales = p.condicion?.opciones || [];
-      const nuevas = actuales.includes(u.v) ? actuales.filter(x => x !== u.v) : [...actuales, u.v];
-      actualizarCondicion(p.id, "ubicacion", nuevas);
-    }
-  }), " ", u.l))), p.tipo === "escala" &&
-  /*#__PURE__*/
-  /*#__PURE__*/
-  React.createElement("div", {
-    className: "rounded-lg p-2 mt-1",
-    style: {
-      background: "#f6f8fc"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-[10px] font-bold text-gray-400 uppercase mb-1"
-  }, "Opciones de la escala (de arriba hacia abajo = de izquierda a derecha al mostrarse)"), /*#__PURE__*/React.createElement("div", {
-    className: "space-y-1"
-  }, (p.escala_opciones || []).map((op, i) =>
-  /*#__PURE__*/
-  /*#__PURE__*/
-  React.createElement("div", {
-    key: i,
-    className: "flex items-center gap-1"
-  }, /*#__PURE__*/React.createElement("input", {
-    value: op,
-    onChange: e => {
-      const nuevas = [...(p.escala_opciones || [])];
-      nuevas[i] = e.target.value;
-      setPreguntas(prev => prev.map(x => x.id === p.id ? {
-        ...x,
-        escala_opciones: nuevas
-      } : x));
-    },
-    onBlur: () => actualizarCampo(p.id, "escala_opciones", p.escala_opciones),
-    className: "flex-1 px-2 py-1 rounded-lg border text-xs",
-    style: {
-      borderColor: "#d5d9e4"
-    }
-  }), /*#__PURE__*/React.createElement("button", {
-    onClick: () => moverOpcion(p, i, -1),
-    disabled: i === 0,
-    className: "w-5 h-5 flex items-center justify-center disabled:opacity-30"
-  }, /*#__PURE__*/React.createElement(ChevronUp, {
-    size: 12,
-    color: "#5c6070"
-  })), /*#__PURE__*/React.createElement("button", {
-    onClick: () => moverOpcion(p, i, 1),
-    disabled: i === (p.escala_opciones || []).length - 1,
-    className: "w-5 h-5 flex items-center justify-center disabled:opacity-30"
-  }, /*#__PURE__*/React.createElement(ChevronDown, {
-    size: 12,
-    color: "#5c6070"
-  })), /*#__PURE__*/React.createElement("button", {
-    onClick: () => quitarOpcion(p, i),
-    className: "w-5 h-5 flex items-center justify-center"
-  }, /*#__PURE__*/React.createElement(X, {
-    size: 12,
-    color: "#dc2626"
-  }))))), /*#__PURE__*/React.createElement("button", {
-    onClick: () => agregarOpcion(p),
-    className: "text-xs font-bold mt-1",
-    style: {
-      color: AZUL
-    }
-  }, "+ Agregar opci\xF3n"))), /*#__PURE__*/React.createElement("button", {
-    onClick: () => borrarPregunta(p.id),
-    className: "shrink-0 w-6 h-6 rounded-full flex items-center justify-center hover:bg-red-50"
-  }, /*#__PURE__*/React.createElement(X, {
-    size: 14,
-    color: "#dc2626"
-  })))), /*#__PURE__*/React.createElement("button", {
-    onClick: () => agregarPregunta(dim),
+  React.createElement("button", {
+    onClick: () => agregarPregunta(bloque.dimension),
     className: "text-xs font-bold mt-1.5",
     style: {
       color: AZUL
     }
-  }, "+ Agregar pregunta a \"", dim, "\"")))), /*#__PURE__*/React.createElement("div", {
+  }, "+ Agregar pregunta a \"", bloque.dimension, "\""))), /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-xl p-3",
     style: {
       border: "1px dashed #d5d9e4"
     }
+  }, creandoCategoria ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "flex items-center gap-2"
   }, /*#__PURE__*/React.createElement("input", {
-    placeholder: "Nombre de una dimensi\xF3n nueva + Enter para agregar su primera pregunta",
+    autoFocus: true,
+    value: nombreCategoriaNueva,
+    onChange: e => setNombreCategoriaNueva(e.target.value),
+    placeholder: "Nombre de la categor\xEDa nueva",
     onKeyDown: e => {
-      if (e.key === "Enter" && e.target.value.trim()) {
-        agregarPregunta(e.target.value.trim());
-        e.target.value = "";
+      if (e.key === "Enter" && nombreCategoriaNueva.trim()) {
+        agregarPregunta(nombreCategoriaNueva.trim());
+        setNombreCategoriaNueva("");
+        setCreandoCategoria(false);
       }
     },
-    className: "w-full px-2.5 py-1.5 rounded-lg border text-sm",
+    className: "flex-1 px-2.5 py-1.5 rounded-lg border text-sm",
     style: {
       borderColor: "#d5d9e4"
     }
-  }))));
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      if (nombreCategoriaNueva.trim()) agregarPregunta(nombreCategoriaNueva.trim());
+      setNombreCategoriaNueva("");
+      setCreandoCategoria(false);
+    },
+    className: "shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg",
+    style: {
+      background: AMARILLO,
+      color: AZUL
+    }
+  }, "Crear"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setCreandoCategoria(false);
+      setNombreCategoriaNueva("");
+    },
+    className: "shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg border",
+    style: {
+      borderColor: "#d5d9e4",
+      color: "#5c6070"
+    }
+  }, "Cancelar")) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "flex items-center gap-4"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => agregarPregunta(null),
+    className: "text-xs font-bold",
+    style: {
+      color: AZUL
+    }
+  }, "+ Agregar pregunta suelta"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setCreandoCategoria(true),
+    className: "text-xs font-bold",
+    style: {
+      color: AZUL
+    }
+  }, "+ Agregar categor\xEDa nueva")))));
 }
 
 // Convierte un ISO guardado (UTC) al formato que espera un <input type="datetime-local">
@@ -23489,7 +24129,10 @@ function ProgramarRecordatorio({
   };
   const subirImagen = async file => {
     setSubiendoImagen(true);
-    const path = `encuestas/${rondaId}-${Date.now()}-${file.name}`;
+    // Supabase Storage rechaza keys con espacios, tildes o paréntesis ("Invalid key") — mismo
+    // patrón de sanitizado que el slug de encuestas (quita tildes, reemplaza lo demás no seguro).
+    const nombreSeguro = file.name.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-zA-Z0-9._-]/g, "_");
+    const path = `encuestas/${rondaId}-${Date.now()}-${nombreSeguro}`;
     const {
       error
     } = await sbClient.storage.from("avisos").upload(path, file);
