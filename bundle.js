@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-22T21:17:37.819Z */
+/* UniconApp — Bundle generado el 2026-10-22T21:25:40.646Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 21770 — CERO simplificaciones */
+/* Líneas originales del JSX: 21784 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -12055,12 +12055,26 @@ function RitualesLiderazgo({
     const dx = dragRef.current.dx || 0;
     dragRef.current.dragging = false;
     style.transition = "transform .22s ease";
+    // El transform se escribe directo sobre el DOM (fuera de React), así que si no se resetea acá
+    // la tarjeta siguiente carga con el estilo viejo heredado — se ve "fuera de pantalla" aunque el
+    // índice sí avanzó, a diferencia de los botones Anterior/Siguiente que nunca tocan este estilo.
+    const resetear = () => {
+      if (!commCardRef.current) return;
+      commCardRef.current.style.transition = "none";
+      commCardRef.current.style.transform = "translateX(0) rotate(0)";
+    };
     if (dx < -80) {
       style.transform = "translateX(-600px) rotate(-18deg)";
-      setTimeout(commNext, 160);
+      setTimeout(() => {
+        commNext();
+        resetear();
+      }, 160);
     } else if (dx > 80) {
       style.transform = "translateX(600px) rotate(18deg)";
-      setTimeout(commPrev, 160);
+      setTimeout(() => {
+        commPrev();
+        resetear();
+      }, 160);
     } else {
       style.transform = "translateX(0) rotate(0)";
     }
