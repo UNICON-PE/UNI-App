@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-22T21:25:40.646Z */
+/* UniconApp — Bundle generado el 2026-10-24T16:49:34.816Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 21784 — CERO simplificaciones */
+/* Líneas originales del JSX: 21829 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -16903,7 +16903,9 @@ function UniBot({
       p_cargada: data.carga === "Cargado",
       p_lugar_incidente: data.lugar,
       p_descripcion: data.desc,
-      p_foto_path: fotoPath
+      p_foto_path: fotoPath,
+      p_ubicacion_lat: data.ubicacionLat ?? null,
+      p_ubicacion_lng: data.ubicacionLng ?? null
     });
     setEnviandoAuxilio(false);
     if (error) {
@@ -21409,7 +21411,9 @@ function BitacoraPersonal({
   }, /*#__PURE__*/React.createElement(X, {
     size: 18,
     color: "#6b7280"
-  }))), entradaAbierta.foto_path && (fotoDetalleUrl ?
+  }))), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm text-gray-700 whitespace-pre-wrap mb-3"
+  }, entradaAbierta.texto), entradaAbierta.foto_path && (fotoDetalleUrl ?
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("img", {
@@ -21417,17 +21421,14 @@ function BitacoraPersonal({
     alt: "Foto de la bit\xE1cora",
     style: {
       width: "100%",
-      borderRadius: 12,
-      marginBottom: 12
+      borderRadius: 12
     }
   }) :
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
-    className: "text-xs text-gray-400 mb-3"
-  }, "Cargando foto...")), /*#__PURE__*/React.createElement("p", {
-    className: "text-sm text-gray-700 whitespace-pre-wrap"
-  }, entradaAbierta.texto))));
+    className: "text-xs text-gray-400"
+  }, "Cargando foto...")))));
 }
 function contactosPorTipo(tipo, cfg) {
   const c = cfg.contactos;
@@ -30008,14 +30009,21 @@ function AuxilioMecanicoBuzon({
       className: "text-right shrink-0"
     }, /*#__PURE__*/React.createElement("div", {
       className: "text-[11px] text-gray-400"
-    }, fechaHoraCorta(a.created_at)), a.foto_path &&
+    }, fechaHoraCorta(a.created_at)), /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center gap-1 mt-1 justify-end"
+    }, a.ubicacion_lat != null &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement(MapPin, {
+      size: 14,
+      color: "#9ca3af"
+    }), a.foto_path &&
     /*#__PURE__*/
     /*#__PURE__*/
     React.createElement(Camera, {
       size: 14,
-      color: "#9ca3af",
-      className: "mt-1 ml-auto"
-    })));
+      color: "#9ca3af"
+    }))));
   })));
   const modal = abierto &&
   /*#__PURE__*/
@@ -30081,6 +30089,28 @@ function AuxilioMecanicoBuzon({
     label: "Lugar",
     value: abierto.lugar_incidente
   })), /*#__PURE__*/React.createElement("div", {
+    className: "px-3 py-2 flex items-center justify-between text-sm"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-gray-500"
+  }, "Ubicaci\xF3n"), abierto.ubicacion_lat != null && abierto.ubicacion_lng != null ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("a", {
+    href: `https://www.google.com/maps?q=${abierto.ubicacion_lat},${abierto.ubicacion_lng}`,
+    target: "_blank",
+    rel: "noopener noreferrer",
+    className: "font-semibold text-right flex items-center gap-1",
+    style: {
+      color: AZUL
+    }
+  }, /*#__PURE__*/React.createElement(MapPin, {
+    size: 13
+  }), " Ver en Google Maps") :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("span", {
+    className: "font-medium text-gray-400 text-right"
+  }, "No adjuntada")), /*#__PURE__*/React.createElement("div", {
     className: "px-3 py-2"
   }, /*#__PURE__*/React.createElement(ReadRow, {
     label: "Responsable AZT",
@@ -31614,8 +31644,14 @@ function AuxilioForm({
   const [desc, setDesc] = useState("");
   const [fotoFile, setFotoFile] = useState(null);
   const [fotoPreview, setFotoPreview] = useState(null);
+  const [ubicacion, setUbicacion] = useState(null); // { lat, lng } | null — opcional, no bloquea el envío
+  const [obteniendoUbicacion, setObteniendoUbicacion] = useState(false);
+  const [errorUbicacion, setErrorUbicacion] = useState("");
   const fileRef = useRef(null);
-  const valido = mixer && planta && carga && lugar && desc.trim();
+  // obteniendoUbicacion bloquea el envío mientras carga — si no, el chofer podría tocar "Enviar
+  // auxilio" en el ratito que tarda el GPS en responder y el auxilio saldría sin la ubicación que
+  // sí alcanzó a marcar.
+  const valido = mixer && planta && carga && lugar && desc.trim() && !obteniendoUbicacion;
   const elegirFoto = e => {
     const f = e.target.files?.[0];
     if (!f) return;
@@ -31625,6 +31661,27 @@ function AuxilioForm({
     reader.readAsDataURL(f);
     e.target.value = "";
   };
+  const obtenerUbicacion = () => {
+    if (!navigator.geolocation) {
+      setErrorUbicacion("Tu navegador no soporta geolocalización.");
+      return;
+    }
+    setErrorUbicacion("");
+    setObteniendoUbicacion(true);
+    navigator.geolocation.getCurrentPosition(pos => {
+      setUbicacion({
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude
+      });
+      setObteniendoUbicacion(false);
+    }, err => {
+      setErrorUbicacion("No se pudo obtener tu ubicación: " + err.message);
+      setObteniendoUbicacion(false);
+    }, {
+      enableHighAccuracy: true,
+      timeout: 10000
+    });
+  };
   const enviar = () => {
     if (!valido || enviando) return;
     onSubmit({
@@ -31633,7 +31690,9 @@ function AuxilioForm({
       carga,
       lugar,
       desc,
-      fotoFile
+      fotoFile,
+      ubicacionLat: ubicacion?.lat ?? null,
+      ubicacionLng: ubicacion?.lng ?? null
     });
   };
   const py = compact ? "py-1.5" : "py-2.5";
@@ -31785,7 +31844,60 @@ function AuxilioForm({
   /*#__PURE__*/
   React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Camera, {
     size: 14
-  }), " Adjuntar foto o video (opcional)"))), /*#__PURE__*/React.createElement("div", {
+  }), " Adjuntar foto o video (opcional)"))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: `${lbl} block mb-0.5`
+  }, "Ubicaci\xF3n"), ubicacion ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "flex items-center gap-2 px-3 py-2 rounded-lg",
+    style: {
+      border: "2px solid #16a34a",
+      background: "#eaf7ee"
+    }
+  }, /*#__PURE__*/React.createElement(MapPin, {
+    size: 14,
+    color: "#166534",
+    className: "shrink-0"
+  }), /*#__PURE__*/React.createElement("a", {
+    href: `https://www.google.com/maps?q=${ubicacion.lat},${ubicacion.lng}`,
+    target: "_blank",
+    rel: "noopener noreferrer",
+    className: "flex-1 text-xs font-semibold underline",
+    style: {
+      color: "#166534"
+    }
+  }, "Ver ubicaci\xF3n adjuntada"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setUbicacion(null),
+    className: "shrink-0",
+    style: {
+      color: "#166534"
+    }
+  }, /*#__PURE__*/React.createElement(X, {
+    size: 13
+  }))) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
+    onClick: obtenerUbicacion,
+    disabled: obteniendoUbicacion,
+    className: "w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg font-semibold text-xs disabled:opacity-60",
+    style: {
+      background: "white",
+      color: "#374151",
+      border: "2px dashed #d5d9e4"
+    }
+  }, /*#__PURE__*/React.createElement(MapPin, {
+    size: 14
+  }), " ", obteniendoUbicacion ? "Obteniendo ubicación..." : "Adjuntar mi ubicación actual (opcional)"), errorUbicacion &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("p", {
+    className: "text-[11px] mt-1",
+    style: {
+      color: "#dc2626"
+    }
+  }, errorUbicacion)), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-2 pt-0.5"
   }, onCancel &&
   /*#__PURE__*/
