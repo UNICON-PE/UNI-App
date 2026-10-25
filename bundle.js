@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-25T19:27:33.705Z */
+/* UniconApp — Bundle generado el 2026-10-25T22:49:06.592Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 21867 — CERO simplificaciones */
+/* Líneas originales del JSX: 21892 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -9693,6 +9693,45 @@ function HerramientasPanel({
   })), /*#__PURE__*/React.createElement("span", {
     className: "font-semibold text-sm text-gray-800"
   }, "Rituales de Liderazgo"))));
+}
+// Mismo patrón que "Mis herramientas" del chofer (HerramientasPanel) — para el panel admin: hoy
+// solo el Checklist de estandarización de Trabajadora Social, que no debe verse como un canal más
+// en el menú lateral sino como una herramienta aparte, igual que Bitácora personal para el chofer.
+function HerramientasPanelAdmin({
+  onClose,
+  onElegir
+}) {
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 z-50 flex items-start justify-end p-3 pt-14",
+    style: {
+      background: "rgba(0,0,0,.4)"
+    },
+    onClick: onClose
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-2xl shadow-2xl overflow-hidden",
+    style: {
+      width: 250
+    },
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "px-4 py-3 text-xs font-extrabold uppercase tracking-wide text-gray-400 border-b",
+    style: {
+      borderColor: "#eef0f4"
+    }
+  }, "Mis herramientas"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => onElegir("checklist_estandarizacion"),
+    className: "w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "w-9 h-9 rounded-full flex items-center justify-center shrink-0",
+    style: {
+      background: "#eef1fb"
+    }
+  }, /*#__PURE__*/React.createElement(ListChecks, {
+    size: 18,
+    color: AZUL
+  })), /*#__PURE__*/React.createElement("span", {
+    className: "font-semibold text-sm text-gray-800"
+  }, "Checklist de estandarizaci\xF3n"))));
 }
 
 // Tarjeta NO bloqueante (a diferencia del aviso de pantalla completa de "reasignado") que
@@ -21903,7 +21942,7 @@ function PerfilModal({
     }
     setGuardando(false);
   };
-  const plantaDisplay = perfil?.rol === "supervisor_mantenimiento" || perfil?.rol === "analista_mantenimiento" ? "Todas (excepto Maravillas)" : (perfil?.planta || "").split(",").filter(Boolean).join(", ");
+  const plantaDisplay = (perfil?.planta || "").split(",").filter(Boolean).join(", ");
   return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 z-[998]",
     style: {
@@ -24900,7 +24939,7 @@ function GestionHumanaPanel({
     const adminPersonas = personal.filter(p => CARGOS_ADMIN_MAP[p.rol] && p.activo);
     adminPersonas.forEach((p, idx) => {
       const row = 4 + idx;
-      const plantaDisplay = p.rol === "supervisor_mantenimiento" || p.rol === "analista_mantenimiento" ? "Todas excepto Maravillas" : p.planta ? p.planta.split(",").join(", ") : "";
+      const plantaDisplay = p.planta ? p.planta.split(",").join(", ") : "";
       const vals = [p.dni, p.nombre, CARGO_LABEL[p.rol] || p.rol, plantaDisplay, p.telefono || "", p.email_personal || "", TURNO_LABEL[p.turno] || ""];
       vals.forEach((v, i) => {
         const cell = wsAdmin.getCell(row, i + 1);
@@ -25107,11 +25146,12 @@ function GestionHumanaPanel({
               turnosIgnorados.push(`DNI ${dni} (${cargoLabel})`);
             }
           }
-          // Normalizar plantas: separar por coma, validar contra la lista conocida, y manejar caso especial Mantenimiento
+          // Normalizar plantas: separar por coma, validar contra la lista conocida. Mantenimiento
+          // (supervisor/analista) ya NO es un caso especial "todas menos Maravillas" (pedido
+          // explícito de ewq 2026-10-25) — sigue el mismo camino que cualquier otro rol
+          // administrativo, con las plantas que de verdad traiga el Excel.
           let plantaFinal;
-          if (cargoCode === "supervisor_mantenimiento" || cargoCode === "analista_mantenimiento") {
-            plantaFinal = PLANTAS_TODAS.filter(p => p !== "Maravillas" && p !== "Transversal").join(",");
-          } else if (esAdmin) {
+          if (esAdmin) {
             const plantasArr = plantaLabelRaw.split(",").map(s => s.trim()).filter(Boolean);
             const invalidas = plantasArr.filter(p => !PLANTAS_TODAS.includes(p));
             if (invalidas.length > 0) {
@@ -26662,7 +26702,10 @@ function AztPanel({
         data
       } = await sbClient.from("perfiles").select("*").eq("dni", initialDni).maybeSingle();
       if (data) {
-        const plantasArr = data.rol === "supervisor_mantenimiento" || data.rol === "analista_mantenimiento" ? PLANTAS_TODAS.filter(p => p !== "Maravillas" && p !== "Transversal") : data.planta ? data.planta.split(",") : [];
+        // Mantenimiento (supervisor/analista) ya NO se trata como transversal (pedido explícito de
+        // ewq 2026-10-25) — ve solo las plantas que tiene marcadas en su perfil, igual que
+        // cualquier otro rol administrativo (AZT, SGI, Jefe de Planta, etc.).
+        const plantasArr = data.planta ? data.planta.split(",") : [];
         setAdmin({
           id: data.id,
           nombre: data.nombre,
@@ -26863,7 +26906,8 @@ function AztPanel({
         data
       }) => {
         if (data) {
-          const plantasArr = data.rol === "supervisor_mantenimiento" || data.rol === "analista_mantenimiento" ? PLANTAS_TODAS.filter(p => p !== "Maravillas" && p !== "Transversal") : data.planta ? data.planta.split(",") : [];
+          // Ver comentario de la carga inicial más arriba: Mantenimiento ya no es transversal.
+          const plantasArr = data.planta ? data.planta.split(",") : [];
           setAdmin(prev => ({
             ...prev,
             plantas: plantasArr,
@@ -26951,7 +26995,7 @@ function AztPanel({
     if (miRolChatConTurno && (i.participantes || []).includes(miRolChatConTurno)) return true;
     switch (admin?.rol) {
       case "admin_zonal_transporte":
-        return i.turnoAzt === admin.turno;
+        return i.tipo !== "servicios" && i.turnoAzt === admin.turno;
       case "despachador":
         return (i.tipo === "acceso" || i.tipo === "retiro") && i.turnoDespachador === admin.turno;
       case "jefe_planta":
@@ -27066,6 +27110,10 @@ function AztPanel({
   // — cero tablas nuevas, cero cambios al Edge Function.
   const [adminNotifs, setAdminNotifs] = useState([]);
   const [openAdminNotif, setOpenAdminNotif] = useState(false);
+  // Herramientas del perfil admin (hoy, solo el Checklist de estandarización de Trabajadora
+  // Social) — mismo patrón "Mis herramientas" del chofer (HerramientasPanel): no debe aparecer
+  // como un canal más en el menú lateral, sino como una herramienta aparte vía este popup.
+  const [openHerramientasAdmin, setOpenHerramientasAdmin] = useState(false);
   const [toastAdminNotif, setToastAdminNotif] = useState(null);
   const [irAIncidenciaId, setIrAIncidenciaId] = useState(null); // resalta+scrollea la tarjeta al entrar desde una notificación
   const [irAAuxilioId, setIrAAuxilioId] = useState(null); // abre el detalle exacto al entrar desde la notificación de Auxilio mecánico
@@ -27284,6 +27332,10 @@ function AztPanel({
   // Mantenimiento solo gestiona auxilios mecánicos: no publica avisos ni atiende incidencias de
   // planta, así que esas dos secciones (antes visibles para todos los cargos administrativos)
   // se ocultan específicamente para ese rol.
+  // SGI nunca recibe nada en el buzón de chat (incidenciaEsParaMiRol siempre devuelve false para
+  // ese rol) y, desde que se quitó "Fallas mecánicas" sin reemplazo, tampoco tiene ya ningún otro
+  // contenido ahí — la sección queda oculta para no mostrar un buzón permanentemente vacío.
+  const ROLES_SIN_INCIDENCIAS = new Set(["sgi"]);
   const SECTIONS = [...(!ROLES_MANTENIMIENTO.has(admin?.rol) && !ROLES_SIN_CANAL.has(admin?.rol) ? [{
     id: "avisos",
     label: "Canal de Avisos",
@@ -27296,7 +27348,7 @@ function AztPanel({
     icon: Truck,
     sub: "Fin de vuelta que reportan los choferes",
     badge: 0
-  }] : []), ...(!ROLES_MANTENIMIENTO.has(admin?.rol) && !ROLES_SIN_CANAL.has(admin?.rol) ? [{
+  }] : []), ...(!ROLES_MANTENIMIENTO.has(admin?.rol) && !ROLES_SIN_CANAL.has(admin?.rol) && !ROLES_SIN_INCIDENCIAS.has(admin?.rol) ? [{
     id: "incidencias",
     label: "Incidencias",
     icon: Inbox,
@@ -27314,12 +27366,6 @@ function AztPanel({
     icon: Wrench,
     sub: "Buzón de auxilios reportados",
     badge: auxNoLeidos
-  }] : []), ...(ROLES_CON_CHECKLIST_ESTANDARIZACION.has(admin?.rol) ? [{
-    id: "checklist_estandarizacion",
-    label: "Checklist de estandarización",
-    icon: ListChecks,
-    sub: "Por planta, por ronda de la encuesta",
-    badge: 0
   }] : [])];
   const showSidebar = isDesktop || mobileList;
   const showMain = isDesktop || !mobileList;
@@ -27403,7 +27449,30 @@ function AztPanel({
     className: "font-bold truncate text-base"
   }, admin.nombre), /*#__PURE__*/React.createElement("div", {
     className: "text-sm opacity-90 mt-0.5"
-  }, admin.cargo))))), /*#__PURE__*/React.createElement("button", {
+  }, admin.cargo))))), ROLES_CON_CHECKLIST_ESTANDARIZACION.has(admin?.rol) &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
+    onClick: () => setOpenHerramientasAdmin(true),
+    className: "absolute flex items-center justify-center text-white",
+    style: {
+      top: 12,
+      right: 50,
+      width: 32,
+      height: 32
+    }
+  }, /*#__PURE__*/React.createElement(HardHat, {
+    size: 19
+  })), openHerramientasAdmin &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(HerramientasPanelAdmin, {
+    onClose: () => setOpenHerramientasAdmin(false),
+    onElegir: id => {
+      setOpenHerramientasAdmin(false);
+      openSection(id);
+    }
+  }), /*#__PURE__*/React.createElement("button", {
     onClick: () => setOpenAdminNotif(true),
     className: "absolute flex items-center justify-center text-white",
     style: {
@@ -27818,26 +27887,7 @@ function AztPanel({
       background: incView === "buzón" ? "#e11d48" : "#9ca3af",
       color: "white"
     }
-  }, totalPend)), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setIncView("emergencias"),
-    className: "flex-1 flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-bold transition-all",
-    style: {
-      background: incView === "emergencias" ? "white" : "transparent",
-      color: incView === "emergencias" ? "#e11d48" : "#6b7280",
-      boxShadow: incView === "emergencias" ? "0 1px 3px rgba(0,0,0,.1)" : "none"
-    }
-  }, /*#__PURE__*/React.createElement(Wrench, {
-    size: 13
-  }), " Fallas mec\xE1nicas", pendEmerg > 0 &&
-  /*#__PURE__*/
-  /*#__PURE__*/
-  React.createElement("span", {
-    className: "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
-    style: {
-      background: incView === "emergencias" ? "#e11d48" : "#9ca3af",
-      color: "white"
-    }
-  }, pendEmerg))), incView === "buzón" &&
+  }, totalPend))), incView === "buzón" &&
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("button", {
@@ -29948,7 +29998,7 @@ function AuxilioMecanicoBuzon({
     }
     setIrAAuxilioId(null);
   }, [irAAuxilioId, auxilios, cargando]);
-  const visibles = auxiliosPropios.filter(a => plantaSel === "Todas" || a.planta === plantaSel);
+  const visibles = auxiliosPropios.filter(a => plantaSel === "Todas" ? (admin?.plantas || []).includes(a.planta) : a.planta === plantaSel);
   const esNuevaFrozen = a => {
     const cursor = lecturasCongeladas[a.planta] ? new Date(lecturasCongeladas[a.planta]) : new Date(0);
     return new Date(a.created_at) > cursor;
