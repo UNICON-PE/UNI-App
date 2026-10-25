@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-25T18:39:57.612Z */
+/* UniconApp — Bundle generado el 2026-10-25T19:27:33.705Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 21830 — CERO simplificaciones */
+/* Líneas originales del JSX: 21867 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -16439,6 +16439,35 @@ function parseCitacionConPosiblePlanta(valorCrudo) {
   };
 }
 
+// ExcelJS no soporta bien ciertos casos de "fórmulas compartidas" (comunes en columnas ocultas con
+// numeración automática tipo =1+A2, que varias plantillas de citación traen) y falla al leer el
+// archivo con "Shared Formula master must exist..." aunque el archivo no esté corrupto — como esta
+// app NUNCA necesita evaluar fórmulas (solo lee los valores ya calculados de cada celda), se quitan
+// todas las fórmulas del XML interno del .xlsx ANTES de pasárselo a ExcelJS, dejando solo el valor
+// cacheado <v> de cada celda. Arregla el problema de raíz sin pedirle ningún paso extra al AZT (ni
+// "pegado especial", ni volver a guardar el archivo a mano).
+async function quitarFormulasExcel(buf) {
+  try {
+    const zip = await JSZip.loadAsync(buf);
+    const hojas = Object.keys(zip.files).filter(nombre => /^xl\/worksheets\/sheet\d+\.xml$/.test(nombre));
+    for (const nombre of hojas) {
+      const xml = await zip.file(nombre).async("string");
+      // Autocerrada (clon de una fórmula compartida, "<f .../>") PRIMERO en la alternancia: si no,
+      // la rama de "apertura...cierre" la confunde con una apertura sin cierre inmediato y se come
+      // de más buscando el próximo "</f>" que encuentre en el documento, borrando celdas de otras
+      // filas sin querer (bug real detectado probando contra un archivo real antes de desplegar).
+      zip.file(nombre, xml.replace(/<f\b[^>]*\/>|<f\b[^>]*>[\s\S]*?<\/f>/g, ""));
+    }
+    return await zip.generateAsync({
+      type: "arraybuffer"
+    });
+  } catch {
+    // Si por lo que sea no se pudo limpiar (archivo no es un zip válido, etc.), se sigue con el
+    // buffer original — ExcelJS dará su propio error más abajo, igual que antes de este cambio.
+    return buf;
+  }
+}
+
 // Lee la tabla de citación COMPLETA directamente del archivo .xlsx que publica el AZT en el
 // Canal de Avisos (columnas: Planta, Apellidos y Nombres, Citación, Mixer, Observación, Detalle),
 // usando ExcelJS (mismo patrón que la carga masiva de personal en GestionHumanaPanel). Reemplaza
@@ -16452,7 +16481,7 @@ async function leerTablaCitacionDesdeExcel(excelUrl) {
     if (!resp.ok) return null;
     const buf = await resp.arrayBuffer();
     const wb = new ExcelJS.Workbook();
-    await wb.xlsx.load(buf);
+    await wb.xlsx.load(await quitarFormulasExcel(buf));
     const sheet = wb.worksheets[0];
     if (!sheet) return null;
 
@@ -17600,6 +17629,10 @@ function UniBot({
     setPendingAsk(null);
   };
   const responsableDe = id => {
+    // Citación escala a AZT (día/noche, dinámico según la planta del chofer), no a CHOM Líder como
+    // el resto de opciones "op_*" — mismo patrón ya usado en op_nolista. Va antes del caso genérico
+    // de abajo para no quedar atrapada por él.
+    if (id === "op_citacion") return "📞 [nombre de Administrador Zonal de Transporte (turno día)] · Administrador Zonal de Transporte (turno día) · [teléfono de Administrador Zonal de Transporte (turno día)]\n📞 [nombre de Administrador Zonal de Transporte (turno noche)] · Administrador Zonal de Transporte (turno noche) · [teléfono de Administrador Zonal de Transporte (turno noche)]";
     if (id?.startsWith("op")) return `CHOM Líder — ${driver.chom} · ${cfg.contactos["CHOM Líder"]}`;
     if (id?.startsWith("un")) return `CHOM Líder — ${driver.chom} · ${cfg.contactos["CHOM Líder"]}`;
     if (id === "pa_boleta") return `Planillas · ${cfg.contactos["Planillas"]}`;
@@ -25865,7 +25898,7 @@ function ModalSubirCitacionGeneral({
     try {
       const buf = await file.arrayBuffer();
       const wb = new ExcelJS.Workbook();
-      await wb.xlsx.load(buf);
+      await wb.xlsx.load(await quitarFormulasExcel(buf));
       const sheet = wb.worksheets[0];
       if (!sheet) {
         setResumen(["❌ No se pudo leer el archivo."]);
@@ -26192,7 +26225,11 @@ function ModalSubirCitacionGeneral({
       if (sinPerfilEncontrado.size) resumenLineas.push(`⚠️ No se pudo vincular el DNI a un perfil existente (se usó la columna PLANTA del Excel tal cual, revisar a mano): ${[...sinPerfilEncontrado].join(", ")}`);
       setResumen(resumenLineas);
     } catch (e) {
-      setResumen([`❌ Error: ${e.message}`]);
+      // ExcelJS no soporta ciertos casos de "fórmulas compartidas" (común en columnas ocultas con
+      // numeración automática tipo =1+A2) y falla al leer el archivo aunque no esté corrupto — el
+      // mensaje crudo de la librería no le dice nada al AZT, así que se reemplaza por uno accionable.
+      const esFormulaCompartida = /shared formula/i.test(e.message || "");
+      setResumen([esFormulaCompartida ? "❌ Este Excel tiene columnas con fórmulas (ej. numeración automática) que no se pueden leer. Ábrelo en Excel, selecciona todo (Ctrl+A), copia (Ctrl+C), pega con \"Pegado especial → Solo valores\" encima de sí mismo, guarda, y vuelve a subirlo." : `❌ Error: ${e.message}`]);
     }
     setProcesando(false);
   };
