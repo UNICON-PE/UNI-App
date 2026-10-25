@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-24T16:49:34.816Z */
+/* UniconApp — Bundle generado el 2026-10-25T18:39:57.612Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 21829 — CERO simplificaciones */
+/* Líneas originales del JSX: 21830 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -18200,10 +18200,11 @@ Por favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
   // evita dejar un corchete roto en pantalla.
   const resolverPlaceholdersContacto = texto => (texto || "").replace(/\[nombre de ([^\]]+)\]/g, (match, etiqueta) => resolverEtiquetaContacto(etiqueta)?.nombre || "Sin asignar").replace(/\[teléfono de ([^\]]+)\]/g, (match, etiqueta) => resolverEtiquetaContacto(etiqueta)?.telefono || "sin registrar").replace(/\[correo de ([^\]]+)\]/g, (match, etiqueta) => resolverEtiquetaContacto(etiqueta)?.email_personal || "aún no registrado — consulta a tu AZT");
   const rolesConCategoriaPropia = new Set(DIRECTORIO_CATEGORIAS.map(cat => cat.rol));
-  // Mantenimiento queda excluido a propósito del Directorio de contactos (pedido explícito): a
-  // varios se les puso "Transversal" en Planta desde el panel (no vía Excel, que sí lo normaliza),
-  // así que sin esta exclusión el catch-all de "cualquier cargo Transversal" los seguiría agarrando.
-  const ROLES_OCULTOS_DIRECTORIO = new Set(["supervisor_mantenimiento", "analista_mantenimiento"]);
+  // Mantenimiento, Jefe de Capacitación, Jefe de Transporte y Gestión Humana quedan excluidos a
+  // propósito del Directorio de contactos (pedido explícito): a varios se les puso "Transversal" en
+  // Planta desde el panel (no vía Excel, que sí lo normaliza), así que sin esta exclusión el
+  // catch-all de "cualquier cargo Transversal" los seguiría agarrando.
+  const ROLES_OCULTOS_DIRECTORIO = new Set(["supervisor_mantenimiento", "analista_mantenimiento", "jefe_capacitacion", "jefe_transporte", "gestion_humana"]);
   const directorioFilas = [...DIRECTORIO_CATEGORIAS.flatMap(cat => directorioContactos.filter(p => p.rol === cat.rol && (!cat.turno || p.turno === cat.turno) && perteneceAMiPlanta(p)).map(p => ({
     label: cat.label,
     nombre: p.nombre,
