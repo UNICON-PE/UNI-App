@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-26T17:11:18.843Z */
+/* UniconApp — Bundle generado el 2026-10-26T17:29:05.936Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 21930 — CERO simplificaciones */
+/* Líneas originales del JSX: 21943 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -27030,7 +27030,16 @@ function AztPanel({
         }
         return i.turnoAzt === admin.turno;
       case "despachador":
-        return (i.tipo === "acceso" || i.tipo === "retiro") && i.turnoDespachador === admin.turno;
+        if (i.tipo !== "acceso" && i.tipo !== "retiro") return false;
+        // SOLO para este piloto, SOLO Villa el Salvador: corte propio de turno (4:15pm, no el
+        // global de 4:30pm que usa turnoDespachador) y ventana de almuerzo (12:15pm-1:00pm) donde
+        // el despachador de turno noche también releva al de turno día — mismo patrón que AZT.
+        if (i.planta === "Villa el Salvador") {
+          const h = horaLimaDeIncidencia(i);
+          if (h >= 12.25 && h < 13) return true;
+          return h < 16.25 === (admin.turno === "dia");
+        }
+        return i.turnoDespachador === admin.turno;
       case "jefe_planta":
       case "trabajadora_social":
         return i.tipo === "servicios";
@@ -29655,7 +29664,11 @@ function IncidentModal({
       // cualquier otro administrativo) en blanco a la izquierda, para no tener tantos
       // colores distintos que confundan de un vistazo.
       const isChofer = m.rol === "Chofer";
-      const esMio = !isChofer && m.rol === miRolChat;
+      // Comparar también por nombre (no solo por rol): dos personas distintas pueden
+      // compartir el mismo rol/turno en el mismo chat (ej. AZT o Despacho de ambos
+      // turnos durante la ventana de almuerzo), y antes el chat las confundía a ambas
+      // como "mi propio mensaje" por tener la misma etiqueta de rol.
+      const esMio = !isChofer && m.rol === miRolChat && m.nombre === miNombre;
       const c = ROLE_COLORS[m.rol] || AZUL;
       const alineadoDerecha = esMio;
       return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
