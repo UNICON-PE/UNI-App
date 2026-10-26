@@ -1,4 +1,4 @@
-/* UniconApp — Bundle generado el 2026-10-25T22:49:06.592Z */
+/* UniconApp — Bundle generado el 2026-10-26T02:06:26.572Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
 /* Líneas originales del JSX: 21892 — CERO simplificaciones */
 
@@ -27397,10 +27397,7 @@ function AztPanel({
       flex: 1,
       minHeight: 0
     }
-  }, (admin.rol === "admin_zonal_transporte" || admin.rol === "jefe_transporte") &&
-  /*#__PURE__*/
-  /*#__PURE__*/
-  React.createElement(BotonPruebaAjusteMixer, null), showSidebar &&
+  }, showSidebar &&
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("aside", {
