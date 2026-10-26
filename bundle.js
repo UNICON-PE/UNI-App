@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-26T05:57:49.463Z */
+/* UniconApp — Bundle generado el 2026-10-26T17:11:18.843Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 21915 — CERO simplificaciones */
+/* Líneas originales del JSX: 21930 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -27007,13 +27007,28 @@ function AztPanel({
   // agregaron a mano al chat (botón "+" en el modal, con su turno específico), eso manda por
   // encima de la regla automática — si no, agregarlo era solo cosmético y nunca le llegaba de
   // verdad a su buzón.
+  // Hora Lima (en punto decimal, ej. 13.25 = 1:15pm) en la que se reportó la incidencia — para la
+  // ventana especial de Villa el Salvador de abajo.
+  const horaLimaDeIncidencia = i => {
+    const d = new Date(i.ts - 5 * 60 * 60 * 1000);
+    return d.getUTCHours() + d.getUTCMinutes() / 60;
+  };
   const incidenciaEsParaMiRol = i => {
     if (i.tipo === "falla") return false; // vive en su propio buzón informativo (fallaEsParaMiRol)
     if (!miPlantaIncluye(i.planta)) return false;
     if (miRolChatConTurno && (i.participantes || []).includes(miRolChatConTurno)) return true;
     switch (admin?.rol) {
       case "admin_zonal_transporte":
-        return i.tipo !== "servicios" && i.turnoAzt === admin.turno;
+        if (i.tipo === "servicios") return false;
+        // SOLO para este piloto, SOLO Villa el Salvador: entre 13:15 y 14:00 el AZT turno noche
+        // también releva al AZT turno día en su hora de almuerzo, así que una incidencia
+        // reportada en esa ventana le llega a AMBOS turnos, no solo al de turnoAzt. Fuera de esa
+        // ventana sigue el corte normal (turnoAzt), incluido el relevo real de las 15:15.
+        if (i.planta === "Villa el Salvador") {
+          const h = horaLimaDeIncidencia(i);
+          if (h >= 13.25 && h < 14) return true;
+        }
+        return i.turnoAzt === admin.turno;
       case "despachador":
         return (i.tipo === "acceso" || i.tipo === "retiro") && i.turnoDespachador === admin.turno;
       case "jefe_planta":
