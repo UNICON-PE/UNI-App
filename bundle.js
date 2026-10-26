@@ -1,4 +1,4 @@
-/* UniconApp — Bundle generado el 2026-10-26T05:38:03.176Z */
+/* UniconApp — Bundle generado el 2026-10-26T05:57:49.463Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
 /* Líneas originales del JSX: 21915 — CERO simplificaciones */
 
@@ -26672,7 +26672,7 @@ function AztPanel({
   // pueda "filtrar" por acceso/retiro si nunca le llega ninguna de esas. Los cargos que no están en
   // este mapa (supervisión jerárquica transversal) ven todos los tipos, igual que en el routing.
   const TIPOS_POR_ROL = {
-    admin_zonal_transporte: ["acceso", "retiro", "servicios"],
+    admin_zonal_transporte: ["acceso", "retiro"],
     despachador: ["acceso", "retiro"],
     jefe_planta: ["servicios"],
     trabajadora_social: ["servicios"],
