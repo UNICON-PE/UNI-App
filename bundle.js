@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-26T02:06:26.572Z */
+/* UniconApp — Bundle generado el 2026-10-26T03:57:17.446Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 21892 — CERO simplificaciones */
+/* Líneas originales del JSX: 21904 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -8754,7 +8754,8 @@ async function ejecutarAjusteManualParaPrueba() {
             error: errorUpdate
           } = await sbClient.rpc("actualizar_unidad_chofer", {
             p_chofer_id: chofer.id,
-            p_unidad_nueva: mixerNuevo
+            p_unidad_nueva: mixerNuevo,
+            p_origen: "citacion"
           });
           if (errorUpdate) {
             resumen.push(`   • ${chofer.nombre}: ❌ falló el RPC de mixer (${errorUpdate.message}).`);
@@ -8864,7 +8865,8 @@ async function ejecutarAjusteAutomaticoMixers() {
             error: errorUpdate
           } = await sbClient.rpc("actualizar_unidad_chofer", {
             p_chofer_id: chofer.id,
-            p_unidad_nueva: mixerNuevo
+            p_unidad_nueva: mixerNuevo,
+            p_origen: "citacion"
           });
           if (errorUpdate) {
             console.warn(`No se pudo actualizar el mixer de ${chofer.nombre}:`, errorUpdate.message);
@@ -10269,9 +10271,19 @@ function ChoferApp({
         // El propio chofer editó su mixer desde su perfil hace un instante — no es una
         // reasignación del AZT, así que no le mostramos el aviso de "fuiste reasignado".
         misUnidadesPropias.current.delete(nuevo.unidad);
+      } else if (nuevo.unidad_actualizada_por === "citacion") {
+        // Cambio de mixer por el ajuste automático de citación: se aplica en silencio, sin la
+        // pantalla azul — a pedido de ewq, para que no compita con el aviso de "¡Fuiste
+        // reasignado!" cuando los dos cambios (planta y mixer) llegan la misma noche (hoy solo
+        // sobrevive el último aviso que llega, pisando al anterior). El dato igual se actualiza
+        // normal en toda la app, solo que sin interrumpir al chofer con un popup.
+        setDriver(d => ({
+          ...d,
+          unidad: nuevo.unidad
+        }));
       } else {
-        // El AZT reasignó el mixer desde "Gestión de choferes y obras" — avisamos igual que en
-        // una reasignación de planta para que el chofer vea reflejado el cambio de inmediato.
+        // El AZT reasignó el mixer a mano desde "Gestión de choferes y obras" — avisamos igual
+        // que en una reasignación de planta para que el chofer vea reflejado el cambio de inmediato.
         setReasignado({
           unidadNueva: nuevo.unidad
         });
@@ -10291,7 +10303,7 @@ function ChoferApp({
     // (mismo síntoma ya visto con avisos/auxilios_lectura) — con esto, aunque falle Realtime, el
     // bloqueo llega como máximo a los pocos segundos en vez de depender de que recargue la app.
     const intervalo = setInterval(() => {
-      sbClient.from("perfiles").select("activo,planta,unidad").eq("id", driver.id).maybeSingle().then(({
+      sbClient.from("perfiles").select("activo,planta,unidad,unidad_actualizada_por").eq("id", driver.id).maybeSingle().then(({
         data
       }) => {
         if (data) aplicarCambioDePerfil(data);
