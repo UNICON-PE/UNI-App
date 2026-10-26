@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-26T03:57:17.446Z */
+/* UniconApp — Bundle generado el 2026-10-26T05:38:03.176Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 21904 — CERO simplificaciones */
+/* Líneas originales del JSX: 21915 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -7879,7 +7879,7 @@ const PLANT_CONFIG = {
       "Bienestar Social": "996 444 111",
       "SGI": "996 444 222",
       "CHOM Líder": "995 555 111",
-      "Canal AAA (emergencias)": "0800-AAA-99",
+      "Canal AAA (emergencias)": "947031580",
       "Planillas": "994 666 111"
     }
   },
@@ -7899,7 +7899,7 @@ const PLANT_CONFIG = {
       "Bienestar Social": "996 000 111",
       "SGI": "996 000 222",
       "CHOM Líder": "995 121 111",
-      "Canal AAA (emergencias)": "0800-AAA-99",
+      "Canal AAA (emergencias)": "947031580",
       "Planillas": "994 232 111"
     }
   },
@@ -7919,7 +7919,7 @@ const PLANT_CONFIG = {
       "Bienestar Social": "[Teléfono]",
       "SGI": "[Teléfono]",
       "CHOM Líder": "[Teléfono]",
-      "Canal AAA (emergencias)": "0800-AAA-99",
+      "Canal AAA (emergencias)": "947031580",
       "Planillas": "[Teléfono]"
     }
   }
@@ -7945,7 +7945,7 @@ const PLANT_CONFIG_FALLBACK = {
     "Bienestar Social": "[Teléfono]",
     "SGI": "[Teléfono]",
     "CHOM Líder": "[Teléfono]",
-    "Canal AAA (emergencias)": "0800-AAA-99",
+    "Canal AAA (emergencias)": "947031580",
     "Planillas": "[Teléfono]"
   }
 };
@@ -10119,7 +10119,7 @@ function ChoferApp({
   const [encuestaAbierta, setEncuestaAbierta] = useState(null); // la encuesta (con preguntas) que se está respondiendo, o null
   const isDesktop = useIsDesktop();
   useMobileBackButton(isDesktop, mobileList, setMobileList);
-  const ROLES_ADMIN_PANEL = ["jefe_planta", "despachador", "sgi", "supervisor_mantenimiento", "analista_mantenimiento", "admin_zonal_transporte", "trabajadora_social", "admin_transporte_bombas", "supervisor_bombas_jefe_ops", "gerente_transporte_distribucion", "jefe_transporte", "supervisor_transportes", "jefe_capacitacion", "administracion_personal", "mecanico_lider"];
+  const ROLES_ADMIN_PANEL = ["jefe_planta", "despachador", "sgi", "supervisor_mantenimiento", "analista_mantenimiento", "admin_zonal_transporte", "trabajadora_social", "admin_transporte_bombas", "supervisor_bombas_jefe_ops", "gerente_transporte_distribucion", "jefe_transporte", "supervisor_transportes", "jefe_capacitacion", "administracion_personal", "mecanico_lider", "gestion_sistema"];
   const ROLES_CHOFER = ["chofer", "chom_lider", "chofer_operador_bomba", "operador_bomba", "ayudante_bomba_multitask", "auxiliar_tuberia"];
   // Aplica el perfil ya resuelto (por DNI o por una sesión restaurada) y decide a qué panel
   // entra: gestión humana / AZT-administrativo / chofer. Separado de login() para que la
@@ -16760,8 +16760,10 @@ function UniBot({
       // — sin mantener una lista aparte a mano — más "chom_lider" (es de CARGOS_CHOFER_MAP pero
       // funciona como contacto de soporte). Así, cualquier cargo administrativo nuevo que se cree
       // (transversal o de una planta puntual) aparece solo en el directorio de los choferes que
-      // corresponda, sin tener que tocar este código cada vez.
-      const rolesDirectorio = [...Object.keys(CARGOS_ADMIN_MAP), "chom_lider"];
+      // corresponda, sin tener que tocar este código cada vez. Excepción: "gestion_sistema" es un
+      // cargo interno sin contacto (cuentas de uso administrativo, ej. publicar en el Canal de
+      // Avisos) — a propósito nunca debe salir en el directorio ni en respuestas de UNIBOT.
+      const rolesDirectorio = [...Object.keys(CARGOS_ADMIN_MAP).filter(r => r !== "gestion_sistema"), "chom_lider"];
       // Respaldo: cualquier persona activa cuya planta incluya "Transversal", aunque su rol no esté
       // en la lista de arriba (por si algún día se marca Transversal un rol no administrativo).
       const {
@@ -17392,9 +17394,9 @@ function UniBot({
     push("user", siTiene ? "Sí ✅" : "No ❌");
     const ans = BOT_ANSWERS.pa_descuento;
     if (siTiene) {
-      push("bot", ans.respuesta_si);
+      push("bot", resolverPlaceholdersContacto(ans.respuesta_si));
     } else {
-      push("bot", ans.respuesta_no);
+      push("bot", resolverPlaceholdersContacto(ans.respuesta_no));
     }
     // Al terminar la respuesta se muestra el menú principal
     setTimeout(goHome, 200);
@@ -17684,11 +17686,11 @@ function UniBot({
     // el resto de opciones "op_*" — mismo patrón ya usado en op_nolista. Va antes del caso genérico
     // de abajo para no quedar atrapada por él.
     if (id === "op_citacion") return "📞 [nombre de Administrador Zonal de Transporte (turno día)] · Administrador Zonal de Transporte (turno día) · [teléfono de Administrador Zonal de Transporte (turno día)]\n📞 [nombre de Administrador Zonal de Transporte (turno noche)] · Administrador Zonal de Transporte (turno noche) · [teléfono de Administrador Zonal de Transporte (turno noche)]";
-    if (id?.startsWith("op")) return `CHOM Líder — ${driver.chom} · ${cfg.contactos["CHOM Líder"]}`;
-    if (id?.startsWith("un")) return `CHOM Líder — ${driver.chom} · ${cfg.contactos["CHOM Líder"]}`;
+    if (id?.startsWith("op")) return resolverPlaceholdersContacto("CHOM Líder — [nombre de CHOM Líder] · [teléfono de CHOM Líder]");
+    if (id?.startsWith("un")) return resolverPlaceholdersContacto("CHOM Líder — [nombre de CHOM Líder] · [teléfono de CHOM Líder]");
     if (id === "pa_boleta") return `Planillas · ${cfg.contactos["Planillas"]}`;
-    if (id?.startsWith("pa")) return `Bienestar Social · ${cfg.contactos["Bienestar Social"]}`;
-    if (id?.startsWith("ps")) return `Bienestar Social · ${cfg.contactos["Bienestar Social"]}`;
+    if (id?.startsWith("pa")) return resolverPlaceholdersContacto("Trabajadora Social — [nombre de Trabajadora Social] · [teléfono de Trabajadora Social]");
+    if (id?.startsWith("ps")) return resolverPlaceholdersContacto("Trabajadora Social — [nombre de Trabajadora Social] · [teléfono de Trabajadora Social]");
     if (id?.startsWith("ch")) return `SGI · ${cfg.contactos["SGI"]}`;
     return `AZT de turno · ${cfg.contactos["AZT día"]}`;
   };
@@ -21549,7 +21551,11 @@ const CARGOS_ADMIN_MAP = {
   jefe_transporte: "Jefe de Transporte",
   supervisor_transportes: "Supervisor de Transportes",
   jefe_capacitacion: "Jefe de Capacitación",
-  mecanico_lider: "Mecánico Líder"
+  mecanico_lider: "Mecánico Líder",
+  // Cargo interno sin contacto: cuentas de uso administrativo (ej. publicar en el Canal de
+  // Avisos) que no deben aparecer en el Directorio de contactos ni en respuestas de UNIBOT —
+  // excluido a propósito de rolesDirectorio (ver UniBot) y de ROLES_SIN_INCIDENCIAS (ver AztPanel).
+  gestion_sistema: "Gestión de Sistema"
 };
 const CARGO_LABEL = {
   ...CARGOS_CHOFER_MAP,
@@ -27347,7 +27353,9 @@ function AztPanel({
   // SGI nunca recibe nada en el buzón de chat (incidenciaEsParaMiRol siempre devuelve false para
   // ese rol) y, desde que se quitó "Fallas mecánicas" sin reemplazo, tampoco tiene ya ningún otro
   // contenido ahí — la sección queda oculta para no mostrar un buzón permanentemente vacío.
-  const ROLES_SIN_INCIDENCIAS = new Set(["sgi"]);
+  // "gestion_sistema" es un cargo interno (cuentas de uso administrativo, ej. publicar en el
+  // Canal de Avisos) sin ninguna planta/incidencia real asociada — se oculta por el mismo motivo.
+  const ROLES_SIN_INCIDENCIAS = new Set(["sgi", "gestion_sistema"]);
   const SECTIONS = [...(!ROLES_MANTENIMIENTO.has(admin?.rol) && !ROLES_SIN_CANAL.has(admin?.rol) ? [{
     id: "avisos",
     label: "Canal de Avisos",
@@ -28501,7 +28509,10 @@ function EstadoMixers({
   // Estado ACTUAL de cada mixer: no puede estar a la vez "parqueado en X" y "en el lavadero", así
   // que se queda solo con su reporte más reciente (reportesFinVuelta ya viene ordenado por fecha
   // descendente desde cargarReportesFinVuelta), sin importar el tipo — las pestañas de abajo
-  // filtran ESTE estado actual por tipo, no un historial de envíos.
+  // filtran ESTE estado actual por tipo, no un historial de envíos. Al retirar un mixer del
+  // taller, sacar_mixer_de_taller borra el último reporte de "falla mecánica" de ese mixer (ver
+  // esa función) — por eso simplemente deja de aparecer acá, sin que haga falta ningún ajuste de
+  // este lado.
   const vistos = new Set();
   const estadoActual = reportesFinVuelta.filter(r => {
     if (vistos.has(r.mixer)) return false;
