@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-27T15:19:35.917Z */
+/* UniconApp — Bundle generado el 2026-10-27T22:47:28.650Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 22003 — CERO simplificaciones */
+/* Líneas originales del JSX: 21999 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -16836,10 +16836,7 @@ function ModalElegirObra({
     autoFocus: true,
     value: busqueda,
     onChange: e => setBusqueda(e.target.value),
-    onKeyDown: e => {
-      if (e.key === "Enter" && texto) onElegir(texto);
-    },
-    placeholder: "Buscar o escribir el nombre de la obra...",
+    placeholder: "Buscar el nombre de la obra...",
     className: "w-full px-3 py-2 mb-2 text-sm rounded-lg border outline-none shrink-0",
     style: {
       borderColor: "#d5d9e4"
@@ -16851,16 +16848,7 @@ function ModalElegirObra({
   /*#__PURE__*/
   React.createElement("div", {
     className: "text-xs text-gray-400 py-3"
-  }, texto ?
-  /*#__PURE__*/
-  /*#__PURE__*/
-  React.createElement("button", {
-    onClick: () => onElegir(texto),
-    className: "font-semibold underline",
-    style: {
-      color: AZUL
-    }
-  }, "No est\xE1 en la lista \u2014 usar \"", texto, "\"") : "No hay obras registradas para tu planta todavía.") : filtradas.map(o =>
+  }, texto ? "No se encontró ninguna obra con ese nombre." : "No hay obras registradas para tu planta todavía.") : filtradas.map(o =>
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("button", {
