@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-26T17:29:05.936Z */
+/* UniconApp — Bundle generado el 2026-10-27T05:13:44.154Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 21943 — CERO simplificaciones */
+/* Líneas originales del JSX: 21988 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -10076,6 +10076,7 @@ function ChoferApp({
   // pantalla de "Tu cuenta fue desactivada".
   const cuentaDesactivadaRef = useRef(false);
   const tallerVistoRef = useRef(new Set()); // ids de mixers_taller ya mostrados en esta sesión, para no repetir la pantalla azul en cada sondeo ni duplicarla si Realtime y el sondeo detectan el mismo envío
+  const tallerRetiroVistoRef = useRef(new Set()); // mismo patrón que tallerVistoRef, pero para el aviso de "ya lo retiraron" — son dos eventos distintos de la MISMA fila (mismo id), así que necesitan su propio set/clave para no pisarse entre sí
   const [channel, setChannel] = useState(null); // avisos|finvuelta|bot|incidencias — null = sin canal elegido aún, para evitar montar el chat automáticamente al iniciar sesión
   const channelRef = useRef(channel); // espejo de "channel" para el canal de Realtime del badge (ver más abajo), que debe quedarse conectado toda la sesión sin reconectarse en cada cambio de pantalla
   useEffect(() => {
@@ -10325,6 +10326,15 @@ function ChoferApp({
   // no lo retire — tallerVistoRef (en memoria) no alcanza porque se reinicia con cada recarga, así
   // que el id ya visto se guarda también en localStorage (persiste entre sesiones en este
   // dispositivo, igual que uni_ultimo_dni).
+  // Contacto del Mecánico Líder de la planta del chofer (nombre y apellidos, igual que el
+  // Directorio de contactos) — se muestra tanto al enviar el mixer al taller como al retirarlo, en
+  // vez del nombre de un AZT puntual (que cambia según quién esté de turno en ese momento).
+  const buscarMecanicoLider = async () => {
+    const {
+      data
+    } = await sbClient.from("perfiles").select("nombre, telefono").eq("rol", "mecanico_lider").eq("activo", true).or(`planta.ilike.%${driverRef.current.planta}%,planta.ilike.%Transversal%`);
+    return data?.[0] || null;
+  };
   const mostrarAvisoTaller = async fila => {
     if (!fila || tallerVistoRef.current.has(fila.id)) return;
     tallerVistoRef.current.add(fila.id);
@@ -10332,12 +10342,33 @@ function ChoferApp({
       if (localStorage.getItem(`uni_taller_visto_${driverRef.current.unidad}`) === fila.id) return;
       localStorage.setItem(`uni_taller_visto_${driverRef.current.unidad}`, fila.id);
     } catch {}
-    const {
-      data: aztRows
-    } = await sbClient.from("perfiles").select("nombre, telefono").eq("rol", "admin_zonal_transporte").eq("activo", true).or(`planta.ilike.%${driverRef.current.planta}%,planta.ilike.%Transversal%`);
+    const mecanicoLider = await buscarMecanicoLider();
     setReasignado({
       enviadoTaller: true,
-      azt: aztRows?.[0] || null
+      mecanicoLider
+    });
+  };
+  // Aviso de "ya lo retiraron" — no cambia el mixer del chofer (sigue siendo el mismo), solo le
+  // avisa que su AZT ya coordinó con el taller y puede ir a recogerlo. Solo debe salir si a ESTE
+  // chofer/dispositivo ya se le había avisado que ESA MISMA fila entró al taller — si no, es
+  // historial de otro chofer que tuvo este mismo número de mixer antes (el número se reasigna con
+  // el tiempo) y no tiene nada que ver con su camión actual, aunque la fila ya esté cerrada.
+  const mostrarAvisoRetiroTaller = async fila => {
+    if (!fila || tallerRetiroVistoRef.current.has(fila.id)) return;
+    let yaVioElIngreso = false;
+    try {
+      yaVioElIngreso = localStorage.getItem(`uni_taller_visto_${driverRef.current.unidad}`) === fila.id;
+    } catch {}
+    if (!yaVioElIngreso) return;
+    tallerRetiroVistoRef.current.add(fila.id);
+    try {
+      if (localStorage.getItem(`uni_taller_retiro_visto_${driverRef.current.unidad}`) === fila.id) return;
+      localStorage.setItem(`uni_taller_retiro_visto_${driverRef.current.unidad}`, fila.id);
+    } catch {}
+    const mecanicoLider = await buscarMecanicoLider();
+    setReasignado({
+      retiradoTaller: true,
+      mecanicoLider
     });
   };
   useEffect(() => {
@@ -10347,14 +10378,23 @@ function ChoferApp({
       schema: "public",
       table: "mixers_taller",
       filter: `mixer=eq.${driver.unidad}`
-    }, payload => mostrarAvisoTaller(payload.new)).subscribe();
+    }, payload => mostrarAvisoTaller(payload.new)).on("postgres_changes", {
+      event: "UPDATE",
+      schema: "public",
+      table: "mixers_taller",
+      filter: `mixer=eq.${driver.unidad}`
+    }, payload => {
+      if (payload.new.sacado_en) mostrarAvisoRetiroTaller(payload.new);
+    }).subscribe();
     const chequearTaller = async () => {
       const {
         data
-      } = await sbClient.from("mixers_taller").select("id").eq("mixer", driver.unidad).is("sacado_en", null).order("enviado_en", {
+      } = await sbClient.from("mixers_taller").select("id, sacado_en").eq("mixer", driver.unidad).order("enviado_en", {
         ascending: false
       }).limit(1);
-      if (data?.[0]) mostrarAvisoTaller(data[0]);
+      const fila = data?.[0];
+      if (!fila) return;
+      if (fila.sacado_en) mostrarAvisoRetiroTaller(fila);else mostrarAvisoTaller(fila);
     };
     chequearTaller();
     const intervaloTaller = setInterval(chequearTaller, 15000);
@@ -10859,7 +10899,7 @@ function ChoferApp({
       }
     }, "Tu cami\xF3n debe ir al taller de mantenimiento"), /*#__PURE__*/React.createElement("p", {
       className: "text-sm text-gray-600 mb-4"
-    }, "Comun\xEDcate con tu AZT para coordinarlo."), reasignado.azt ?
+    }, "Tu AZT indic\xF3 que debe ir al taller de mantenimiento. Coordina con el Mec\xE1nico L\xEDder de tu planta:"), reasignado.mecanicoLider ?
     /*#__PURE__*/
     /*#__PURE__*/
     React.createElement("div", {
@@ -10869,16 +10909,45 @@ function ChoferApp({
       style: {
         color: AZUL
       }
-    }, reasignado.azt.nombre), /*#__PURE__*/React.createElement("p", {
+    }, reasignado.mecanicoLider.nombre), /*#__PURE__*/React.createElement("p", {
       className: "text-sm text-gray-600 flex items-center gap-1.5 mt-0.5"
     }, /*#__PURE__*/React.createElement(Phone, {
       size: 13
-    }), " ", reasignado.azt.telefono || "Sin teléfono registrado")) :
+    }), " ", reasignado.mecanicoLider.telefono || "Sin teléfono registrado")) :
     /*#__PURE__*/
     /*#__PURE__*/
     React.createElement("p", {
       className: "text-xs text-gray-400 mb-6"
-    }, "No se encontr\xF3 un AZT asignado a tu planta \u2014 consulta en tu planta.")) : reasignado.unidadNueva ?
+    }, "No se encontr\xF3 un Mec\xE1nico L\xEDder asignado a tu planta \u2014 consulta en tu planta.")) : reasignado.retiradoTaller ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("h2", {
+      className: "text-xl font-black mb-2",
+      style: {
+        color: AZUL
+      }
+    }, "\xA1Tu cami\xF3n ya est\xE1 listo!"), /*#__PURE__*/React.createElement("p", {
+      className: "text-sm text-gray-600 mb-4"
+    }, "Tu AZT indica que ya puedes recogerlo en el taller de mantenimiento. Tu mixer sigue siendo el mismo. Coordina con el Mec\xE1nico L\xEDder de tu planta:"), reasignado.mecanicoLider ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
+      className: "bg-gray-50 rounded-xl p-3 mb-6 text-left"
+    }, /*#__PURE__*/React.createElement("p", {
+      className: "font-bold text-sm",
+      style: {
+        color: AZUL
+      }
+    }, reasignado.mecanicoLider.nombre), /*#__PURE__*/React.createElement("p", {
+      className: "text-sm text-gray-600 flex items-center gap-1.5 mt-0.5"
+    }, /*#__PURE__*/React.createElement(Phone, {
+      size: 13
+    }), " ", reasignado.mecanicoLider.telefono || "Sin teléfono registrado")) :
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("p", {
+      className: "text-xs text-gray-400 mb-6"
+    }, "No se encontr\xF3 un Mec\xE1nico L\xEDder asignado a tu planta \u2014 consulta en tu planta.")) : reasignado.unidadNueva ?
     /*#__PURE__*/
     /*#__PURE__*/
     React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("h2", {
@@ -26806,7 +26875,7 @@ function AztPanel({
   // Total de auxilios mecánicos no leídos, para el badge del ítem "Auxilio mecánico" del menú
   // lateral (antes quedaba en 0 fijo: el conteo real solo se calculaba adentro del buzón, así que
   // nadie se enteraba de un auxilio nuevo si no había entrado ya a esa sección).
-  const ROLES_CON_AUXILIO_MECANICO_BADGE = new Set(["admin_zonal_transporte", "sgi", "supervisor_mantenimiento", "analista_mantenimiento"]);
+  const ROLES_CON_AUXILIO_MECANICO_BADGE = new Set(["admin_zonal_transporte", "despachador", "sgi", "supervisor_mantenimiento", "analista_mantenimiento"]);
   const cargarAuxPreview = async () => {
     if (!admin?.id || !admin?.plantas?.length || !ROLES_CON_AUXILIO_MECANICO_BADGE.has(admin?.rol)) return;
     const plantasReales = admin.plantas.filter(p => p !== "Transversal");
@@ -26820,9 +26889,9 @@ function AztPanel({
     (lecturas || []).forEach(l => {
       leidoPorPlanta[l.planta] = l.ultimo_leido_at;
     });
-    // AZT solo cuenta los de su propio turno (ver auxilioEsParaMiRol en AuxilioMecanicoBuzon) —
-    // SGI y Mantenimiento no filtran por turno.
-    const total = filas.filter(a => admin.rol !== "admin_zonal_transporte" || a.turno_azt === admin.turno).filter(a => {
+    // AZT y Despachador solo cuentan los de su propio turno (ver auxilioEsParaMiRol en
+    // AuxilioMecanicoBuzon) — SGI y Mantenimiento no filtran por turno.
+    const total = filas.filter(a => admin.rol !== "admin_zonal_transporte" && admin.rol !== "despachador" || a.turno_azt === admin.turno).filter(a => {
       const cursor = leidoPorPlanta[a.planta] ? new Date(leidoPorPlanta[a.planta]) : new Date(0);
       return new Date(a.created_at) > cursor;
     }).length;
@@ -27361,7 +27430,7 @@ function AztPanel({
   // Social, Mantenimiento, etc.) solo publican avisos y gestionan incidencias de su planta.
   const ROLES_CON_GESTION_CHOFERES = new Set(["admin_zonal_transporte", "jefe_transporte", "supervisor_transportes", "gerente_transporte_distribucion"]);
   const ROLES_CON_REPORTES_MIXERS = new Set([...ROLES_CON_GESTION_CHOFERES, "despachador"]);
-  const ROLES_CON_AUXILIO_MECANICO = new Set(["admin_zonal_transporte", "sgi", "supervisor_mantenimiento", "analista_mantenimiento"]);
+  const ROLES_CON_AUXILIO_MECANICO = new Set(["admin_zonal_transporte", "despachador", "sgi", "supervisor_mantenimiento", "analista_mantenimiento"]);
   const ROLES_MANTENIMIENTO = new Set(["supervisor_mantenimiento", "analista_mantenimiento"]);
   // Cargos que solo existen para figurar en el Directorio de contactos de los choferes — no operan
   // el panel para nada, así que no ven ninguna sección al entrar (ni avisos, ni incidencias, ni
@@ -29952,9 +30021,10 @@ function AuxilioMecanicoBuzon({
   const [abierto, setAbierto] = useState(null);
   const [fotoUrl, setFotoUrl] = useState(null);
   const plantList = ["Todas", ...(admin?.plantas || [])];
-  // AZT solo ve/recibe los auxilios de su propio turno (igual que ya pasa con Incidencias, ver
-  // incidenciaEsParaMiRol) — SGI y Mantenimiento siguen viendo todos, sin filtrar por turno.
-  const auxilioEsParaMiRol = a => admin?.rol !== "admin_zonal_transporte" || a.turno_azt === admin?.turno;
+  // AZT y Despachador solo ven/reciben los auxilios de su propio turno (igual que ya pasa con
+  // Incidencias, ver incidenciaEsParaMiRol) — SGI y Mantenimiento siguen viendo todos, sin filtrar
+  // por turno.
+  const auxilioEsParaMiRol = a => admin?.rol !== "admin_zonal_transporte" && admin?.rol !== "despachador" || a.turno_azt === admin?.turno;
   const auxiliosPropios = auxilios.filter(auxilioEsParaMiRol);
   useEffect(() => {
     if (!admin?.id) return;
