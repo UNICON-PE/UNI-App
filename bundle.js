@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-27T07:19:16.159Z */
+/* UniconApp — Bundle generado el 2026-10-27T07:43:30.523Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 21957 — CERO simplificaciones */
+/* Líneas originales del JSX: 21995 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -13156,7 +13156,44 @@ function PanelAvisos({
   const plantaEfectiva = planta;
   const autorLabel = yo?.nombre || ""; // nombre limpio (se guarda así en Supabase)
   const autorLabelConCargo = yo ? yo.cargo ? `${yo.nombre} (${yo.cargo})` : yo.nombre : ""; // solo para el banner informativo
-
+  // Cargo administrativo al costado del nombre, SOLO en este Canal de Avisos — NO se graba en el
+  // mensaje (a diferencia del intento anterior, que lo pegaba al nombre al publicar y se hacía muy
+  // extenso en las notificaciones): se consulta en vivo por autor_id, así que si la persona cambia
+  // de cargo más adelante, hasta sus mensajes viejos muestran el cargo actualizado. Solo para
+  // cargos administrativos (CARGOS_ADMIN_MAP) — nunca para choferes ni CHOM Líder.
+  const [cargoPorAutorId, setCargoPorAutorId] = useState({});
+  useEffect(() => {
+    const idsYaConsultados = new Set(Object.keys(cargoPorAutorId));
+    const idsPorConsultar = [...new Set(avisosData.map(a => a.autor_id).filter(id => id && !idsYaConsultados.has(id)))];
+    if (idsPorConsultar.length === 0) return;
+    let vigente = true;
+    (async () => {
+      const {
+        data
+      } = await sbClient.from("perfiles").select("id, rol").in("id", idsPorConsultar);
+      if (!vigente) return;
+      setCargoPorAutorId(prev => {
+        const siguiente = {
+          ...prev
+        };
+        (data || []).forEach(p => {
+          siguiente[p.id] = CARGOS_ADMIN_MAP[p.rol] || null;
+        });
+        idsPorConsultar.forEach(id => {
+          if (!(id in siguiente)) siguiente[id] = null;
+        });
+        return siguiente;
+      });
+    })();
+    return () => {
+      vigente = false;
+    };
+  }, [avisosData]);
+  const nombreConCargo = a => {
+    const nombreLimpio = limpiarNombreAutor(a?.autor_nombre);
+    const cargo = a?.autor_id && cargoPorAutorId[a.autor_id];
+    return cargo ? `${nombreLimpio} (${cargo})` : nombreLimpio;
+  };
   const enriquecerAviso = (aviso, reacciones, respuestas, respuestasObjeto = []) => ({
     ...aviso,
     reaccionesDeAviso: reacciones.filter(r => r.aviso_id === aviso.id),
@@ -14362,15 +14399,15 @@ function PanelAvisos({
       style: {
         color: AZUL
       }
-    }, limpiarNombreAutor(a.autor_nombre)) :
+    }, nombreConCargo(a)) :
     /*#__PURE__*/
     /*#__PURE__*/
     React.createElement(NombreClickeable, {
       id: a.autor_id,
-      nombre: limpiarNombreAutor(a.autor_nombre),
+      nombre: nombreConCargo(a),
       dniViewer: dniViewer,
       className: "text-[11px] font-bold hover:underline block pr-5"
-    }, limpiarNombreAutor(a.autor_nombre)), citada &&
+    }, nombreConCargo(a)), citada &&
     /*#__PURE__*/
     /*#__PURE__*/
     React.createElement("div", {
@@ -14384,7 +14421,7 @@ function PanelAvisos({
       style: {
         color: AZUL
       }
-    }, limpiarNombreAutor(citada.autor_nombre)), /*#__PURE__*/React.createElement("div", {
+    }, nombreConCargo(citada)), /*#__PURE__*/React.createElement("div", {
       className: "text-gray-600 truncate"
     }, citada.contenido || (citada.archivo_tipo === "imagen" ? "📷 Foto" : citada.archivo_nombre ? `📎 ${citada.archivo_nombre}` : ""))), a.archivo_url && a.archivo_tipo === "imagen" &&
     /*#__PURE__*/
@@ -14716,7 +14753,7 @@ function PanelAvisos({
     style: {
       color: AZUL
     }
-  }, "Respondiendo a ", limpiarNombreAutor(respondiendoA.autor_nombre)), /*#__PURE__*/React.createElement("div", {
+  }, "Respondiendo a ", nombreConCargo(respondiendoA)), /*#__PURE__*/React.createElement("div", {
     className: "text-xs text-gray-600 truncate"
   }, respondiendoA.contenido || (respondiendoA.archivo_tipo === "imagen" ? "📷 Foto" : respondiendoA.archivo_nombre ? `📎 ${respondiendoA.archivo_nombre}` : ""))), /*#__PURE__*/React.createElement("button", {
     onClick: () => setRespondiendoA(null),
