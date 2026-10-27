@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-27T22:47:28.650Z */
+/* UniconApp — Bundle generado el 2026-10-27T23:12:25.021Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 21999 — CERO simplificaciones */
+/* Líneas originales del JSX: 22004 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -28615,8 +28615,13 @@ function EstadoMixers({
     return true;
   });
   // Ordenar por más reciente primero
-  const filtered = estadoActual.filter(r => plant === "Todas" || r.planta === plant).filter(r => tipo === "todos" || r.tipo === tipo).filter(r => tipo !== "ubicacion" || estadoFiltro === "falla" === (r.estado === "Falla mecánica")).filter(r => r.mixer.toLowerCase().includes(q.toLowerCase()) || r.chofer.toLowerCase().includes(q.toLowerCase())).sort((a, b) => b.ts - a.ts);
-  const tallerCards = estadoActual.filter(r => tallerSet.has(r.mixer)).filter(r => r.mixer.toLowerCase().includes(q.toLowerCase()) || r.chofer.toLowerCase().includes(q.toLowerCase())).sort((a, b) => b.ts - a.ts);
+  // "Todas" significa "todas las plantas a cargo de este AZT/Despacho" (plantList ya viene
+  // filtrado a admin?.plantas desde AztPanel) — NO todas las plantas de la empresa. Sin este
+  // chequeo, cualquier AZT veía (y podía mandar al taller) mixers de plantas que ni administra.
+  const misPlantas = plantList.filter(p => p !== "Todas");
+  const perteneceAMisPlantas = r => plant === "Todas" ? misPlantas.includes(r.planta) : r.planta === plant;
+  const filtered = estadoActual.filter(perteneceAMisPlantas).filter(r => tipo === "todos" || r.tipo === tipo).filter(r => tipo !== "ubicacion" || estadoFiltro === "falla" === (r.estado === "Falla mecánica")).filter(r => r.mixer.toLowerCase().includes(q.toLowerCase()) || r.chofer.toLowerCase().includes(q.toLowerCase())).sort((a, b) => b.ts - a.ts);
+  const tallerCards = estadoActual.filter(r => tallerSet.has(r.mixer)).filter(r => misPlantas.includes(r.planta)).filter(r => r.mixer.toLowerCase().includes(q.toLowerCase()) || r.chofer.toLowerCase().includes(q.toLowerCase())).sort((a, b) => b.ts - a.ts);
   const confirmarRetiro = async planta => {
     if (!aztId || !retirarModal) return;
     const {
