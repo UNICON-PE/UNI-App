@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-27T07:43:30.523Z */
+/* UniconApp — Bundle generado el 2026-10-27T15:19:35.917Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 21995 — CERO simplificaciones */
+/* Líneas originales del JSX: 22003 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -27715,7 +27715,8 @@ function AztPanel({
     isDesktop: isDesktop,
     onBackMobile: () => setMobileList(true),
     plantaElegida: plantaElegidaMobile,
-    setPlantaElegida: setPlantaElegidaMobile
+    setPlantaElegida: setPlantaElegidaMobile,
+    puedeGestionarTaller: admin?.rol !== "despachador"
   }), section === "incidencias" && (isDesktop ?
   /*#__PURE__*/
   /*#__PURE__*/
@@ -28597,10 +28598,14 @@ function EstadoMixers({
   isDesktop,
   onBackMobile,
   plantaElegida,
-  setPlantaElegida
+  setPlantaElegida,
+  puedeGestionarTaller = true
 }) {
   const [q, setQ] = useState("");
-  const [tipo, setTipo] = useState("todos"); // todos | ubicacion | lavadero
+  // Ejecutivo de Despacho (puedeGestionarTaller=false) solo debe ver Lavadero — ni "Todos" ni
+  // "Ubicación y llaves" (de ahí sale la opción de "Enviar a Taller", que ya no le corresponde) —
+  // así que arranca fijo en "lavadero" y los chips de abajo ni le ofrecen las otras opciones.
+  const [tipo, setTipo] = useState(puedeGestionarTaller ? "todos" : "lavadero"); // todos | ubicacion | lavadero
   const [estadoFiltro, setEstadoFiltro] = useState("operativo"); // operativo | falla — solo aplica cuando tipo === "ubicacion"
   // "Taller" es una pseudo-planta local a esta vista (no toca el `plant`/`setPlant` que viene de
   // AztPanel, compartido también con Incidencias) — así elegirla acá no afecta esa otra sección.
@@ -28685,7 +28690,7 @@ function EstadoMixers({
     }
   })), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-1.5"
-  }, [{
+  }, (puedeGestionarTaller ? [{
     id: "todos",
     label: "Todos"
   }, {
@@ -28694,7 +28699,10 @@ function EstadoMixers({
   }, {
     id: "lavadero",
     label: "💧 Lavadero"
-  }].map(t =>
+  }] : [{
+    id: "lavadero",
+    label: "💧 Lavadero"
+  }]).map(t =>
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("button", {
@@ -28775,7 +28783,8 @@ function EstadoMixers({
     key: r.id,
     r: r,
     enTaller: tallerSet.has(r.mixer),
-    aztId: aztId
+    aztId: aztId,
+    puedeGestionarTaller: puedeGestionarTaller
   })));
   const modal = retirarModal &&
   /*#__PURE__*/
@@ -28828,7 +28837,10 @@ function EstadoMixers({
           wordBreak: "break-word"
         }
       }, p));
-    })), /*#__PURE__*/React.createElement("div", {
+    })), puedeGestionarTaller &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
       className: "px-2.5 pb-2.5 shrink-0 bg-white border-b",
       style: {
         borderColor: "#e6e8ee"
@@ -28892,7 +28904,10 @@ function EstadoMixers({
     }), /*#__PURE__*/React.createElement("span", {
       className: "text-sm font-semibold flex-1 truncate"
     }, p));
-  }), /*#__PURE__*/React.createElement("div", {
+  }), puedeGestionarTaller &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "border-t my-2",
     style: {
       borderColor: "#e6e8ee"
@@ -28910,7 +28925,7 @@ function EstadoMixers({
     className: "shrink-0"
   }), /*#__PURE__*/React.createElement("span", {
     className: "text-sm font-semibold flex-1 truncate"
-  }, "Taller")))), /*#__PURE__*/React.createElement("div", {
+  }, "Taller"))))), /*#__PURE__*/React.createElement("div", {
     className: "flex-1 flex flex-col min-w-0"
   }, buscador, lista), modal);
 }
@@ -28919,7 +28934,8 @@ function ReporteCard({
   enTaller,
   aztId,
   modoTaller,
-  onRetirar
+  onRetirar,
+  puedeGestionarTaller = true
 }) {
   const [enviando, setEnviando] = useState(false);
   const enviarATaller = async () => {
@@ -29047,7 +29063,7 @@ function ReporteCard({
       color: "#92400e",
       border: "1.5px solid #fde68a"
     }
-  }, "\uD83D\uDD27 En Taller") :
+  }, "\uD83D\uDD27 En Taller") : puedeGestionarTaller ?
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("button", {
@@ -29059,7 +29075,7 @@ function ReporteCard({
       color: "#6b7280",
       border: "1.5px solid #e6e8ee"
     }
-  }, enviando ? "Guardando…" : "Enviar a Taller") : null));
+  }, enviando ? "Guardando…" : "Enviar a Taller") : null : null));
 }
 function ModalRetirarTaller({
   mixer,
