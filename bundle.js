@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-27T05:13:44.154Z */
+/* UniconApp — Bundle generado el 2026-10-27T07:19:16.159Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 21988 — CERO simplificaciones */
+/* Líneas originales del JSX: 21957 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -1104,6 +1104,32 @@ const Lock = ({
   "ry": "2"
 }), React.createElement("path", {
   "d": "M7 11V7a5 5 0 0 1 10 0v4"
+}));
+const Mic = ({
+  size = 24,
+  color = "currentColor",
+  className = "",
+  strokeWidth = 2,
+  ...props
+}) => React.createElement("svg", Object.assign({
+  width: size,
+  height: size,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: color,
+  strokeWidth: strokeWidth,
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  className: className
+}, props), React.createElement("path", {
+  "d": "M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"
+}), React.createElement("path", {
+  "d": "M19 10v2a7 7 0 0 1-14 0v-2"
+}), React.createElement("line", {
+  "x1": "12",
+  "x2": "12",
+  "y1": "19",
+  "y2": "22"
 }));
 const {
   useState,
@@ -7949,11 +7975,23 @@ const PLANT_CONFIG_FALLBACK = {
     "Planillas": "[Teléfono]"
   }
 };
+// SOLO Villa el Salvador (piloto): las opciones de "Parqueo" del reporte de fin de vuelta son
+// distintas a las demás plantas (no maneja patios como tal) — se resuelven aparte en vez de agregar
+// una entrada completa a PLANT_CONFIG, ya que PLANT_CONFIG_FALLBACK se usa como objeto completo
+// (lavadero/técnicos/obras/contactos), y Villa el Salvador todavía no tiene esos otros datos reales
+// cargados; esto evita inventarlos solo para poder cambiar el parqueo.
+const cfgDePlanta = planta => {
+  const base = PLANT_CONFIG[planta] || PLANT_CONFIG_FALLBACK;
+  return planta === "Villa el Salvador" ? {
+    ...base,
+    parqueo: ["Zona petrolera", "Zona de gasolina"]
+  } : base;
+};
 
 /* ===================== INCIDENCIAS: tipos y ruteo ===================== */
 const INCIDENT_TYPES = [{
   id: "acceso",
-  label: "El cliente no me da acceso a la obra",
+  label: "El cliente no me da acceso a la obra (o me hace esperar)",
   icon: Building2,
   buzones: ["AZT de turno", "Despachador de turno"],
   preguntaLlamada: true
@@ -8329,7 +8367,7 @@ const CHANNEL_INFO = {
     note: "Los accidentes o condiciones inseguras van obligatoriamente al Canal AAA, no por aquí.",
     sections: [{
       h: "Qué puedes reportar",
-      items: ["El cliente no me da acceso a la obra", "El cliente no me deja retirarme de la obra", "Tengo una falla mecánica o necesito un llantero", "Servicios de planta no disponibles"]
+      items: ["El cliente no me da acceso a la obra (o me hace esperar)", "El cliente no me deja retirarme de la obra", "Tengo una falla mecánica o necesito un llantero", "Servicios de planta no disponibles"]
     }],
     cta: "Reportar una incidencia"
   },
@@ -11266,11 +11304,7 @@ function ChoferApp({
   /*#__PURE__*/
   React.createElement(BitacoraPersonal, {
     driver: driver,
-    setChannel: setChannel,
-    onIrAUnikin: () => {
-      setBotDeepLink("op_unikin");
-      setChannel("bot");
-    }
+    setChannel: setChannel
   }), channel === "rituales_liderazgo" &&
   /*#__PURE__*/
   /*#__PURE__*/
@@ -15605,7 +15639,7 @@ function ModalVerVotos({
 function FinDeVuelta({
   driver
 }) {
-  const cfg = PLANT_CONFIG[driver.planta] || PLANT_CONFIG_FALLBACK;
+  const cfg = cfgDePlanta(driver.planta);
   const [jornada, setJornada] = useState(null);
   const [view, setView] = useState("home"); // home | wizard | sent
   const [quad, setQuad] = useState(null);
@@ -15815,7 +15849,7 @@ function FinDeVuelta({
       const idxZona = tieneZona ? tienePicker ? 2 : 1 : null;
       const idxLlaves = (idxZona ?? (tienePicker ? 1 : 0)) + 1;
       const idxProblema = idxLlaves + 1;
-      const cfgEfectivo = tieneZona ? PLANT_CONFIG[plantaEfectiva] || PLANT_CONFIG_FALLBACK : null;
+      const cfgEfectivo = tieneZona ? cfgDePlanta(plantaEfectiva) : null;
       const pasos = [{
         campo: "plantaConfirm",
         titulo: `¿Te encuentras en la planta ${driver.planta}?`,
@@ -16810,13 +16844,21 @@ function UniBot({
   deepLink,
   onDeepLinkConsumido
 }) {
-  const cfg = PLANT_CONFIG[driver.planta] || PLANT_CONFIG_FALLBACK;
+  const cfg = cfgDePlanta(driver.planta);
   const [msgs, setMsgs] = useState([]);
   const [node, setNode] = useState("root");
   // Directorio de contactos: se carga en vivo desde perfiles (antes eran teléfonos fijos
   // hardcodeados por planta, sin persona real detrás).
   const [directorioContactos, setDirectorioContactos] = useState([]);
   const [directorioCargando, setDirectorioCargando] = useState(false);
+  // Fuerza un recálculo cada minuto de qué AZT está de turno ahora mismo en Villa el Salvador
+  // (ver DIRECTORIO_CATEGORIAS más abajo) — sin esto, el directorio solo se actualizaría si el
+  // chofer sale y vuelve a entrar a la pantalla justo después del cambio de turno.
+  const [, setDirectorioTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setDirectorioTick(t => t + 1), 60000);
+    return () => clearInterval(id);
+  }, []);
   useEffect(() => {
     // Se carga apenas se conoce la planta del chofer (no solo al entrar al nodo "directorio")
     // porque también se usa para resolver placeholders "[correo de <Cargo>]" dentro de respuestas
@@ -18293,7 +18335,40 @@ Por favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
   // de estas, se agrega automáticamente cualquier otro cargo cuya planta incluya "Transversal" y
   // que no tenga ya una categoría propia aquí arriba — así una posición nueva marcada Transversal
   // aparece en el directorio sin tener que tocar este código.
-  const DIRECTORIO_CATEGORIAS = [{
+  // SOLO Villa el Salvador (piloto): en vez de mostrar siempre los dos turnos de AZT/Despacho
+  // fijos, el directorio muestra uno solo — el que está de turno en este momento. Este horario es
+  // PROPIO del directorio (pedido explícito de ewq) y NO es el mismo corte usado para enrutar
+  // incidencias (ver incidenciaEsParaMiRol en AztPanel) — ahí sigue 6:30am-3:15pm; acá el contacto
+  // de turno día cubre toda la madrugada también. El resto de plantas no tiene este corte por
+  // planta, así que siguen viendo los dos turnos como filas separadas.
+  const horaLimaAhoraDecimal = () => {
+    const d = new Date(Date.now() - 5 * 60 * 60 * 1000);
+    return d.getUTCHours() + d.getUTCMinutes() / 60;
+  };
+  // AZT: día 12:00am-1:14pm y 2:00pm-3:14pm, noche 1:15pm-1:59pm y 3:15pm-11:59pm.
+  const turnoAztVillaElSalvadorAhora = () => {
+    const h = horaLimaAhoraDecimal();
+    if (h >= 13.25 && h < 14) return "noche";
+    if (h >= 15.25) return "noche";
+    return "dia";
+  };
+  // Despacho: día (Andrea) 12:00am-12:14pm y 1:01pm-4:14pm, noche (Edgard) 4:15pm-11:59pm. La
+  // ventana 12:15pm-1:00pm es un matiz aparte: el turno ya le toca a Edgard (así que su NOMBRE es
+  // el que se muestra), pero en la práctica todavía no prende su celular a esa hora — por eso el
+  // TELÉFONO que se muestra en esa ventana puntual sigue siendo el de Andrea (ver resolverTelefono
+  // más abajo). Nunca se muestran los dos contactos a la vez.
+  const VENTANA_RELEVO_DESPACHO_VES = h => h >= 12.25 && h < 13;
+  const turnoDespachoVillaElSalvadorAhora = () => {
+    const h = horaLimaAhoraDecimal();
+    if (VENTANA_RELEVO_DESPACHO_VES(h)) return "noche";
+    return h < 16.25 ? "dia" : "noche";
+  };
+  const DIRECTORIO_CATEGORIAS = [...(driver?.planta === "Villa el Salvador" ? [{
+    label: "Ejecutivo de Despacho",
+    rol: "despachador",
+    turno: turnoDespachoVillaElSalvadorAhora(),
+    resolverTelefono: () => VENTANA_RELEVO_DESPACHO_VES(horaLimaAhoraDecimal()) ? directorioContactos.find(p => p.rol === "despachador" && p.turno === "dia" && perteneceAMiPlanta(p))?.telefono : null
+  }] : [{
     label: "Ejecutivo de Despacho (turno día)",
     rol: "despachador",
     turno: "dia"
@@ -18301,7 +18376,11 @@ Por favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
     label: "Ejecutivo de Despacho (turno noche)",
     rol: "despachador",
     turno: "noche"
-  }, {
+  }]), ...(driver?.planta === "Villa el Salvador" ? [{
+    label: "Administrador Zonal de Transporte",
+    rol: "admin_zonal_transporte",
+    turno: turnoAztVillaElSalvadorAhora()
+  }] : [{
     label: "Administrador Zonal de Transporte (turno día)",
     rol: "admin_zonal_transporte",
     turno: "dia"
@@ -18309,7 +18388,7 @@ Por favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
     label: "Administrador Zonal de Transporte (turno noche)",
     rol: "admin_zonal_transporte",
     turno: "noche"
-  }, {
+  }]), {
     label: "SGI",
     rol: "sgi"
   }, {
@@ -18327,6 +18406,9 @@ Por favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
   }, {
     label: "Mecánico Líder",
     rol: "mecanico_lider"
+  }, {
+    label: "Soporte UNI APP",
+    rol: "gestion_sistema"
   }];
   const perteneceAMiPlanta = p => {
     const plantas = (p.planta || "").split(",").map(s => s.trim());
@@ -18363,7 +18445,7 @@ Por favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
   const directorioFilas = [...DIRECTORIO_CATEGORIAS.flatMap(cat => directorioContactos.filter(p => p.rol === cat.rol && (!cat.turno || p.turno === cat.turno) && perteneceAMiPlanta(p)).map(p => ({
     label: cat.label,
     nombre: p.nombre,
-    telefono: p.telefono
+    telefono: cat.resolverTelefono?.() ?? p.telefono
   }))), ...directorioContactos.filter(p => !rolesConCategoriaPropia.has(p.rol) && !ROLES_OCULTOS_DIRECTORIO.has(p.rol) && perteneceAMiPlanta(p)).map(p => ({
     label: CARGO_LABEL[p.rol] || p.rol,
     nombre: p.nombre,
@@ -19135,7 +19217,7 @@ Por favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
     size: 14
   }), " Men\xFA principal"), /*#__PURE__*/React.createElement("div", {
     className: "space-y-1.5"
-  }, (PLANT_CONFIG[fv.planta] || PLANT_CONFIG_FALLBACK).parqueo.map(z =>
+  }, cfgDePlanta(fv.planta).parqueo.map(z =>
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("button", {
@@ -19275,7 +19357,7 @@ Por favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
     size: 14
   }), " Men\xFA principal"), /*#__PURE__*/React.createElement("div", {
     className: "space-y-1.5"
-  }, [...(PLANT_CONFIG[driver.planta] || PLANT_CONFIG_FALLBACK).lavadero, "En cola del lavadero"].map(l =>
+  }, [...cfgDePlanta(driver.planta).lavadero, "En cola del lavadero"].map(l =>
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("button", {
@@ -19828,7 +19910,7 @@ function ReporteIncidencias({
   irAIncidenciaId,
   setIrAIncidenciaId
 }) {
-  const cfg = PLANT_CONFIG[driver.planta] || PLANT_CONFIG_FALLBACK;
+  const cfg = cfgDePlanta(driver.planta);
   const [step, setStep] = useState("list"); // list | pick | askCall | contacts | obra | aaa | auxilio | servicio | falla_rop | falla_rop_no | falla_choice | falla | falla_sent | dedupCheck | dedupConfirmed
   const [tipo, setTipo] = useState(null);
   const [obra, setObra] = useState("");
@@ -20966,116 +21048,6 @@ function ReporteIncidencias({
   }), " Llamar al Canal AAA \xB7 ", cfg.contactos["Canal AAA (emergencias)"])));
 }
 
-// Categorías de "esto ya tiene un canal" — el texto descriptivo de cada una es exactamente lo
-// que se le explica a Gemini para que decida por CONTEXTO (no por palabra suelta) si la nota
-// del chofer pertenece a alguna de ellas. canal/nombreCanal/motivo son solo para armar el
-// aviso y el botón una vez que la IA ya eligió la categoría.
-const CATEGORIAS_OTRO_CANAL_BITACORA = {
-  auxilio_mecanico: {
-    canal: "bot",
-    nombreCanal: "UNI BOT",
-    motivo: "un auxilio mecánico",
-    descripcion: "el chofer está reportando ahora una avería, que está varado, o que necesita auxilio mecánico o un llantero"
-  },
-  emergencia_accidente: {
-    canal: "bot",
-    nombreCanal: "UNI BOT",
-    motivo: "una emergencia o accidente",
-    descripcion: "el chofer está reportando una emergencia o un accidente que está ocurriendo o ya ocurrió y necesita reportarse formalmente"
-  },
-  objeto_perdido_encontrado: {
-    canal: "bot",
-    nombreCanal: "UNI BOT",
-    motivo: "objetos perdidos o encontrados",
-    descripcion: "el chofer está reportando que perdió algo, o que encontró/halló un objeto (de él o de otra persona)"
-  },
-  // "unikin_no_funciona" NO es una categoría de bloqueo: a diferencia de las demás, esta nota
-  // sí se guarda en la bitácora (ya no hay un canal exclusivo para problemas de sistema/equipos
-  // desde que se quitó esa opción de Reportes de incidencia) — solo se le sugiere al chofer
-  // intentar resolverlo por UNIBOT, y se le abre automáticamente esa opción ya marcada. Ver
-  // manejo especial en guardar().
-  unikin_no_funciona: {
-    especial: "unikin",
-    descripcion: "el chofer menciona explícitamente que UNIKIN no está funcionando o está fallando (específicamente UNIKIN, no un problema genérico de sistema, tablet o RTS)"
-  },
-  pagos_beneficios: {
-    canal: "bot",
-    nombreCanal: "UNI BOT",
-    motivo: "tus pagos o beneficios",
-    descripcion: "pregunta o reclamo sobre Sodexo, bono, boleta de pago, préstamo, cuenta de abono o beneficios"
-  },
-  permisos_personal: {
-    canal: "bot",
-    nombreCanal: "UNI BOT",
-    motivo: "permisos o servicios de personal (descanso médico, vacaciones, uniformes, movilidad)",
-    descripcion: "trámite de descanso médico, licencia de paternidad, vacaciones, uniformes o movilidad de regreso"
-  },
-  charla_programacion: {
-    canal: "bot",
-    nombreCanal: "UNI BOT",
-    motivo: "la programación o recuperación de la charla semanal",
-    descripcion: "pregunta sobre CUÁNDO es la charla semanal o cómo recuperarla — NO una opinión u observación sobre lo que pasó en ella (eso sí es contenido válido de bitácora)"
-  },
-  alerta_preventiva: {
-    canal: "bot",
-    nombreCanal: "UNI BOT",
-    motivo: "una alerta preventiva para tus compañeros",
-    descripcion: "quiere avisar a sus compañeros de un grifo cerrado o una zona de tráfico, para publicarlo en el Canal de Avisos"
-  },
-  incidencia_cliente_servicio: {
-    canal: "incidencias",
-    nombreCanal: "Reportes de incidencia",
-    motivo: "una incidencia con el cliente en obra o un servicio no disponible en planta",
-    descripcion: "un problema ACTUAL con el cliente en obra (no le da acceso, no lo deja retirarse) o un servicio de planta no disponible ahora mismo (baños, comedor, luz, wifi, agua)"
-  },
-  parqueo_llaves: {
-    canal: "bot",
-    nombreCanal: "Reporte de fin de vuelta",
-    motivo: "dónde dejaste el mixer, las llaves o la zona de lavadero",
-    descripcion: "está registrando dónde dejó o está dejando el mixer, dónde dejó las llaves, o que está entrando o está en la zona de lavadero — cualquier información sobre la ubicación física del mixer al terminar su turno"
-  }
-};
-// Clasificación por CONTEXTO (no por palabra suelta) usando la misma Edge Function de Gemini
-// que ya usa la app para leer citaciones — entiende sinónimos, negaciones ("no perdí nada") y
-// que una nota que solo MENCIONA un tema (ej. una opinión sobre la charla semanal) no es lo
-// mismo que un reporte que ese canal necesita procesar. Si Gemini falla o no responde, se deja
-// pasar el guardado (nunca bloquea la bitácora por una falla de la IA).
-async function clasificarBitacoraConIA(texto) {
-  const lista = Object.entries(CATEGORIAS_OTRO_CANAL_BITACORA).map(([id, c]) => `- "${id}": ${c.descripcion}`).join("\n");
-  const prompt = `Un chofer de mixer de concreto está escribiendo una nota libre en su "bitácora personal" (un espacio privado para notas de su día a día, tipo diario: probetas, slump, observaciones, lo que sea).
-
-Tu tarea es decidir si esta nota en realidad pertenece a otro canal que YA EXISTE en la app para resolver ese tema específico, en vez de quedarse en la bitácora. Categorías posibles:
-${lista}
-- "ninguno": no encaja en ninguna de las anteriores — es una nota personal válida para la bitácora.
-
-Importante: si el texto tiene una negación (ej. "no perdí nada", "no tuve ningún problema") o es solo una opinión/observación sobre algo que pasó (no un reporte que necesite acción de otro canal), responde "ninguno".
-
-Texto del chofer: "${texto}"
-
-Responde ÚNICAMENTE con este JSON, sin texto adicional ni markdown: {"categoria": "uno_de_los_ids_de_arriba_o_ninguno"}`;
-  try {
-    const resp = await fetchGeminiConReintentos({
-      contents: [{
-        parts: [{
-          text: prompt
-        }]
-      }],
-      generationConfig: {
-        temperature: 0,
-        responseMimeType: "application/json"
-      }
-    });
-    if (!resp.ok) return null;
-    const data = await resp.json();
-    const textoRespuesta = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!textoRespuesta) return null;
-    const parsed = JSON.parse(textoRespuesta);
-    return CATEGORIAS_OTRO_CANAL_BITACORA[parsed?.categoria] || null;
-  } catch (e) {
-    console.warn("No se pudo clasificar la bitácora con IA:", e.message);
-    return null;
-  }
-}
 // Cuaderno abierto + lápiz, para distinguirlo a simple vista del icono de "Reporte de fin de
 // vuelta" (que usa solo un portapapeles). Mismo API que los demás iconos (size, color) para
 // poder usarse en cualquier lugar donde se use un icono normal.
@@ -21112,8 +21084,7 @@ function BitacoraIcon({
 const BITACORA_POR_PAGINA = 8;
 function BitacoraPersonal({
   driver,
-  setChannel,
-  onIrAUnikin
+  setChannel
 }) {
   const [texto, setTexto] = useState("");
   const [fotoFile, setFotoFile] = useState(null);
@@ -21124,12 +21095,52 @@ function BitacoraPersonal({
   const [pagina, setPagina] = useState(0);
   const [entradaAbierta, setEntradaAbierta] = useState(null);
   const [fotoDetalleUrl, setFotoDetalleUrl] = useState(null);
-  const [avisoCanal, setAvisoCanal] = useState(null);
-  const [avisoUnikinPendiente, setAvisoUnikinPendiente] = useState(false);
   const [errorGuardado, setErrorGuardado] = useState("");
   const [busqueda, setBusqueda] = useState("");
   const [fechaFiltro, setFechaFiltro] = useState("");
+  const [grabando, setGrabando] = useState(false);
   const fileRef = useRef(null);
+  const reconocimientoRef = useRef(null);
+  const dictadoBaseRef = useRef(""); // texto que ya había en el cuadro antes de empezar a grabar
+  const dictadoFinalRef = useRef(""); // fragmentos ya confirmados (no provisionales) de esta grabación
+  // Dictado por voz (Web Speech API, nativa del navegador — sin backend/IA externa). Si el
+  // navegador no la soporta (ej. Firefox), el botón del micrófono simplemente no se muestra.
+  const dictadoDisponible = typeof window !== "undefined" && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  useEffect(() => () => reconocimientoRef.current?.stop(), []);
+  const alternarDictado = () => {
+    if (grabando) {
+      reconocimientoRef.current?.stop();
+      return;
+    }
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+    dictadoBaseRef.current = texto.trim();
+    dictadoFinalRef.current = "";
+    const reconocimiento = new SpeechRecognition();
+    reconocimiento.lang = "es-PE";
+    reconocimiento.continuous = true;
+    // interimResults=true: mientras el chofer habla, el texto reconocido hasta el momento (todavía
+    // sin confirmar) se va mostrando de inmediato en el cuadro — así ve en vivo que su voz sí se
+    // está grabando y convirtiendo en palabras, no solo un indicador aparte.
+    reconocimiento.interimResults = true;
+    reconocimiento.onresult = e => {
+      let provisional = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const fragmento = e.results[i][0].transcript;
+        if (e.results[i].isFinal) {
+          dictadoFinalRef.current = dictadoFinalRef.current ? `${dictadoFinalRef.current} ${fragmento.trim()}` : fragmento.trim();
+        } else {
+          provisional += fragmento;
+        }
+      }
+      setTexto([dictadoBaseRef.current, dictadoFinalRef.current, provisional.trim()].filter(Boolean).join(" "));
+    };
+    reconocimiento.onerror = () => setGrabando(false);
+    reconocimiento.onend = () => setGrabando(false);
+    reconocimientoRef.current = reconocimiento;
+    reconocimiento.start();
+    setGrabando(true);
+  };
   useEffect(() => {
     if (!driver?.id) return;
     let vigente = true;
@@ -21159,15 +21170,6 @@ function BitacoraPersonal({
     if (!texto.trim() || guardando) return;
     setGuardando(true);
     setErrorGuardado("");
-    const clasif = await clasificarBitacoraConIA(texto.trim());
-    const esUnikin = clasif?.especial === "unikin";
-    // "unikin_no_funciona" no bloquea el guardado (ver comentario en la categoría) — el resto de
-    // categorías sí, como antes.
-    if (clasif && !esUnikin) {
-      setAvisoCanal(clasif);
-      setGuardando(false);
-      return;
-    }
     let fotoPath = null;
     if (fotoFile) {
       const ext = (fotoFile.name.split(".").pop() || "jpg").toLowerCase();
@@ -21201,9 +21203,7 @@ function BitacoraPersonal({
       setTexto("");
       setFotoFile(null);
       setFotoPreview(null);
-      setAvisoCanal(null);
       setPagina(0);
-      if (esUnikin) setAvisoUnikinPendiente(true);
     }
   };
   const abrirDetalle = async entrada => {
@@ -21276,7 +21276,6 @@ function BitacoraPersonal({
     value: texto,
     onChange: e => {
       setTexto(e.target.value);
-      setAvisoCanal(null);
       setErrorGuardado("");
     },
     placeholder: "Escribe lo que quieras registrar...",
@@ -21285,23 +21284,7 @@ function BitacoraPersonal({
     style: {
       borderColor: "#d5d9e4"
     }
-  }), avisoCanal &&
-  /*#__PURE__*/
-  /*#__PURE__*/
-  React.createElement("div", {
-    className: "mt-2 rounded-xl p-3 text-sm flex items-start gap-2",
-    style: {
-      background: "#fff7ed",
-      border: "1px solid #fdba74",
-      color: "#9a3412"
-    }
-  }, /*#__PURE__*/React.createElement(AlertTriangle, {
-    size: 16,
-    className: "shrink-0 mt-0.5"
-  }), /*#__PURE__*/React.createElement("div", null, "Tu bit\xE1cora no es el espacio para registrar esto. Para ", avisoCanal.motivo, " debes registrar por el canal ", /*#__PURE__*/React.createElement("button", {
-    onClick: () => setChannel(avisoCanal.canal),
-    className: "underline font-bold"
-  }, avisoCanal.nombreCanal), ".")), fotoPreview &&
+  }), fotoPreview &&
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
@@ -21338,9 +21321,34 @@ function BitacoraPersonal({
       display: "none"
     },
     onChange: elegirFoto
-  }), /*#__PURE__*/React.createElement("div", {
+  }), grabando &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "mt-2 flex items-center gap-1.5 text-xs font-semibold",
+    style: {
+      color: "#dc2626"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "w-2 h-2 rounded-full animate-pulse",
+    style: {
+      background: "#dc2626"
+    }
+  }), " Escuchando... toca el micr\xF3fono para detener"), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2 mt-2"
-  }, /*#__PURE__*/React.createElement("button", {
+  }, dictadoDisponible &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
+    onClick: alternarDictado,
+    className: `flex items-center justify-center w-9 h-9 rounded-xl shrink-0 ${grabando ? "animate-pulse" : ""}`,
+    style: {
+      background: grabando ? "#dc2626" : "#eef1fb",
+      color: grabando ? "white" : AZUL
+    }
+  }, /*#__PURE__*/React.createElement(Mic, {
+    size: 16
+  })), /*#__PURE__*/React.createElement("button", {
     onClick: () => fileRef.current?.click(),
     disabled: !!fotoPreview,
     className: "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold disabled:opacity-40",
@@ -21502,48 +21510,7 @@ function BitacoraPersonal({
   }, /*#__PURE__*/React.createElement(ChevronRight, {
     size: 18,
     color: AZUL
-  }))))), avisoUnikinPendiente &&
-  /*#__PURE__*/
-  /*#__PURE__*/
-  React.createElement("div", {
-    className: "fixed inset-0 z-50 flex items-center justify-center p-4",
-    style: {
-      background: "rgba(0,0,0,.5)"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "bg-white rounded-2xl p-5 shadow-2xl w-full max-w-sm text-center"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "w-12 h-12 rounded-full mx-auto mb-3 flex items-center justify-center",
-    style: {
-      background: "#eef1fb"
-    }
-  }, /*#__PURE__*/React.createElement(MessageCircle, {
-    size: 22,
-    color: AZUL
-  })), /*#__PURE__*/React.createElement("h4", {
-    className: "font-bold text-gray-800 mb-1"
-  }, "Registro guardado"), /*#__PURE__*/React.createElement("p", {
-    className: "text-sm text-gray-600 mb-4"
-  }, "Mencionaste que UNIKIN no est\xE1 funcionando. Vamos a intentar resolverlo por UNI BOT."), /*#__PURE__*/React.createElement("div", {
-    className: "flex gap-2"
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => setAvisoUnikinPendiente(false),
-    className: "flex-1 py-2.5 rounded-xl font-semibold text-sm",
-    style: {
-      background: "#f3f4f6",
-      color: "#374151"
-    }
-  }, "Ahora no"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => {
-      setAvisoUnikinPendiente(false);
-      onIrAUnikin?.();
-    },
-    className: "flex-1 py-2.5 rounded-xl font-bold text-sm",
-    style: {
-      background: AMARILLO,
-      color: AZUL
-    }
-  }, "Continuar")))), entradaAbierta &&
+  }))))), entradaAbierta &&
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
@@ -21621,10 +21588,11 @@ const CARGOS_ADMIN_MAP = {
   supervisor_transportes: "Supervisor de Transportes",
   jefe_capacitacion: "Jefe de Capacitación",
   mecanico_lider: "Mecánico Líder",
-  // Cargo interno sin contacto: cuentas de uso administrativo (ej. publicar en el Canal de
-  // Avisos) que no deben aparecer en el Directorio de contactos ni en respuestas de UNIBOT —
-  // excluido a propósito de rolesDirectorio (ver UniBot) y de ROLES_SIN_INCIDENCIAS (ver AztPanel).
-  gestion_sistema: "Gestión de Sistema"
+  // Cargo de la cuenta de uso administrativo que publica en el Canal de Avisos — SÍ debe aparecer
+  // en el Directorio de contactos (categoría propia "Soporte UNI APP" en DIRECTORIO_CATEGORIAS, ver
+  // UniBot), pero sigue excluido de rolesDirectorio (no participa en placeholders "[nombre de
+  // <Cargo>]" de respuestas de UNIBOT) y de ROLES_SIN_INCIDENCIAS (ver AztPanel).
+  gestion_sistema: "Soporte UNI APP"
 };
 const CARGO_LABEL = {
   ...CARGOS_CHOFER_MAP,
@@ -26743,7 +26711,7 @@ function AztPanel({
   const TIPOS_POR_ROL = {
     admin_zonal_transporte: ["acceso", "retiro"],
     despachador: ["acceso", "retiro"],
-    jefe_planta: ["servicios"],
+    jefe_planta: ["servicios", "acceso"],
     trabajadora_social: ["servicios"],
     sgi: []
   };
@@ -27110,6 +27078,10 @@ function AztPanel({
         }
         return i.turnoDespachador === admin.turno;
       case "jefe_planta":
+        // A diferencia de Trabajadora Social, Jefe de Planta también debe ver las incidencias de
+        // "el cliente no me da acceso a la obra" (junto con AZT y Ejecutivo de Despacho) — NO las
+        // de "el cliente no me deja retirar el mixer", que siguen siendo solo de AZT/Despacho.
+        return i.tipo === "servicios" || i.tipo === "acceso";
       case "trabajadora_social":
         return i.tipo === "servicios";
       case "sgi":
