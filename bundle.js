@@ -1,4 +1,4 @@
-/* UniconApp — Bundle generado el 2026-10-28T03:03:25.646Z */
+/* UniconApp — Bundle generado el 2026-10-28T03:33:11.307Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
 /* Líneas originales del JSX: 22010 — CERO simplificaciones */
 
@@ -14239,7 +14239,7 @@ function PanelAvisos({
   })), /*#__PURE__*/React.createElement("div", {
     ref: scrollRef,
     onScroll: handleScrollChat,
-    className: "flex-1 overflow-y-auto p-4 space-y-3",
+    className: "flex-1 overflow-y-auto p-4 space-y-1.5",
     style: {
       opacity: listoParaMostrar ? 1 : 0,
       transition: listoParaMostrar ? "opacity .12s ease" : "none"
@@ -14300,7 +14300,7 @@ function PanelAvisos({
         maxWidth: "100%"
       }
     }, /*#__PURE__*/React.createElement("div", {
-      className: `rounded-xl px-3 py-2 shadow-sm relative ${esPropio ? "rounded-tr-none" : "rounded-tl-none"}`,
+      className: `rounded-xl px-2.5 py-1.5 shadow-sm relative ${esPropio ? "rounded-tr-none" : "rounded-tl-none"}`,
       style: {
         background: a.id === mensajeResaltadoId ? "#FEF3C7" : esPropio ? WA_SENT : "white",
         transition: "background 0.6s ease",
@@ -14487,7 +14487,7 @@ function PanelAvisos({
     /*#__PURE__*/
     /*#__PURE__*/
     React.createElement("div", {
-      className: "text-sm text-gray-800 whitespace-pre-wrap mt-0.5",
+      className: "text-[13px] text-gray-800 whitespace-pre-wrap mt-0.5",
       style: {
         overflowWrap: "break-word",
         wordBreak: "break-word"
