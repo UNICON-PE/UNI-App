@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-28T04:11:46.000Z */
+/* UniconApp — Bundle generado el 2026-10-28T04:14:34.196Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 22052 — CERO simplificaciones */
+/* Líneas originales del JSX: 22060 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -21204,8 +21204,16 @@ function BitacoraPersonal({
   };
   const alternarDictado = () => {
     if (grabando) {
+      // Se apaga de inmediato al tocar el botón, sin esperar a que el navegador confirme con
+      // onend — en el reinicio automático entre frases, esa confirmación a veces tarda o no llega
+      // a tiempo en el celular, y la pantalla se quedaba mostrando "Escuchando..." como si no se
+      // hubiera apagado. abort() además corta de una vez cualquier sesión que esté a medio
+      // reiniciarse, en vez de esperar a que termine de procesar (eso hacía stop()).
       grabandoRef.current = false;
-      reconocimientoRef.current?.stop();
+      setGrabando(false);
+      try {
+        reconocimientoRef.current?.abort();
+      } catch (e) {}
       return;
     }
     if (typeof window === "undefined" || !(window.SpeechRecognition || window.webkitSpeechRecognition)) return;
