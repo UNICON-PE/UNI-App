@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-28T03:43:23.759Z */
+/* UniconApp — Bundle generado el 2026-10-28T04:02:47.194Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 22010 — CERO simplificaciones */
+/* Líneas originales del JSX: 22016 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -21134,7 +21134,12 @@ function BitacoraPersonal({
   const fileRef = useRef(null);
   const reconocimientoRef = useRef(null);
   const dictadoBaseRef = useRef(""); // texto que ya había en el cuadro antes de empezar a grabar
-  const dictadoFinalRef = useRef(""); // fragmentos ya confirmados (no provisionales) de esta grabación
+  // Fragmentos ya confirmados (no provisionales), guardados por índice de resultado — NO como
+  // texto concatenado: en Android, el motor de reconocimiento a veces reenvía el mismo resultado
+  // "final" más de una vez (reinicio interno del reconocimiento en el celular). Si se concatenara
+  // cada vez que llega, el texto terminaba repetido muchas veces — guardar por índice hace que un
+  // mismo resultado reenviado solo sobreescriba su propia posición, nunca duplique.
+  const dictadoFinalesRef = useRef([]);
   // Dictado por voz (Web Speech API, nativa del navegador — sin backend/IA externa). Si el
   // navegador no la soporta (ej. Firefox), el botón del micrófono simplemente no se muestra.
   const dictadoDisponible = typeof window !== "undefined" && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
@@ -21147,7 +21152,7 @@ function BitacoraPersonal({
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) return;
     dictadoBaseRef.current = texto.trim();
-    dictadoFinalRef.current = "";
+    dictadoFinalesRef.current = [];
     const reconocimiento = new SpeechRecognition();
     reconocimiento.lang = "es-PE";
     reconocimiento.continuous = true;
@@ -21160,12 +21165,13 @@ function BitacoraPersonal({
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const fragmento = e.results[i][0].transcript;
         if (e.results[i].isFinal) {
-          dictadoFinalRef.current = dictadoFinalRef.current ? `${dictadoFinalRef.current} ${fragmento.trim()}` : fragmento.trim();
+          dictadoFinalesRef.current[i] = fragmento.trim();
         } else {
           provisional += fragmento;
         }
       }
-      setTexto([dictadoBaseRef.current, dictadoFinalRef.current, provisional.trim()].filter(Boolean).join(" "));
+      const textoFinal = dictadoFinalesRef.current.filter(Boolean).join(" ");
+      setTexto([dictadoBaseRef.current, textoFinal, provisional.trim()].filter(Boolean).join(" "));
     };
     reconocimiento.onerror = () => setGrabando(false);
     reconocimiento.onend = () => setGrabando(false);
