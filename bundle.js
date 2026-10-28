@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-28T02:58:09.088Z */
+/* UniconApp — Bundle generado el 2026-10-28T03:03:25.646Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 22003 — CERO simplificaciones */
+/* Líneas originales del JSX: 22010 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -13086,6 +13086,13 @@ const cacheAvisosPorPlanta = {};
 // consulta real de todas formas se dispara para mantenerla al día, pero no bloquea el render.
 const cacheUltimoLeido = {};
 const claveUltimoLeido = (usuarioId, planta) => `${usuarioId}::${planta}`;
+// Día y fecha corta al costado de la hora de cada mensaje, ej. "Mar. 27/10" — formato propio en
+// vez de toLocaleDateString para no depender de cómo cada navegador abrevie el día en español.
+const DIAS_CORTO = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+const diaFechaCorta = fechaIso => {
+  const d = new Date(fechaIso);
+  return `${DIAS_CORTO[d.getDay()]}. ${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+};
 function PanelAvisos({
   yo,
   planta,
@@ -14684,7 +14691,7 @@ function PanelAvisos({
     /*#__PURE__*/
     React.createElement("span", {
       className: "italic mr-1"
-    }, "editado"), new Date(a.created_at).toLocaleTimeString("es-PE", {
+    }, "editado"), diaFechaCorta(a.created_at), " \xB7 ", new Date(a.created_at).toLocaleTimeString("es-PE", {
       hour: "2-digit",
       minute: "2-digit"
     }))), totalR > 0 &&
@@ -15424,7 +15431,7 @@ function EncuestaCard({
     style: {
       color: "rgba(255,255,255,.55)"
     }
-  }, horaTexto)), esAdmin &&
+  }, diaFechaCorta(encuesta.created_at), " \xB7 ", horaTexto)), esAdmin &&
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("button", {
