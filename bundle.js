@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-28T04:08:05.099Z */
+/* UniconApp — Bundle generado el 2026-10-28T04:11:46.000Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 22050 — CERO simplificaciones */
+/* Líneas originales del JSX: 22052 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -21178,8 +21178,10 @@ function BitacoraPersonal({
       setTexto([dictadoBaseRef.current, textoFinal, provisional.trim()].filter(Boolean).join(" "));
     };
     reconocimiento.onerror = e => {
-      // "no-speech" es normal (silencio entre una frase y la siguiente) y no debe cortar la
-      // grabación — onend la reinicia sola. Solo se detiene de verdad ante un error real.
+      // "no-speech" (silencio) y "aborted" (pausa momentánea, ej. la pestaña pasó a segundo plano)
+      // NO deben cortar la grabación — simplemente se reinicia sola en onend. La ÚNICA forma de
+      // detener la grabación es que el chofer vuelva a tocar el micrófono (ver alternarDictado);
+      // así no hay que adivinar cuándo "ya terminó de hablar".
       if (e.error !== "no-speech" && e.error !== "aborted") {
         grabandoRef.current = false;
         setGrabando(false);
