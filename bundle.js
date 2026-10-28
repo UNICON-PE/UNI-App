@@ -1,4 +1,4 @@
-/* UniconApp — Bundle generado el 2026-10-28T03:40:07.819Z */
+/* UniconApp — Bundle generado el 2026-10-28T03:43:23.759Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
 /* Líneas originales del JSX: 22010 — CERO simplificaciones */
 
@@ -14487,7 +14487,7 @@ function PanelAvisos({
     /*#__PURE__*/
     /*#__PURE__*/
     React.createElement("div", {
-      className: "text-[12px] text-gray-800 whitespace-pre-wrap",
+      className: "text-[13px] text-gray-800 whitespace-pre-wrap",
       style: {
         overflowWrap: "break-word",
         wordBreak: "break-word"
