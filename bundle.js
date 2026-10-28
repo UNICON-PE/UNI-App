@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-28T04:02:47.194Z */
+/* UniconApp — Bundle generado el 2026-10-28T04:08:05.099Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 22016 — CERO simplificaciones */
+/* Líneas originales del JSX: 22050 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -21133,29 +21133,32 @@ function BitacoraPersonal({
   const [grabando, setGrabando] = useState(false);
   const fileRef = useRef(null);
   const reconocimientoRef = useRef(null);
+  // Espejo de "grabando" legible dentro de onend (ese callback queda "congelado" con el valor de
+  // grabando que había cuando se creó esa instancia de reconocimiento, no el actual).
+  const grabandoRef = useRef(false);
   const dictadoBaseRef = useRef(""); // texto que ya había en el cuadro antes de empezar a grabar
-  // Fragmentos ya confirmados (no provisionales), guardados por índice de resultado — NO como
-  // texto concatenado: en Android, el motor de reconocimiento a veces reenvía el mismo resultado
-  // "final" más de una vez (reinicio interno del reconocimiento en el celular). Si se concatenara
-  // cada vez que llega, el texto terminaba repetido muchas veces — guardar por índice hace que un
-  // mismo resultado reenviado solo sobreescriba su propia posición, nunca duplique.
-  const dictadoFinalesRef = useRef([]);
+  const dictadoFinalesRef = useRef([]); // fragmentos ya confirmados (no provisionales), en orden
   // Dictado por voz (Web Speech API, nativa del navegador — sin backend/IA externa). Si el
   // navegador no la soporta (ej. Firefox), el botón del micrófono simplemente no se muestra.
   const dictadoDisponible = typeof window !== "undefined" && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
-  useEffect(() => () => reconocimientoRef.current?.stop(), []);
-  const alternarDictado = () => {
-    if (grabando) {
-      reconocimientoRef.current?.stop();
-      return;
-    }
+  useEffect(() => () => {
+    grabandoRef.current = false;
+    reconocimientoRef.current?.stop();
+  }, []);
+  // En Android, "continuous: true" hace que el propio motor de reconocimiento reenvíe o repita
+  // resultados "finales" de la misma frase varias veces — el texto terminaba duplicado muchas
+  // veces (confirmado por ewq en celular real; un primer intento guardando por índice no alcanzó,
+  // porque a veces el reenvío no repite el mismo índice sino que entrega el mismo contenido en un
+  // índice nuevo). La solución que de verdad funciona cruzando celulares: NUNCA usar continuous en
+  // true — se usa una sesión corta por frase (continuous: false) y, mientras el chofer siga
+  // grabando, se arranca una sesión nueva apenas termina la anterior (onend). Cada sesión nueva
+  // entrega sus propios resultados desde cero, así que no hay reenvíos que puedan duplicarse.
+  const iniciarSesionDictado = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) return;
-    dictadoBaseRef.current = texto.trim();
-    dictadoFinalesRef.current = [];
     const reconocimiento = new SpeechRecognition();
     reconocimiento.lang = "es-PE";
-    reconocimiento.continuous = true;
+    reconocimiento.continuous = false;
     // interimResults=true: mientras el chofer habla, el texto reconocido hasta el momento (todavía
     // sin confirmar) se va mostrando de inmediato en el cuadro — así ve en vivo que su voz sí se
     // está grabando y convirtiendo en palabras, no solo un indicador aparte.
@@ -21165,19 +21168,50 @@ function BitacoraPersonal({
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const fragmento = e.results[i][0].transcript;
         if (e.results[i].isFinal) {
-          dictadoFinalesRef.current[i] = fragmento.trim();
+          const limpio = fragmento.trim();
+          if (limpio) dictadoFinalesRef.current.push(limpio);
         } else {
           provisional += fragmento;
         }
       }
-      const textoFinal = dictadoFinalesRef.current.filter(Boolean).join(" ");
+      const textoFinal = dictadoFinalesRef.current.join(" ");
       setTexto([dictadoBaseRef.current, textoFinal, provisional.trim()].filter(Boolean).join(" "));
     };
-    reconocimiento.onerror = () => setGrabando(false);
-    reconocimiento.onend = () => setGrabando(false);
+    reconocimiento.onerror = e => {
+      // "no-speech" es normal (silencio entre una frase y la siguiente) y no debe cortar la
+      // grabación — onend la reinicia sola. Solo se detiene de verdad ante un error real.
+      if (e.error !== "no-speech" && e.error !== "aborted") {
+        grabandoRef.current = false;
+        setGrabando(false);
+      }
+    };
+    reconocimiento.onend = () => {
+      if (grabandoRef.current) {
+        try {
+          iniciarSesionDictado();
+        } catch (err) {
+          grabandoRef.current = false;
+          setGrabando(false);
+        }
+      } else {
+        setGrabando(false);
+      }
+    };
     reconocimientoRef.current = reconocimiento;
     reconocimiento.start();
+  };
+  const alternarDictado = () => {
+    if (grabando) {
+      grabandoRef.current = false;
+      reconocimientoRef.current?.stop();
+      return;
+    }
+    if (typeof window === "undefined" || !(window.SpeechRecognition || window.webkitSpeechRecognition)) return;
+    dictadoBaseRef.current = texto.trim();
+    dictadoFinalesRef.current = [];
+    grabandoRef.current = true;
     setGrabando(true);
+    iniciarSesionDictado();
   };
   useEffect(() => {
     if (!driver?.id) return;
