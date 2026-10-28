@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-27T23:12:25.021Z */
+/* UniconApp — Bundle generado el 2026-10-28T02:58:09.088Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 22004 — CERO simplificaciones */
+/* Líneas originales del JSX: 22003 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -26738,7 +26738,7 @@ function AztPanel({
     despachador: ["acceso", "retiro"],
     jefe_planta: ["servicios", "acceso"],
     trabajadora_social: ["servicios"],
-    sgi: []
+    sgi: ["servicios"]
   };
   const TIPOS_FILTRABLES_TODOS = INCIDENT_TYPES.filter(t => t.id !== "auxilio" && t.id !== "falla");
   const TIPOS_FILTRABLES = TIPOS_POR_ROL[admin?.rol] ? TIPOS_FILTRABLES_TODOS.filter(t => TIPOS_POR_ROL[admin.rol].includes(t.id)) : TIPOS_FILTRABLES_TODOS;
@@ -27110,8 +27110,7 @@ function AztPanel({
       case "trabajadora_social":
         return i.tipo === "servicios";
       case "sgi":
-        return false;
-      // SGI solo ve Fallas mecánicas, no el buzón de chat
+        return i.tipo === "servicios";
       default:
         return true;
     }
@@ -27440,12 +27439,11 @@ function AztPanel({
   // Mantenimiento solo gestiona auxilios mecánicos: no publica avisos ni atiende incidencias de
   // planta, así que esas dos secciones (antes visibles para todos los cargos administrativos)
   // se ocultan específicamente para ese rol.
-  // SGI nunca recibe nada en el buzón de chat (incidenciaEsParaMiRol siempre devuelve false para
-  // ese rol) y, desde que se quitó "Fallas mecánicas" sin reemplazo, tampoco tiene ya ningún otro
-  // contenido ahí — la sección queda oculta para no mostrar un buzón permanentemente vacío.
+  // SGI ahora sí recibe incidencias de "servicios de planta no disponibles" (ver
+  // incidenciaEsParaMiRol), así que ya no se oculta la sección para ese rol.
   // "gestion_sistema" es un cargo interno (cuentas de uso administrativo, ej. publicar en el
-  // Canal de Avisos) sin ninguna planta/incidencia real asociada — se oculta por el mismo motivo.
-  const ROLES_SIN_INCIDENCIAS = new Set(["sgi", "gestion_sistema"]);
+  // Canal de Avisos) sin ninguna planta/incidencia real asociada — se oculta por ese motivo.
+  const ROLES_SIN_INCIDENCIAS = new Set(["gestion_sistema"]);
   const SECTIONS = [...(!ROLES_MANTENIMIENTO.has(admin?.rol) && !ROLES_SIN_CANAL.has(admin?.rol) ? [{
     id: "avisos",
     label: "Canal de Avisos",
