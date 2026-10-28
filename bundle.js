@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-28T04:14:34.196Z */
+/* UniconApp — Bundle generado el 2026-10-28T14:33:09.466Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 22060 — CERO simplificaciones */
+/* Líneas originales del JSX: 22124 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -18370,16 +18370,14 @@ Por favor selecciona "Ver menú" para ver todas las opciones disponibles.`);
   // SOLO Villa el Salvador (piloto): en vez de mostrar siempre los dos turnos de AZT/Despacho
   // fijos, el directorio muestra uno solo — el que está de turno en este momento. Este horario es
   // PROPIO del directorio (pedido explícito de ewq) y NO es el mismo corte usado para enrutar
-  // incidencias (ver incidenciaEsParaMiRol en AztPanel) — ahí sigue 6:30am-3:15pm; acá el contacto
-  // de turno día cubre toda la madrugada también. El resto de plantas no tiene este corte por
+  // incidencias (ver incidenciaEsParaMiRol en AztPanel) — ahí sigue 6:30am-3:15pm. El AZT ya usa
+  // ese mismo corte de 6:30am (el de noche cubre la madrugada); en el Despacho el contacto de turno
+  // día sigue cubriendo toda la madrugada. El resto de plantas no tiene este corte por
   // planta, así que siguen viendo los dos turnos como filas separadas.
-  const horaLimaAhoraDecimal = () => {
-    const d = new Date(Date.now() - 5 * 60 * 60 * 1000);
-    return d.getUTCHours() + d.getUTCMinutes() / 60;
-  };
-  // AZT: día 12:00am-1:14pm y 2:00pm-3:14pm, noche 1:15pm-1:59pm y 3:15pm-11:59pm.
+  // AZT: día 6:30am-1:14pm y 2:00pm-3:14pm, noche 1:15pm-1:59pm y 3:15pm-6:29am (madrugada incluida).
   const turnoAztVillaElSalvadorAhora = () => {
     const h = horaLimaAhoraDecimal();
+    if (h < 6.5) return "noche";
     if (h >= 13.25 && h < 14) return "noche";
     if (h >= 15.25) return "noche";
     return "dia";
@@ -19956,6 +19954,31 @@ function ReporteIncidencias({
       data
     }) => setObrasReales((data || []).map(o => o.obra)));
   }, [driver.planta]);
+  // Contactos de turno (AZT y Despacho) para la pantalla "Primero comunícate por teléfono": mismas
+  // personas reales de perfiles que usa el Directorio de contactos de UNIBOT, con el recálculo
+  // cada minuto para que el contacto de turno cambie solo al pasar la hora de relevo.
+  const [directorioTurno, setDirectorioTurno] = useState([]);
+  const [directorioTurnoCargando, setDirectorioTurnoCargando] = useState(true);
+  const [, setContactosTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setContactosTick(t => t + 1), 60000);
+    return () => clearInterval(id);
+  }, []);
+  useEffect(() => {
+    let vigente = true;
+    sbClient.from("perfiles").select("nombre, rol, turno, telefono, planta").in("rol", ["despachador", "admin_zonal_transporte", "jefe_planta"]).eq("activo", true).then(({
+      data,
+      error
+    }) => {
+      if (!vigente) return;
+      if (error) console.error("Error cargando contactos de turno:", error.message);
+      setDirectorioTurno(data || []);
+      setDirectorioTurnoCargando(false);
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [driver.planta]);
   const [servicio, setServicio] = useState("");
   const [subAlmuerzo, setSubAlmuerzo] = useState("");
   const [comentario, setComentario] = useState("");
@@ -20456,22 +20479,43 @@ function ReporteIncidencias({
     }
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-sm text-gray-700"
-  }, /*#__PURE__*/React.createElement("b", null, "Primero comun\xEDcate por tel\xE9fono."), " Estos son los contactos para: ", /*#__PURE__*/React.createElement("br", null), "\u201C", tipo.label, "\u201D.")), contactosPorTipo(tipo, cfg).map(([k, v]) =>
+  }, /*#__PURE__*/React.createElement("b", null, "Primero comun\xEDcate por tel\xE9fono."), " Estos son los contactos para: ", /*#__PURE__*/React.createElement("br", null), "\u201C", tipo.label, "\u201D.")), directorioTurnoCargando ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "text-sm text-gray-400 text-center py-4"
+  }, "Cargando contactos\u2026") : contactosPorTipo(tipo, cfg, directorioTurno, driver.planta).map(([k, v, nombre], i) =>
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("a", {
-    key: k,
-    className: "flex items-center justify-between bg-white rounded-xl px-3 py-3 shadow-sm mb-2"
-  }, /*#__PURE__*/React.createElement("span", {
+    key: k + i,
+    href: v && /\d/.test(v) ? `tel:${v.replace(/[^\d+]/g, "")}` : undefined,
+    className: "flex items-center justify-between gap-2 bg-white rounded-xl px-3 py-3 shadow-sm mb-2"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "min-w-0"
+  }, /*#__PURE__*/React.createElement("div", {
     className: "text-sm text-gray-700"
-  }, k), /*#__PURE__*/React.createElement("span", {
-    className: "text-sm font-bold flex items-center gap-1",
+  }, k), nombre &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "text-[11px] text-gray-400 truncate"
+  }, nombre)), v ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("span", {
+    className: "text-sm font-bold flex items-center gap-1 shrink-0",
     style: {
       color: AZUL
     }
   }, /*#__PURE__*/React.createElement(Phone, {
     size: 14
-  }), " ", v))), tipo.id !== "mecanica" &&
+  }), " ", v) : nombre !== "Sin asignar" &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("span", {
+    className: "text-xs text-gray-400 shrink-0"
+  }, "Sin tel\xE9fono"))), tipo.id !== "mecanica" &&
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("button", {
@@ -21143,22 +21187,25 @@ function BitacoraPersonal({
   const dictadoDisponible = typeof window !== "undefined" && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
   useEffect(() => () => {
     grabandoRef.current = false;
-    reconocimientoRef.current?.stop();
+    reconocimientoRef.current?.abort();
   }, []);
-  // En Android, "continuous: true" hace que el propio motor de reconocimiento reenvíe o repita
-  // resultados "finales" de la misma frase varias veces — el texto terminaba duplicado muchas
-  // veces (confirmado por ewq en celular real; un primer intento guardando por índice no alcanzó,
-  // porque a veces el reenvío no repite el mismo índice sino que entrega el mismo contenido en un
-  // índice nuevo). La solución que de verdad funciona cruzando celulares: NUNCA usar continuous en
-  // true — se usa una sesión corta por frase (continuous: false) y, mientras el chofer siga
-  // grabando, se arranca una sesión nueva apenas termina la anterior (onend). Cada sesión nueva
-  // entrega sus propios resultados desde cero, así que no hay reenvíos que puedan duplicarse.
+  // Una sola grabación continua de principio a fin — SIN reinicios automáticos ni al detectar
+  // silencio: empieza al tocar el micrófono y sigue escuchando y transcribiendo hasta que el
+  // chofer vuelva a tocarlo, sin importar cuántas pausas haga mientras tanto (pedido explícito:
+  // ewq probó una versión que reiniciaba sola entre frases y en el celular eso sonaba un pitido
+  // cada vez, dando la sensación de estar "en bucle").
+  //
+  // El motivo por el que antes se evitaba continuous=true es que, en Android, el motor de
+  // reconocimiento a veces reenvía como "final" un fragmento que ya se había agregado — en vez de
+  // resolverlo reiniciando la grabación (lo que causaba el pitido), ahora se compara el texto: si
+  // el fragmento nuevo ya aparece dentro de lo ya transcrito, se descarta en vez de agregarse de
+  // nuevo.
   const iniciarSesionDictado = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) return;
     const reconocimiento = new SpeechRecognition();
     reconocimiento.lang = "es-PE";
-    reconocimiento.continuous = false;
+    reconocimiento.continuous = true;
     // interimResults=true: mientras el chofer habla, el texto reconocido hasta el momento (todavía
     // sin confirmar) se va mostrando de inmediato en el cuadro — así ve en vivo que su voz sí se
     // está grabando y convirtiendo en palabras, no solo un indicador aparte.
@@ -21169,7 +21216,10 @@ function BitacoraPersonal({
         const fragmento = e.results[i][0].transcript;
         if (e.results[i].isFinal) {
           const limpio = fragmento.trim();
-          if (limpio) dictadoFinalesRef.current.push(limpio);
+          const acumulado = dictadoFinalesRef.current.join(" ");
+          if (limpio && !acumulado.includes(limpio)) {
+            dictadoFinalesRef.current.push(limpio);
+          }
         } else {
           provisional += fragmento;
         }
@@ -21177,16 +21227,12 @@ function BitacoraPersonal({
       const textoFinal = dictadoFinalesRef.current.join(" ");
       setTexto([dictadoBaseRef.current, textoFinal, provisional.trim()].filter(Boolean).join(" "));
     };
-    reconocimiento.onerror = e => {
-      // "no-speech" (silencio) y "aborted" (pausa momentánea, ej. la pestaña pasó a segundo plano)
-      // NO deben cortar la grabación — simplemente se reinicia sola en onend. La ÚNICA forma de
-      // detener la grabación es que el chofer vuelva a tocar el micrófono (ver alternarDictado);
-      // así no hay que adivinar cuándo "ya terminó de hablar".
-      if (e.error !== "no-speech" && e.error !== "aborted") {
-        grabandoRef.current = false;
-        setGrabando(false);
-      }
-    };
+    // Ningún error detiene la grabación por su cuenta (ni "no-speech", ni ningún otro) — la ÚNICA
+    // forma de detenerla es que el chofer vuelva a tocar el micrófono (ver alternarDictado).
+    reconocimiento.onerror = () => {};
+    // Esto es solo un respaldo por si el sistema operativo corta la grabación por su cuenta sin
+    // que el chofer la haya detenido (poco común con continuous=true, pero puede pasar) — se
+    // reinicia en silencio para no perder la grabación, sin que el chofer tenga que hacer nada.
     reconocimiento.onend = () => {
       if (grabandoRef.current) {
         try {
@@ -21205,10 +21251,8 @@ function BitacoraPersonal({
   const alternarDictado = () => {
     if (grabando) {
       // Se apaga de inmediato al tocar el botón, sin esperar a que el navegador confirme con
-      // onend — en el reinicio automático entre frases, esa confirmación a veces tarda o no llega
-      // a tiempo en el celular, y la pantalla se quedaba mostrando "Escuchando..." como si no se
-      // hubiera apagado. abort() además corta de una vez cualquier sesión que esté a medio
-      // reiniciarse, en vez de esperar a que termine de procesar (eso hacía stop()).
+      // onend — esa confirmación a veces tarda o no llega a tiempo en el celular, y la pantalla se
+      // quedaba mostrando "Escuchando..." como si no se hubiera apagado.
       grabandoRef.current = false;
       setGrabando(false);
       try {
@@ -21635,11 +21679,52 @@ function BitacoraPersonal({
     className: "text-xs text-gray-400"
   }, "Cargando foto...")))));
 }
-function contactosPorTipo(tipo, cfg) {
+const horaLimaAhoraDecimal = () => {
+  const d = new Date(Date.now() - 5 * 60 * 60 * 1000);
+  return d.getUTCHours() + d.getUTCMinutes() / 60;
+};
+// Contactos de AZT y Ejecutivo de Despacho para la pantalla "Primero comunícate por teléfono" de
+// ReporteIncidencias. A diferencia del Directorio de contactos de UNIBOT, esta pantalla sigue la
+// MISMA lógica que las incidencias (incidenciaEsParaMiRol en AztPanel y destinatarios_incidencia en
+// la base de datos): muestra a quien recibe el aviso de la incidencia en este momento. Personas
+// reales de perfiles (de la planta o Transversal). Cada fila es [etiqueta, teléfono, nombre].
+// - AZT: día 6:30am-3:14pm, noche el resto (corte grabado en turno_azt). SOLO Villa el Salvador
+//   (piloto): de 1:15pm a 1:59pm solo el de noche, porque cubre el almuerzo del de día (a la
+//   incidencia le suenan los dos, pero a quien se llama es a quien está cubriendo).
+// - Despacho: SOLO Villa el Salvador (piloto): corte propio de las 4:15pm (la madrugada es del
+//   turno día) y de 12:15pm a 12:59pm solo el de noche (cubre el almuerzo del de día), con su
+//   propio teléfono. El resto de plantas muestra las filas de turno día y noche.
+function contactosDeTurno(planta, directorio) {
+  const pertenece = p => {
+    const plantas = (p.planta || "").split(",").map(s => s.trim());
+    return plantas.includes(planta) || plantas.includes("Transversal");
+  };
+  const buscar = (rol, turno) => directorio.filter(p => p.rol === rol && p.turno === turno && pertenece(p));
+  const esVES = planta === "Villa el Salvador";
+  const h = horaLimaAhoraDecimal();
+  const turnosAzt = !esVES ? ["dia", "noche"] : h >= 13.25 && h < 14 ? ["noche"] : [h >= 6.5 && h < 15.25 ? "dia" : "noche"];
+  const turnosDespacho = !esVES ? ["dia", "noche"] : h >= 12.25 && h < 13 ? ["noche"] : [h < 16.25 ? "dia" : "noche"];
+  const filas = (rol, turnos, etiquetaBase) => turnos.flatMap(t => {
+    const etiqueta = esVES ? `${etiquetaBase} de turno` : `${etiquetaBase} ${t === "dia" ? "día" : "noche"}`;
+    const personas = buscar(rol, t);
+    if (personas.length === 0) return [[etiqueta, null, "Sin asignar"]];
+    return personas.map(p => [etiqueta, p.telefono, p.nombre]);
+  });
+  // Jefe de Planta (sin turno): solo se muestra en "acceso", que es el tipo donde también le suena.
+  const jefes = directorio.filter(p => p.rol === "jefe_planta" && pertenece(p));
+  return {
+    azt: filas("admin_zonal_transporte", turnosAzt, "AZT"),
+    despacho: filas("despachador", turnosDespacho, "Despacho"),
+    jefePlanta: jefes.length === 0 ? [["Jefe de Planta", null, "Sin asignar"]] : jefes.map(p => ["Jefe de Planta", p.telefono, p.nombre])
+  };
+}
+function contactosPorTipo(tipo, cfg, directorio = [], planta) {
   const c = cfg.contactos;
+  const t = contactosDeTurno(planta, directorio);
   if (tipo.id === "mecanica") return [["AZT día", c["AZT día"]], ["AZT noche", c["AZT noche"]], ["Mecánico de turno", c["Mecánico de turno"]], ["Llantero de turno", c["Llantero de turno"]]];
-  if (tipo.id === "servicios") return [["AZT de turno", c["AZT día"]], ["Trabajadora Social", c["Bienestar Social"]]];
-  return [["AZT día", c["AZT día"]], ["AZT noche", c["AZT noche"]], ["Despacho día", c["Despacho día"]]];
+  if (tipo.id === "servicios") return [...t.azt, ["Trabajadora Social", c["Bienestar Social"]]];
+  if (tipo.id === "acceso") return [...t.azt, ...t.despacho, ...t.jefePlanta];
+  return [...t.azt, ...t.despacho];
 }
 
 /* ============================================================ */
