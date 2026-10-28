@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-28T14:33:09.466Z */
+/* UniconApp — Bundle generado el 2026-10-28T16:20:24.223Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 22124 — CERO simplificaciones */
+/* Líneas originales del JSX: 22152 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -21683,6 +21683,24 @@ const horaLimaAhoraDecimal = () => {
   const d = new Date(Date.now() - 5 * 60 * 60 * 1000);
   return d.getUTCHours() + d.getUTCMinutes() / 60;
 };
+// Auxilio mecánico: ¿le corresponde a este AZT/Despachador por su turno? SGI y Mantenimiento no
+// filtran por turno. SOLO Villa el Salvador (piloto), misma lógica que Incidencias, según la hora
+// en que se reportó el auxilio: AZT 13:15-14:00 y Despacho 12:15-13:00, el turno noche también lo
+// ve (releva al de turno día). Fuera de esa ventana, AZT sigue el turno grabado (corte 3:15pm) y
+// Despacho su propio corte de 4:15pm (la madrugada es del turno día), igual que incidenciaEsParaMiRol.
+const auxilioEsDeMiTurno = (a, admin) => {
+  if (admin?.rol !== "admin_zonal_transporte" && admin?.rol !== "despachador") return true;
+  if (a.planta === "Villa el Salvador") {
+    const d = new Date(new Date(a.created_at).getTime() - 5 * 60 * 60 * 1000);
+    const h = d.getUTCHours() + d.getUTCMinutes() / 60;
+    if (admin.rol === "admin_zonal_transporte" && h >= 13.25 && h < 14) return true;
+    if (admin.rol === "despachador") {
+      if (h >= 12.25 && h < 13) return true;
+      return h < 16.25 === (admin.turno === "dia");
+    }
+  }
+  return a.turno_azt === admin?.turno;
+};
 // Contactos de AZT y Ejecutivo de Despacho para la pantalla "Primero comunícate por teléfono" de
 // ReporteIncidencias. A diferencia del Directorio de contactos de UNIBOT, esta pantalla sigue la
 // MISMA lógica que las incidencias (incidenciaEsParaMiRol en AztPanel y destinatarios_incidencia en
@@ -27026,7 +27044,7 @@ function AztPanel({
     });
     // AZT y Despachador solo cuentan los de su propio turno (ver auxilioEsParaMiRol en
     // AuxilioMecanicoBuzon) — SGI y Mantenimiento no filtran por turno.
-    const total = filas.filter(a => admin.rol !== "admin_zonal_transporte" && admin.rol !== "despachador" || a.turno_azt === admin.turno).filter(a => {
+    const total = filas.filter(a => auxilioEsDeMiTurno(a, admin)).filter(a => {
       const cursor = leidoPorPlanta[a.planta] ? new Date(leidoPorPlanta[a.planta]) : new Date(0);
       return new Date(a.created_at) > cursor;
     }).length;
@@ -30178,11 +30196,12 @@ function AuxilioMecanicoBuzon({
   const [plantaSel, setPlantaSel] = useState("Todas");
   const [abierto, setAbierto] = useState(null);
   const [fotoUrl, setFotoUrl] = useState(null);
+  const [fotoFallo, setFotoFallo] = useState(false); // el navegador no pudo mostrar el adjunto (video, HEIC, etc.)
   const plantList = ["Todas", ...(admin?.plantas || [])];
   // AZT y Despachador solo ven/reciben los auxilios de su propio turno (igual que ya pasa con
   // Incidencias, ver incidenciaEsParaMiRol) — SGI y Mantenimiento siguen viendo todos, sin filtrar
   // por turno.
-  const auxilioEsParaMiRol = a => admin?.rol !== "admin_zonal_transporte" && admin?.rol !== "despachador" || a.turno_azt === admin?.turno;
+  const auxilioEsParaMiRol = a => auxilioEsDeMiTurno(a, admin);
   const auxiliosPropios = auxilios.filter(auxilioEsParaMiRol);
   useEffect(() => {
     if (!admin?.id) return;
@@ -30255,6 +30274,7 @@ function AuxilioMecanicoBuzon({
   const abrirDetalle = async a => {
     setAbierto(a);
     setFotoUrl(null);
+    setFotoFallo(false);
     if (a.foto_path) {
       const {
         data
@@ -30498,12 +30518,46 @@ function AuxilioMecanicoBuzon({
     className: "text-xs font-semibold text-gray-500 mb-1"
   }, "Descripci\xF3n"), /*#__PURE__*/React.createElement("p", {
     className: "text-sm text-gray-700 whitespace-pre-wrap"
-  }, abierto.descripcion)), abierto.foto_path && (fotoUrl ?
+  }, abierto.descripcion)), abierto.foto_path && (fotoUrl ? fotoFallo ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("a", {
+    href: fotoUrl,
+    target: "_blank",
+    rel: "noopener noreferrer",
+    className: "block text-center text-xs font-semibold rounded-xl px-3 py-3",
+    style: {
+      background: "#eef2ff",
+      color: "#0033A0"
+    }
+  }, "No se pudo mostrar el adjunto aqu\xED \u2014 toca para abrirlo en otra pesta\xF1a") : /\.(mp4|mov|webm|3gp|m4v|avi|mkv)$/i.test(abierto.foto_path) ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", null, /*#__PURE__*/React.createElement("video", {
+    src: fotoUrl,
+    controls: true,
+    playsInline: true,
+    preload: "metadata",
+    onError: () => setFotoFallo(true),
+    style: {
+      width: "100%",
+      borderRadius: 12
+    }
+  }), /*#__PURE__*/React.createElement("a", {
+    href: fotoUrl,
+    target: "_blank",
+    rel: "noopener noreferrer",
+    className: "block text-center text-xs font-semibold mt-1.5",
+    style: {
+      color: "#0033A0"
+    }
+  }, "\xBFNo se ve bien? Abrir el video en otra pesta\xF1a")) :
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("img", {
     src: fotoUrl,
     alt: "Foto del auxilio",
+    onError: () => setFotoFallo(true),
     style: {
       width: "100%",
       borderRadius: 12
