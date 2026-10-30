@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-28T16:20:24.223Z */
+/* UniconApp — Bundle generado el 2026-10-30T16:12:44.533Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 22152 — CERO simplificaciones */
+/* Líneas originales del JSX: 22508 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -1130,6 +1130,29 @@ const Mic = ({
   "x2": "12",
   "y1": "19",
   "y2": "22"
+}));
+const Eye = ({
+  size = 24,
+  color = "currentColor",
+  className = "",
+  strokeWidth = 2,
+  ...props
+}) => React.createElement("svg", Object.assign({
+  width: size,
+  height: size,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: color,
+  strokeWidth: strokeWidth,
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  className: className
+}, props), React.createElement("path", {
+  "d": "M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"
+}), React.createElement("circle", {
+  "cx": "12",
+  "cy": "12",
+  "r": "3"
 }));
 const {
   useState,
@@ -8655,10 +8678,16 @@ function rondaEnVigencia(ronda) {
 function preguntaEsVisible(pregunta, filtros) {
   const condicion = pregunta.condicion;
   if (!condicion) return true;
-  const cargoFiltro = condicion.cargo || (condicion.dependeDe === "cargo" ? condicion.opciones : null);
-  if (cargoFiltro && cargoFiltro.length && !cargoFiltro.includes(filtros.cargo)) return false;
-  if (condicion.dependeDe && condicion.dependeDe !== "cargo") {
-    if (!(condicion.opciones || []).includes(filtros[condicion.dependeDe])) return false;
+  // ignorarAudiencia: usado por la vista previa de Gestión Humana (ver botón "Preview" en el
+  // editor) — ahí no hay un chofer real detrás, así que las condiciones por cargo/ubicación se
+  // saltan y solo se evalúa la lógica entre preguntas (reglas), que es la que depende de lo que se
+  // va respondiendo en la propia vista previa.
+  if (!filtros.ignorarAudiencia) {
+    const cargoFiltro = condicion.cargo || (condicion.dependeDe === "cargo" ? condicion.opciones : null);
+    if (cargoFiltro && cargoFiltro.length && !cargoFiltro.includes(filtros.cargo)) return false;
+    if (condicion.dependeDe && condicion.dependeDe !== "cargo") {
+      if (!(condicion.opciones || []).includes(filtros[condicion.dependeDe])) return false;
+    }
   }
   if (condicion.reglas && condicion.reglas.length) {
     for (const regla of condicion.reglas) {
@@ -9843,7 +9872,8 @@ function EncuestaResponder({
   encuesta,
   driver,
   onCerrar,
-  onCompletada
+  onCompletada,
+  modoPreview
 }) {
   // Ya no se le pregunta al colaborador su planta de origen: Gestión Humana elige explícitamente a
   // qué plantas/posiciones se le envía cada ronda (ver audienciaIncluye), así que la planta real de
@@ -9853,6 +9883,11 @@ function EncuestaResponder({
   const [respuestas, setRespuestas] = useState({});
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
+  const [paginaIdx, setPaginaIdx] = useState(0);
+  const scrollRef = useRef(null);
+  useEffect(() => {
+    scrollRef.current?.scrollTo(0, 0);
+  }, [paginaIdx]);
   useEffect(() => {
     sbClient.from("rh_planta_categoria").select("planta,categoria").then(({
       data
@@ -9867,15 +9902,35 @@ function EncuestaResponder({
   .filter(p => p.tipo !== "filtro_planta").filter(p => preguntaEsVisible(p, {
     ubicacion,
     cargo: driver.rol,
-    respuestas
+    respuestas,
+    ignorarAudiencia: modoPreview
   }));
   const faltanRespuestas = preguntasVisibles.some(p => p.obligatoria && !respuestas[p.id]);
+  // Salto de página manual (Gestión Humana lo marca pregunta por pregunta en el editor,
+  // independiente de la categoría) — se arma SOLO con las preguntas que ya pasaron el filtro de
+  // lógica/audiencia de arriba, así que una página que quede sin ninguna pregunta visible para
+  // este chofer directamente no existe (nunca se ve una pantalla vacía).
+  const paginas = [];
+  let paginaEnCurso = [];
+  for (const p of preguntasVisibles) {
+    paginaEnCurso.push(p);
+    if (p.salto_pagina_despues) {
+      paginas.push(paginaEnCurso);
+      paginaEnCurso = [];
+    }
+  }
+  if (paginaEnCurso.length || paginas.length === 0) paginas.push(paginaEnCurso);
+  const paginaIdxSegura = Math.min(paginaIdx, paginas.length - 1);
+  const preguntasPagina = paginas[paginaIdxSegura] || [];
+  const esPrimeraPagina = paginaIdxSegura === 0;
+  const esUltimaPagina = paginaIdxSegura === paginas.length - 1;
+  const faltanRespuestasPagina = preguntasPagina.some(p => p.obligatoria && !respuestas[p.id]);
   // Agrupa por categoría (dimension) en bloques CONTIGUOS según el orden real — una pregunta
   // "suelta" (dimension null, ver EncuestaPreguntasEditor) es su propio bloque sin encabezado.
   // No se puede agrupar con un simple Set+filter por nombre de categoría porque eso juntaría
   // preguntas sueltas no contiguas entre sí, rompiendo el orden real si hay varias intercaladas.
   const bloquesVisibles = [];
-  for (const p of preguntasVisibles) {
+  for (const p of preguntasPagina) {
     const ultimo = bloquesVisibles[bloquesVisibles.length - 1];
     if (p.dimension && ultimo && ultimo.dimension === p.dimension) {
       ultimo.preguntas.push(p);
@@ -9887,6 +9942,10 @@ function EncuestaResponder({
     }
   }
   const enviar = async () => {
+    if (modoPreview) {
+      setEnviado(true);
+      return;
+    }
     setEnviando(true);
     const {
       error
@@ -9926,9 +9985,9 @@ function EncuestaResponder({
       style: {
         color: AZUL
       }
-    }, "\xA1Gracias por tu respuesta!"), /*#__PURE__*/React.createElement("p", {
+    }, modoPreview ? "Vista previa completa" : "¡Gracias por tu respuesta!"), /*#__PURE__*/React.createElement("p", {
       className: "text-sm text-gray-600 mb-6"
-    }, "Tu opini\xF3n ya qued\xF3 registrada."), /*#__PURE__*/React.createElement("button", {
+    }, modoPreview ? "Esto es solo una previsualización — no se guardó ninguna respuesta." : "Tu opinión ya quedó registrada."), /*#__PURE__*/React.createElement("button", {
       onClick: onCompletada,
       className: "w-full py-3 rounded-xl font-bold",
       style: {
@@ -9949,7 +10008,7 @@ function EncuestaResponder({
     }
   }, /*#__PURE__*/React.createElement("span", {
     className: "font-semibold flex-1 truncate"
-  }, encuesta.nombre), /*#__PURE__*/React.createElement("button", {
+  }, encuesta.nombre, paginas.length > 1 ? ` · Página ${paginaIdxSegura + 1} de ${paginas.length}` : ""), /*#__PURE__*/React.createElement("button", {
     onClick: onCerrar,
     className: "w-7 h-7 rounded-full flex items-center justify-center",
     style: {
@@ -9959,10 +10018,11 @@ function EncuestaResponder({
     size: 16,
     color: "white"
   }))), /*#__PURE__*/React.createElement("div", {
+    ref: scrollRef,
     className: "flex-1 overflow-y-auto p-4"
   }, /*#__PURE__*/React.createElement("div", {
     className: "max-w-xl mx-auto"
-  }, (encuesta.titulo || encuesta.descripcion) &&
+  }, esPrimeraPagina && (encuesta.titulo || encuesta.descripcion) &&
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
@@ -10038,11 +10098,11 @@ function EncuestaResponder({
       borderColor: "#d5d9e4",
       minHeight: 70
     }
-  }) :
+  }) : p.orientacion_opciones === "vertical" ?
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
-    className: "flex items-start gap-1"
+    className: "flex flex-col gap-2.5"
   }, (p.escala_opciones || []).map(op =>
   /*#__PURE__*/
   /*#__PURE__*/
@@ -10052,7 +10112,41 @@ function EncuestaResponder({
       ...r,
       [p.id]: op
     })),
-    className: "flex-1 min-w-0 flex flex-col items-center gap-1.5 py-1 px-0.5"
+    className: "flex items-center gap-2.5 py-0.5"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center",
+    style: {
+      borderColor: respuestas[p.id] === op ? AZUL : "#c7cbd6"
+    }
+  }, respuestas[p.id] === op &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("span", {
+    className: "w-2 h-2 rounded-full",
+    style: {
+      background: AZUL
+    }
+  })), /*#__PURE__*/React.createElement("span", {
+    className: "text-[13px] text-left",
+    style: {
+      color: respuestas[p.id] === op ? AZUL : "#5c6070",
+      fontWeight: respuestas[p.id] === op ? 700 : 500
+    }
+  }, op)))) :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "flex items-stretch gap-1"
+  }, (p.escala_opciones || []).map(op =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
+    key: op,
+    onClick: () => setRespuestas(r => ({
+      ...r,
+      [p.id]: op
+    })),
+    className: "flex-1 min-w-0 flex flex-col items-center justify-end gap-1.5 py-1 px-0.5"
   }, /*#__PURE__*/React.createElement("span", {
     className: "text-[10px] leading-tight text-center",
     style: {
@@ -10072,15 +10166,41 @@ function EncuestaResponder({
     style: {
       background: AZUL
     }
-  })))))))))), /*#__PURE__*/React.createElement("button", {
+  })))))))))), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2 mb-4"
+  }, !esPrimeraPagina &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
+    onClick: () => setPaginaIdx(paginaIdxSegura - 1),
+    className: "py-3.5 px-5 rounded-xl font-bold border",
+    style: {
+      borderColor: "#d5d9e4",
+      color: "#5c6070"
+    }
+  }, "Atr\xE1s"), esUltimaPagina ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
     onClick: enviar,
     disabled: faltanRespuestas || enviando,
-    className: "w-full py-3.5 rounded-xl font-bold disabled:opacity-40 mb-4",
+    className: "flex-1 py-3.5 rounded-xl font-bold disabled:opacity-40",
     style: {
       background: AMARILLO,
       color: AZUL
     }
-  }, enviando ? "Enviando..." : "Enviar encuesta"))));
+  }, enviando ? "Enviando..." : "Enviar encuesta") :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("button", {
+    onClick: () => setPaginaIdx(paginaIdxSegura + 1),
+    disabled: faltanRespuestasPagina,
+    className: "flex-1 py-3.5 rounded-xl font-bold disabled:opacity-40",
+    style: {
+      background: AMARILLO,
+      color: AZUL
+    }
+  }, "Siguiente")))));
 }
 function ChoferApp({
   incidents,
@@ -22745,7 +22865,7 @@ function EncuestaRondas({
   const [cargando, setCargando] = useState(true);
   const [mensaje, setMensaje] = useState(null);
   const [editandoId, setEditandoId] = useState(null);
-  const [vistaRecordatorio, setVistaRecordatorio] = useState(null); // { rondaId, nombre } o null
+  const [vistaRecordatorio, setVistaRecordatorio] = useState(null); // { rondaId, nombre, rondaAnteriorId } o null
   const cargarRondas = async () => {
     setCargando(true);
     const {
@@ -22830,6 +22950,7 @@ function EncuestaRondas({
     return /*#__PURE__*/ /*#__PURE__*/React.createElement(ProgramarRecordatorio, {
       rondaId: vistaRecordatorio.rondaId,
       nombre: vistaRecordatorio.nombre,
+      rondaAnteriorId: vistaRecordatorio.rondaAnteriorId,
       tieneChecklist: tieneChecklist,
       onVolver: () => setVistaRecordatorio(null)
     });
@@ -22908,10 +23029,14 @@ function EncuestaRondas({
   }, ronda.estado === "abierta" ? "Abierta" : "Finalizada")), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-2 shrink-0"
   }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => setVistaRecordatorio({
-      rondaId: ronda.id,
-      nombre: ronda.nombre
-    }),
+    onClick: () => {
+      const idx = rondas.findIndex(r => r.id === ronda.id);
+      setVistaRecordatorio({
+        rondaId: ronda.id,
+        nombre: ronda.nombre,
+        rondaAnteriorId: idx > 0 ? rondas[idx - 1].id : null
+      });
+    },
     className: "text-xs font-semibold px-2.5 py-1.5 rounded-lg border",
     style: {
       borderColor: "#d5d9e4",
@@ -23438,6 +23563,316 @@ function GaugeDona({
 
 // Detalle de una encuesta: header + 4 pestañas (Diseño / Programación de envío / Resultados /
 // Dashboard) — reemplaza la navegación anterior basada en botones sueltos por fila.
+// Dashboard de resultados (pestaña "Resultados de la encuesta de satisfacción") — % de Top 2 Box
+// general y por categoría, con semáforo configurable (rojo/amarillo/verde, mismo set de metas para
+// todo) y filtros por tipo de puesto (solo si una pregunta fue marcada como tal en el editor),
+// ubicación/sede y planta. Usa siempre la ronda más reciente de la encuesta.
+const OPCION_NA = /^(n\/a|no aplica)$/i;
+function opcionesValidasEscala(escalaOpciones) {
+  return (escalaOpciones || []).filter(op => !OPCION_NA.test((op || "").trim()));
+}
+function EncuestaDashboardTab({
+  encuesta
+}) {
+  const [cargando, setCargando] = useState(true);
+  const [preguntas, setPreguntas] = useState([]);
+  const [respuestas, setRespuestas] = useState([]);
+  const [detalle, setDetalle] = useState([]);
+  const [metas, setMetas] = useState({
+    corte_rojo: 60,
+    corte_verde: 80
+  });
+  const [guardandoMetas, setGuardandoMetas] = useState(false);
+  const [editandoMetas, setEditandoMetas] = useState(false);
+  const [filtroPuesto, setFiltroPuesto] = useState("__todos__");
+  const [filtroUbicacion, setFiltroUbicacion] = useState("__todas__");
+  const [filtroPlanta, setFiltroPlanta] = useState("__todas__");
+  useEffect(() => {
+    (async () => {
+      setCargando(true);
+      const [{
+        data: preguntasRaw
+      }, {
+        data: rondas
+      }, {
+        data: metasData
+      }] = await Promise.all([sbClient.from("rh_encuesta_preguntas").select("*").eq("encuesta_id", encuesta.id).order("orden"), sbClient.from("rh_encuesta_rondas").select("id").eq("encuesta_id", encuesta.id).order("created_at", {
+        ascending: false
+      }).limit(1), sbClient.from("rh_dashboard_metas").select("*").eq("encuesta_id", encuesta.id).maybeSingle()]);
+      setPreguntas(calcularCodigosEncuesta(preguntasRaw || []).filter(p => p.tipo === "escala"));
+      if (metasData) setMetas(metasData);
+      const rondaId = rondas?.[0]?.id || null;
+      if (rondaId) {
+        const {
+          data: resp
+        } = await sbClient.from("rh_encuesta_respuestas").select("id,planta_origen,ubicacion").eq("ronda_id", rondaId);
+        setRespuestas(resp || []);
+        const idsResp = (resp || []).map(r => r.id);
+        const {
+          data: det
+        } = idsResp.length ? await sbClient.from("rh_encuesta_respuesta_detalle").select("respuesta_id,pregunta_id,valor").in("respuesta_id", idsResp) : {
+          data: []
+        };
+        setDetalle(det || []);
+      } else {
+        setRespuestas([]);
+        setDetalle([]);
+      }
+      setCargando(false);
+    })();
+  }, [encuesta.id]);
+  const guardarMetas = async () => {
+    setGuardandoMetas(true);
+    await sbClient.from("rh_dashboard_metas").upsert({
+      encuesta_id: encuesta.id,
+      corte_rojo: Number(metas.corte_rojo) || 0,
+      corte_verde: Number(metas.corte_verde) || 0
+    });
+    setGuardandoMetas(false);
+    setEditandoMetas(false);
+  };
+  if (cargando) return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    className: "text-center py-12 text-gray-400 text-sm"
+  }, "Cargando...");
+  const preguntaFiltroPuesto = preguntas.find(p => p.usar_como_filtro_puesto);
+  const preguntaFiltroPlanta = preguntas.find(p => p.usar_como_filtro_planta);
+  const preguntasMedibles = preguntas.filter(p => !p.usar_como_filtro_puesto && !p.usar_como_filtro_planta);
+  const puestoPorRespuesta = {};
+  if (preguntaFiltroPuesto) {
+    detalle.forEach(d => {
+      if (d.pregunta_id === preguntaFiltroPuesto.id) puestoPorRespuesta[d.respuesta_id] = d.valor;
+    });
+  }
+  // Si hay una pregunta marcada como "a qué planta perteneces", esa respuesta manda sobre la
+  // planta automática del sistema (que es solo dónde estaba al momento de responder).
+  const plantaPorRespuesta = {};
+  if (preguntaFiltroPlanta) {
+    detalle.forEach(d => {
+      if (d.pregunta_id === preguntaFiltroPlanta.id) plantaPorRespuesta[d.respuesta_id] = d.valor;
+    });
+  }
+  const plantaDe = r => preguntaFiltroPlanta ? plantaPorRespuesta[r.id] || null : r.planta_origen;
+  const opcionesUbicacion = [...new Set(respuestas.map(r => r.ubicacion).filter(Boolean))];
+  const opcionesPlanta = preguntaFiltroPlanta ? preguntaFiltroPlanta.escala_opciones || [] : [...new Set(respuestas.map(r => r.planta_origen).filter(Boolean))].sort();
+  const respuestasFiltradas = respuestas.filter(r => {
+    if (filtroPlanta !== "__todas__" && plantaDe(r) !== filtroPlanta) return false;
+    if (filtroUbicacion !== "__todas__" && r.ubicacion !== filtroUbicacion) return false;
+    if (preguntaFiltroPuesto && filtroPuesto !== "__todos__" && puestoPorRespuesta[r.id] !== filtroPuesto) return false;
+    return true;
+  });
+  const idsRespuestasFiltradas = new Set(respuestasFiltradas.map(r => r.id));
+  const detalleFiltrado = detalle.filter(d => idsRespuestasFiltradas.has(d.respuesta_id));
+  const opcionesValidasPorPregunta = {};
+  const top2PorPregunta = {};
+  preguntasMedibles.forEach(p => {
+    const validas = opcionesValidasEscala(p.escala_opciones);
+    opcionesValidasPorPregunta[p.id] = validas;
+    top2PorPregunta[p.id] = validas.slice(-2);
+  });
+  const calcularTop2 = idsPreguntas => {
+    let numerador = 0,
+      denominador = 0;
+    detalleFiltrado.forEach(d => {
+      if (!idsPreguntas.has(d.pregunta_id)) return;
+      const validas = opcionesValidasPorPregunta[d.pregunta_id];
+      if (!validas || !validas.includes(d.valor)) return;
+      denominador++;
+      if (top2PorPregunta[d.pregunta_id].includes(d.valor)) numerador++;
+    });
+    return denominador > 0 ? Math.round(numerador / denominador * 100) : null;
+  };
+  const pctGeneral = calcularTop2(new Set(preguntasMedibles.map(p => p.id)));
+  const categorias = [...new Set(preguntasMedibles.map(p => p.dimension).filter(Boolean))];
+  const pctPorCategoria = categorias.map(cat => ({
+    categoria: cat,
+    pct: calcularTop2(new Set(preguntasMedibles.filter(p => p.dimension === cat).map(p => p.id)))
+  }));
+  const colorSemaforo = pct => {
+    if (pct == null) return {
+      bg: "#f3f4f6",
+      color: "#9ca3af"
+    };
+    if (pct <= metas.corte_rojo) return {
+      bg: "#fee2e2",
+      color: "#991b1b"
+    };
+    if (pct >= metas.corte_verde) return {
+      bg: "#dcfce7",
+      color: "#166534"
+    };
+    return {
+      bg: "#fef9c3",
+      color: "#854d0e"
+    };
+  };
+  const colGeneral = colorSemaforo(pctGeneral);
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+    className: "p-6 space-y-5"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-3 items-end"
+  }, preguntaFiltroPuesto &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "block text-[10px] font-bold text-gray-400 uppercase mb-1"
+  }, "Tipo de puesto / \xE1rea de trabajo"), /*#__PURE__*/React.createElement("select", {
+    value: filtroPuesto,
+    onChange: e => setFiltroPuesto(e.target.value),
+    className: "text-sm rounded-lg border px-2 py-1.5",
+    style: {
+      borderColor: "#d5d9e4"
+    }
+  }, /*#__PURE__*/React.createElement("option", {
+    value: "__todos__"
+  }, "Todos"), (preguntaFiltroPuesto.escala_opciones || []).map(op =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("option", {
+    key: op,
+    value: op
+  }, op)))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "block text-[10px] font-bold text-gray-400 uppercase mb-1"
+  }, "Ubicaci\xF3n / sede"), /*#__PURE__*/React.createElement("select", {
+    value: filtroUbicacion,
+    onChange: e => setFiltroUbicacion(e.target.value),
+    className: "text-sm rounded-lg border px-2 py-1.5",
+    style: {
+      borderColor: "#d5d9e4"
+    }
+  }, /*#__PURE__*/React.createElement("option", {
+    value: "__todas__"
+  }, "Todas"), opcionesUbicacion.map(op =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("option", {
+    key: op,
+    value: op
+  }, op)))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "block text-[10px] font-bold text-gray-400 uppercase mb-1"
+  }, "Planta"), /*#__PURE__*/React.createElement("select", {
+    value: filtroPlanta,
+    onChange: e => setFiltroPlanta(e.target.value),
+    className: "text-sm rounded-lg border px-2 py-1.5",
+    style: {
+      borderColor: "#d5d9e4"
+    }
+  }, /*#__PURE__*/React.createElement("option", {
+    value: "__todas__"
+  }, "Todas"), opcionesPlanta.map(op =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("option", {
+    key: op,
+    value: op
+  }, op)))), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setEditandoMetas(v => !v),
+    className: "ml-auto text-xs font-bold px-3 py-2 rounded-lg border h-fit",
+    style: {
+      borderColor: "#d5d9e4",
+      color: AZUL
+    }
+  }, "\u2699 Metas del sem\xE1foro")), editandoMetas &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "bg-white rounded-xl p-4 max-w-md",
+    style: {
+      border: "1px solid #e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-gray-400 mb-2"
+  }, "Un solo set de metas \u2014 se aplica igual al % general y a cada categor\xEDa."), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-3 items-end flex-wrap"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "block text-[10px] font-bold text-gray-400 uppercase mb-1"
+  }, "\uD83D\uDD34 Rojo si es \u2264"), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-1"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    value: metas.corte_rojo,
+    onChange: e => setMetas(m => ({
+      ...m,
+      corte_rojo: e.target.value
+    })),
+    className: "w-16 px-2 py-1 rounded-lg border text-sm",
+    style: {
+      borderColor: "#d5d9e4"
+    }
+  }), "%")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "block text-[10px] font-bold text-gray-400 uppercase mb-1"
+  }, "\uD83D\uDFE2 Verde si es \u2265"), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-1"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    value: metas.corte_verde,
+    onChange: e => setMetas(m => ({
+      ...m,
+      corte_verde: e.target.value
+    })),
+    className: "w-16 px-2 py-1 rounded-lg border text-sm",
+    style: {
+      borderColor: "#d5d9e4"
+    }
+  }), "%")), /*#__PURE__*/React.createElement("button", {
+    onClick: guardarMetas,
+    disabled: guardandoMetas,
+    className: "px-3 py-1.5 rounded-lg text-xs font-bold disabled:opacity-40",
+    style: {
+      background: AMARILLO,
+      color: AZUL
+    }
+  }, guardandoMetas ? "Guardando..." : "Guardar"))), respuestasFiltradas.length === 0 ?
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "text-center py-12 text-gray-400 text-sm"
+  }, "Todav\xEDa no hay respuestas para este filtro.") :
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "rounded-2xl p-6 text-center",
+    style: {
+      background: colGeneral.bg
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-bold uppercase tracking-wide mb-1",
+    style: {
+      color: colGeneral.color
+    }
+  }, "% de satisfacci\xF3n general"), /*#__PURE__*/React.createElement("div", {
+    className: "text-5xl font-black",
+    style: {
+      color: colGeneral.color
+    }
+  }, pctGeneral != null ? `${pctGeneral}%` : "—"), /*#__PURE__*/React.createElement("div", {
+    className: "text-[11px] text-gray-500 mt-1"
+  }, respuestasFiltradas.length, " respuesta", respuestasFiltradas.length === 1 ? "" : "s", " \xB7 Top 2 Box de todas las preguntas")), /*#__PURE__*/React.createElement("div", {
+    className: "grid gap-3",
+    style: {
+      gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))"
+    }
+  }, pctPorCategoria.map(c => {
+    const col = colorSemaforo(c.pct);
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+      key: c.categoria,
+      className: "rounded-xl p-4",
+      style: {
+        background: col.bg,
+        border: `1px solid ${col.color}33`
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "text-[11px] font-bold uppercase tracking-wide mb-1",
+      style: {
+        color: col.color
+      }
+    }, c.categoria), /*#__PURE__*/React.createElement("div", {
+      className: "text-2xl font-black",
+      style: {
+        color: col.color
+      }
+    }, c.pct != null ? `${c.pct}%` : "—"));
+  }))));
+}
 function EncuestaDetalle({
   encuesta,
   onVolver
@@ -23510,9 +23945,9 @@ function EncuestaDetalle({
   }), tab === "dashboard" &&
   /*#__PURE__*/
   /*#__PURE__*/
-  React.createElement("div", {
-    className: "p-10 text-center text-gray-400 text-sm"
-  }, "\uD83D\uDCCA Dashboard \u2014 pr\xF3ximamente.")));
+  React.createElement(EncuestaDashboardTab, {
+    encuesta: encuesta
+  })));
 }
 
 // Casilla de 3 estados (lleno/a medias/vacío) para el árbol del organigrama — un <input
@@ -23609,6 +24044,8 @@ function EncuestaPreguntasEditor({
   const [cargando, setCargando] = useState(true);
   const [mensaje, setMensaje] = useState(null);
   const [editando, setEditando] = useState(null); // id de la pregunta en edición, o null
+  const [verLogicaId, setVerLogicaId] = useState(null); // id de la pregunta cuyas reglas de lógica se muestran en el panel deslizante, o null
+  const [previewAbierto, setPreviewAbierto] = useState(false); // true = mostrar la encuesta tal como la vería el chofer, sin guardar nada
   const [tabActiva, setTabActiva] = useState("editar"); // editar | opciones | logica | mover
   const [draft, setDraft] = useState(null); // borrador de la pregunta en edición — nada se guarda hasta Guardar/Mover
   const [creandoCategoria, setCreandoCategoria] = useState(false); // true = mostrar el campo de texto para el nombre de la categoría nueva
@@ -23635,8 +24072,8 @@ function EncuestaPreguntasEditor({
       [campo]: encuestaInfo[campo] || null
     }).eq("id", encuestaId);
   };
-  const cargarPreguntas = async () => {
-    setCargando(true);
+  const cargarPreguntas = async (mostrarCargando = true) => {
+    if (mostrarCargando) setCargando(true);
     const {
       data,
       error
@@ -23649,7 +24086,7 @@ function EncuestaPreguntasEditor({
       resultado = calcularCodigosEncuesta(data || []);
       setPreguntas(resultado);
     }
-    setCargando(false);
+    if (mostrarCargando) setCargando(false);
     return resultado;
   };
   useEffect(() => {
@@ -23669,11 +24106,33 @@ function EncuestaPreguntasEditor({
       texto: p.texto,
       tipo: p.tipo,
       escala_opciones: p.escala_opciones || [],
+      orientacion: p.orientacion_opciones || "horizontal",
       obligatoria: !!p.obligatoria,
+      filtroPuesto: !!p.usar_como_filtro_puesto,
+      filtroPlanta: !!p.usar_como_filtro_planta,
       reglas: p.condicion?.reglas || [],
       moverCategoria: p.dimension || "__suelta__",
       moverDespuesDe: idx > 0 ? preguntas[idx - 1].id : "__inicio__"
     });
+  };
+  const toggleSaltoPagina = async p => {
+    const nuevoValor = !p.salto_pagina_despues;
+    setPreguntas(prev => prev.map(x => x.id === p.id ? {
+      ...x,
+      salto_pagina_despues: nuevoValor
+    } : x));
+    const {
+      error
+    } = await sbClient.from("rh_encuesta_preguntas").update({
+      salto_pagina_despues: nuevoValor
+    }).eq("id", p.id);
+    if (error) {
+      setMensaje({
+        tipo: "error",
+        texto: error.message
+      });
+      cargarPreguntas(false);
+    }
   };
   const borrarPregunta = async id => {
     if (editando === id) cerrarEdicion();
@@ -23724,7 +24183,7 @@ function EncuestaPreguntasEditor({
         orden: i + 1
       }).eq("id", p.id)));
     }
-    const recargadas = await cargarPreguntas();
+    const recargadas = await cargarPreguntas(false);
     const fresca = recargadas.find(p => p.id === data.id);
     if (fresca) abrirEdicion(fresca);
   };
@@ -23786,11 +24245,27 @@ function EncuestaPreguntasEditor({
       texto: draft.texto,
       tipo: draft.tipo,
       escala_opciones: draft.escala_opciones,
+      orientacion_opciones: draft.orientacion,
       obligatoria: draft.obligatoria,
+      usar_como_filtro_puesto: draft.filtroPuesto,
+      usar_como_filtro_planta: draft.filtroPlanta,
       condicion: reglasLimpias.length ? {
         reglas: reglasLimpias
       } : null
     };
+    // Solo una pregunta por encuesta puede ser cada filtro del dashboard ("Tipo de puesto",
+    // "Planta") — si se marca esta, se desmarca cualquier otra que lo tuviera antes (cada filtro
+    // es independiente del otro).
+    const camposExclusivos = [["filtroPuesto", "usar_como_filtro_puesto"], ["filtroPlanta", "usar_como_filtro_planta"]];
+    for (const [campoDraft, campoDB] of camposExclusivos) {
+      if (!draft[campoDraft]) continue;
+      const otras = preguntas.filter(p => p.id !== editando && p[campoDB]);
+      if (otras.length) {
+        await sbClient.from("rh_encuesta_preguntas").update({
+          [campoDB]: false
+        }).in("id", otras.map(p => p.id));
+      }
+    }
     const {
       error
     } = await sbClient.from("rh_encuesta_preguntas").update(payload).eq("id", editando);
@@ -23801,10 +24276,22 @@ function EncuestaPreguntasEditor({
       });
       return;
     }
-    setPreguntas(prev => calcularCodigosEncuesta(prev.map(p => p.id === editando ? {
-      ...p,
-      ...payload
-    } : p)));
+    setPreguntas(prev => calcularCodigosEncuesta(prev.map(p => {
+      if (p.id === editando) return {
+        ...p,
+        ...payload
+      };
+      let actualizado = p;
+      if (draft.filtroPuesto && p.usar_como_filtro_puesto) actualizado = {
+        ...actualizado,
+        usar_como_filtro_puesto: false
+      };
+      if (draft.filtroPlanta && p.usar_como_filtro_planta) actualizado = {
+        ...actualizado,
+        usar_como_filtro_planta: false
+      };
+      return actualizado;
+    })));
     cerrarEdicion();
   };
   const moverPregunta = async () => {
@@ -23843,8 +24330,9 @@ function EncuestaPreguntasEditor({
   });
   const TABS = [["editar", "Editar"], ["opciones", "Opciones"], ["logica", "Lógica"], ["mover", "Mover"]];
   const renderPregunta = p => {
-    if (p.id !== editando) return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
-      key: p.id,
+    if (p.id !== editando) return /*#__PURE__*/ /*#__PURE__*/React.createElement(React.Fragment, {
+      key: p.id
+    }, /*#__PURE__*/React.createElement("div", {
       className: "bg-white rounded-xl p-3 flex gap-3 items-start",
       style: {
         border: "1px solid #e6e8ee"
@@ -23866,23 +24354,53 @@ function EncuestaPreguntasEditor({
         color: "#dc2626"
       }
     }, " *")), /*#__PURE__*/React.createElement("div", {
-      className: "text-[11px] text-gray-400 mt-0.5 mb-1"
-    }, p.tipo === "escala" ? "Escala" : "Abierta", p.condicion?.reglas?.length ? ` · ${p.condicion.reglas.length} lógica(s)` : ""), p.tipo === "escala" &&
+      className: "text-[11px] text-gray-400 mt-0.5 mb-2"
+    }, p.tipo === "escala" ? "Escala" : "Abierta", p.condicion?.reglas?.length ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement(React.Fragment, null, " \xB7 ", /*#__PURE__*/React.createElement("button", {
+      onClick: () => setVerLogicaId(p.id),
+      className: "underline font-semibold",
+      style: {
+        color: AZUL
+      }
+    }, p.condicion.reglas.length, " l\xF3gica(s)")) : ""), p.tipo === "escala" && (/*#__PURE__*/p.orientacion_opciones === "vertical" ?
     /*#__PURE__*/
     /*#__PURE__*/
     React.createElement("div", {
-      className: "flex flex-wrap gap-1"
+      className: "flex flex-col gap-2 mt-2.5"
     }, (p.escala_opciones || []).map((op, i) =>
     /*#__PURE__*/
     /*#__PURE__*/
-    React.createElement("span", {
+    React.createElement("div", {
       key: i,
-      className: "text-[10px] px-1.5 py-0.5 rounded",
+      className: "flex items-center gap-2"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "w-4 h-4 rounded-full border-2 shrink-0",
       style: {
-        background: "#f6f8fc",
-        color: "#5c6070"
+        borderColor: "#c7cbd6"
       }
-    }, op)))), /*#__PURE__*/React.createElement("button", {
+    }), /*#__PURE__*/React.createElement("span", {
+      className: "text-xs text-gray-600 font-medium"
+    }, op)))) :
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
+      className: "flex items-stretch gap-1 mt-2.5"
+    }, (p.escala_opciones || []).map((op, i) =>
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
+      key: i,
+      className: "flex-1 min-w-0 flex flex-col items-center justify-end gap-1.5 py-1 px-0.5"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "text-[11px] leading-tight text-center text-gray-600 font-medium"
+    }, op), /*#__PURE__*/React.createElement("span", {
+      className: "w-4 h-4 rounded-full border-2 shrink-0",
+      style: {
+        borderColor: "#c7cbd6"
+      }
+    })))))), /*#__PURE__*/React.createElement("button", {
       onClick: () => abrirEdicion(p),
       className: "shrink-0 text-xs font-semibold px-2 py-1 rounded-lg border",
       style: {
@@ -23895,6 +24413,26 @@ function EncuestaPreguntasEditor({
     }, /*#__PURE__*/React.createElement(X, {
       size: 14,
       color: "#dc2626"
+    }))), /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center gap-2 py-1"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex-1 border-t",
+      style: {
+        borderStyle: "dashed",
+        borderColor: p.salto_pagina_despues ? AZUL : "#e6e8ee"
+      }
+    }), /*#__PURE__*/React.createElement("button", {
+      onClick: () => toggleSaltoPagina(p),
+      className: "text-[10px] font-bold shrink-0 whitespace-nowrap",
+      style: {
+        color: p.salto_pagina_despues ? AZUL : "#9aa0b0"
+      }
+    }, p.salto_pagina_despues ? "✕ Quitar salto de página" : "+ Salto de página aquí"), /*#__PURE__*/React.createElement("div", {
+      className: "flex-1 border-t",
+      style: {
+        borderStyle: "dashed",
+        borderColor: p.salto_pagina_despues ? AZUL : "#e6e8ee"
+      }
     })));
     const preguntaActual = preguntas.find(x => x.id === editando);
     const preguntasAnteriores = preguntas.filter(q => q.tipo === "escala" && q.id !== editando && (q.orden ?? 0) < (preguntaActual?.orden ?? 0));
@@ -23936,7 +24474,9 @@ function EncuestaPreguntasEditor({
         borderColor: "#d5d9e4",
         minHeight: 50
       }
-    }), /*#__PURE__*/React.createElement("select", {
+    }), /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center gap-2 flex-wrap"
+    }, /*#__PURE__*/React.createElement("select", {
       value: draft.tipo,
       onChange: e => cambiarTipoDraft(e.target.value),
       className: "rounded-lg border px-2 py-1 text-xs",
@@ -23948,6 +24488,23 @@ function EncuestaPreguntasEditor({
     }, "Escala"), /*#__PURE__*/React.createElement("option", {
       value: "abierta"
     }, "Abierta")), draft.tipo === "escala" &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("select", {
+      value: draft.orientacion,
+      onChange: e => setDraft(d => ({
+        ...d,
+        orientacion: e.target.value
+      })),
+      className: "rounded-lg border px-2 py-1 text-xs",
+      style: {
+        borderColor: "#d5d9e4"
+      }
+    }, /*#__PURE__*/React.createElement("option", {
+      value: "horizontal"
+    }, "Horizontal"), /*#__PURE__*/React.createElement("option", {
+      value: "vertical"
+    }, "Vertical"))), draft.tipo === "escala" &&
     /*#__PURE__*/
     /*#__PURE__*/
     React.createElement("div", {
@@ -24008,7 +24565,9 @@ function EncuestaPreguntasEditor({
     }, "+ Agregar opci\xF3n"))), tabActiva === "opciones" &&
     /*#__PURE__*/
     /*#__PURE__*/
-    React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    React.createElement("div", {
+      className: "space-y-3"
+    }, /*#__PURE__*/React.createElement("label", {
       className: "flex items-center gap-2 text-sm"
     }, /*#__PURE__*/React.createElement("input", {
       type: "checkbox",
@@ -24017,7 +24576,37 @@ function EncuestaPreguntasEditor({
         ...d,
         obligatoria: e.target.checked
       }))
-    }), " Pregunta obligatoria")), tabActiva === "logica" &&
+    }), " Pregunta obligatoria"), draft.tipo === "escala" &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("label", {
+      className: "flex items-start gap-2 text-sm"
+    }, /*#__PURE__*/React.createElement("input", {
+      type: "checkbox",
+      className: "mt-0.5",
+      checked: draft.filtroPuesto,
+      onChange: e => setDraft(d => ({
+        ...d,
+        filtroPuesto: e.target.checked
+      }))
+    }), /*#__PURE__*/React.createElement("span", null, "Usar como filtro de \"Tipo de puesto / \xE1rea de trabajo\" en el Dashboard", /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("span", {
+      className: "text-[11px] text-gray-400"
+    }, "Solo una pregunta por encuesta puede ser este filtro \u2014 marcar esta desmarca cualquier otra."))), draft.tipo === "escala" &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("label", {
+      className: "flex items-start gap-2 text-sm"
+    }, /*#__PURE__*/React.createElement("input", {
+      type: "checkbox",
+      className: "mt-0.5",
+      checked: draft.filtroPlanta,
+      onChange: e => setDraft(d => ({
+        ...d,
+        filtroPlanta: e.target.checked
+      }))
+    }), /*#__PURE__*/React.createElement("span", null, "Usar como filtro de \"Planta\" en el Dashboard (reemplaza la planta autom\xE1tica)", /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("span", {
+      className: "text-[11px] text-gray-400"
+    }, "\xDAsala si le preguntas al chofer a qu\xE9 planta pertenece, en vez de usar la planta donde se encuentra al responder. Solo una pregunta por encuesta.")))), tabActiva === "logica" &&
     /*#__PURE__*/
     /*#__PURE__*/
     React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
@@ -24129,7 +24718,7 @@ function EncuestaPreguntasEditor({
     React.createElement("option", {
       key: x.id,
       value: x.id
-    }, "Despu\xE9s de ", x.codigo, ". ", (x.texto || "").slice(0, 40)))))), tabActiva === "mover" ?
+    }, "Despu\xE9s de ", x.codigo, ". ", (x.texto || "").length > 70 ? (x.texto || "").slice(0, 70) + "…" : x.texto || ""))))), tabActiva === "mover" ?
     /*#__PURE__*/
     /*#__PURE__*/
     React.createElement("div", {
@@ -24169,9 +24758,21 @@ function EncuestaPreguntasEditor({
       }
     }, "Cancelar")));
   };
-  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+  const preguntaConLogica = verLogicaId ? preguntas.find(x => x.id === verLogicaId) : null;
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "p-6"
   }, /*#__PURE__*/React.createElement("div", {
+    className: "max-w-3xl flex justify-end mb-2"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setPreviewAbierto(true),
+    className: "flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border",
+    style: {
+      borderColor: "#d5d9e4",
+      color: AZUL
+    }
+  }, /*#__PURE__*/React.createElement(Eye, {
+    size: 14
+  }), " Preview")), /*#__PURE__*/React.createElement("div", {
     className: "bg-white rounded-xl p-4 max-w-3xl mb-4",
     style: {
       border: "1px solid #e6e8ee"
@@ -24313,7 +24914,81 @@ function EncuestaPreguntasEditor({
     style: {
       color: AZUL
     }
-  }, "+ Agregar categor\xEDa nueva")))));
+  }, "+ Agregar categor\xEDa nueva"))))), preguntaConLogica &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "fixed inset-0 z-[998]",
+    style: {
+      background: "rgba(0,0,0,0.25)",
+      backdropFilter: "blur(2px)"
+    },
+    onClick: () => setVerLogicaId(null)
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "fixed top-0 right-0 h-full bg-white shadow-2xl p-6 overflow-y-auto",
+    style: {
+      width: "min(380px, 100vw)",
+      animation: "slideInRight 0.25s ease-out"
+    },
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("style", null, `@keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }`), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setVerLogicaId(null),
+    className: "mb-4 text-gray-400 hover:text-gray-600 flex items-center gap-1 text-sm"
+  }, /*#__PURE__*/React.createElement(ChevronRight, {
+    size: 18
+  }), " Cerrar"), /*#__PURE__*/React.createElement("h3", {
+    className: "text-xs font-bold text-gray-400 uppercase tracking-wide mb-1"
+  }, "L\xF3gica de la pregunta"), /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-semibold text-gray-800 mb-4"
+  }, preguntaConLogica.codigo, ". ", preguntaConLogica.texto), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-gray-400 mb-3"
+  }, "Solo aparece si se cumplen TODAS estas condiciones:"), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-3"
+  }, (preguntaConLogica.condicion?.reglas || []).map((regla, i) => {
+    const preguntaRef = preguntas.find(q => q.id === regla.preguntaId);
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+      key: i,
+      className: "rounded-lg p-3",
+      style: {
+        background: "#f6f8fc",
+        border: "1px solid #e6e8ee"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "text-xs font-semibold text-gray-700 mb-1.5"
+    }, preguntaRef ? `${preguntaRef.codigo}. ${preguntaRef.texto}` : "(pregunta no encontrada)"), /*#__PURE__*/React.createElement("div", {
+      className: "flex flex-wrap gap-1"
+    }, (regla.opciones || []).map((op, j) =>
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("span", {
+      key: j,
+      className: "text-[11px] px-2 py-0.5 rounded-full",
+      style: {
+        background: "white",
+        border: `1px solid ${AZUL}`,
+        color: AZUL
+      }
+    }, op))));
+  })))), previewAbierto &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement(EncuestaResponder, {
+    encuesta: {
+      id: encuestaId,
+      rondaId: null,
+      nombre: encuestaInfo.titulo || "Vista previa",
+      titulo: encuestaInfo.titulo,
+      descripcion: encuestaInfo.descripcion,
+      preguntas
+    },
+    driver: {
+      planta: "",
+      rol: ""
+    },
+    modoPreview: true,
+    onCerrar: () => setPreviewAbierto(false),
+    onCompletada: () => setPreviewAbierto(false)
+  }));
 }
 
 // Convierte un ISO guardado (UTC) al formato que espera un <input type="datetime-local">
@@ -24349,6 +25024,7 @@ function fechaFinDelDia(ymd) {
 function ProgramarRecordatorio({
   rondaId,
   nombre,
+  rondaAnteriorId,
   tieneChecklist,
   onVolver
 }) {
@@ -24371,21 +25047,35 @@ function ProgramarRecordatorio({
       }, {
         data: rondaData
       }] = await Promise.all([sbClient.from("rh_encuesta_recordatorios").select("*").eq("ronda_id", rondaId).maybeSingle(), sbClient.from("rh_encuesta_rondas").select("fecha_inicio,fecha_fin").eq("id", rondaId).single()]);
-      setConfig(data || {
-        ronda_id: rondaId,
-        imagen_path: null,
-        aviso_titulo: "",
-        aviso_descripcion: "",
-        tipo_envio: "unico",
-        fecha_programada: null,
-        tipo_frecuencia: "diaria",
-        horas_valor: 2,
-        hora_envio: "09:00",
-        dia_semana: 1,
-        activo: true,
-        plantas_destino: null,
-        roles_destino: null
-      });
+      let config = data;
+      if (!config) {
+        // Ronda nueva sin recordatorio propio todavía: precarga imagen/título/descripción con lo
+        // de la ronda anterior (si tiene), para no repetir el aviso de cero cada vez — el resto
+        // (frecuencia, audiencia, activo) sí arranca en blanco como siempre, y nada de esto se
+        // guarda hasta que ewq le dé a "Guardar".
+        let anterior = null;
+        if (rondaAnteriorId) {
+          ({
+            data: anterior
+          } = await sbClient.from("rh_encuesta_recordatorios").select("imagen_path,aviso_titulo,aviso_descripcion").eq("ronda_id", rondaAnteriorId).maybeSingle());
+        }
+        config = {
+          ronda_id: rondaId,
+          imagen_path: anterior?.imagen_path || null,
+          aviso_titulo: anterior?.aviso_titulo || "",
+          aviso_descripcion: anterior?.aviso_descripcion || "",
+          tipo_envio: "unico",
+          fecha_programada: null,
+          tipo_frecuencia: "diaria",
+          horas_valor: 2,
+          hora_envio: "09:00",
+          dia_semana: 1,
+          activo: true,
+          plantas_destino: null,
+          roles_destino: null
+        };
+      }
+      setConfig(config);
       setAudienciaPersonalizada(!!(data?.plantas_destino?.length || data?.roles_destino?.length));
       setRonda(rondaData || {
         fecha_inicio: null,
