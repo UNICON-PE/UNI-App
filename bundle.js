@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-30T16:12:44.533Z */
+/* UniconApp — Bundle generado el 2026-10-30T16:23:27.924Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 22508 — CERO simplificaciones */
+/* Líneas originales del JSX: 22522 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -22563,19 +22563,33 @@ function EncuestasListado() {
     const tiempoPromedioResolucionMs = deltasMs.length ? deltasMs.reduce((a, b) => a + b, 0) / deltasMs.length : null;
     // "% de cumplimiento" solo de la ÚLTIMA ronda (la más reciente), no acumulado de todas — así
     // refleja qué tan bien está yendo la aplicación vigente, sin que rondas viejas ya cerradas
-    // infle o desinfle el número.
+    // infle o desinfle el número. El denominador es el público REAL de esa ronda (choferes activos
+    // que calzan con la audiencia configurada en su recordatorio) — NO basta con contar filas de
+    // rh_encuesta_estado_usuario, porque esa tabla solo tiene una fila por chofer una vez que se le
+    // disparó su primer recordatorio (ver dispararRecordatorio) o ya respondió; alguien que todavía
+    // no abrió la app desde que se desplegó la ronda no tiene fila ahí y antes quedaba invisible
+    // para este cálculo, inflando el % (ej. 1 de 1 disparados = 100%, aunque falten más por recibir
+    // su recordatorio).
     const ultimaRonda = listaRondas[listaRondas.length - 1] || null;
-    const {
+    const [{
       data: estadosUltimaRonda
-    } = ultimaRonda ? await sbClient.from("rh_encuesta_estado_usuario").select("completada").eq("ronda_id", ultimaRonda.id) : {
+    }, {
+      data: configRecordatorio
+    }, {
+      data: choferesActivos
+    }] = ultimaRonda ? await Promise.all([sbClient.from("rh_encuesta_estado_usuario").select("completada").eq("ronda_id", ultimaRonda.id), sbClient.from("rh_encuesta_recordatorios").select("plantas_destino,roles_destino").eq("ronda_id", ultimaRonda.id).maybeSingle(), sbClient.from("perfiles").select("planta,rol").eq("activo", true).in("rol", [...ROLES_CHOFER_SET])]) : [{
       data: []
-    };
-    const totalUltima = (estadosUltimaRonda || []).length;
+    }, {
+      data: null
+    }, {
+      data: []
+    }];
+    const totalUltima = ultimaRonda ? (choferesActivos || []).filter(p => audienciaIncluye(configRecordatorio || {}, p)).length : 0;
     const completadasUltima = (estadosUltimaRonda || []).filter(e => e.completada).length;
     return {
       numRondas: listaRondas.length,
       tiempoPromedioResolucionMs,
-      tasaFinalizacion: totalUltima ? Math.round(completadasUltima / totalUltima * 100) : 0
+      tasaFinalizacion: totalUltima ? Math.min(100, Math.round(completadasUltima / totalUltima * 100)) : 0
     };
   };
   const cargarEncuestas = async () => {
