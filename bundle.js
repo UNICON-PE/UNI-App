@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-10-30T16:23:27.924Z */
+/* UniconApp — Bundle generado el 2026-11-02T17:03:59.388Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 22522 — CERO simplificaciones */
+/* Líneas originales del JSX: 22656 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -8505,7 +8505,7 @@ const GEMINI_PROXY_URL = `${SUPABASE_URL}/functions/v1/gemini-proxy`;
 // Mantenimiento). El registro automático de filas lo hace un Apps Script Web App conectado
 // desde el RPC registrar_auxilio_mecanico (ver migración de Supabase); este enlace solo abre
 // la hoja para verla/editarla manualmente.
-const AUXILIO_MECANICO_SHEET_URL = "https://docs.google.com/spreadsheets/d/1vScU6cJmErMZq0RN8U4E_QCRTR4AF14zJfvJy6dsoGg/edit";
+const AUXILIO_MECANICO_SHEET_URL = "https://docs.google.com/spreadsheets/d/1V8b7TnDvskPmA5eDWldyZl3gSY0j7cpLrFPGxdnm09w/edit";
 // sessionStorage para todos los dispositivos (celular incluido): cada pestaña/ventana tiene su
 // propia sesión, aislada de las demás. Se probó localStorage (persistente, primero para todos y
 // luego solo en celular) para que el chofer no reingrese el DNI si Android mata la PWA en segundo
@@ -23537,9 +23537,11 @@ function EncuestaResultadosTab({
 // estilo Alchemer.
 function GaugeDona({
   pct,
-  size = 60
+  size = 60,
+  color = AZUL,
+  grosor = 6
 }) {
-  const r = (size - 8) / 2;
+  const r = (size - grosor * 2) / 2;
   const c = 2 * Math.PI * r;
   const offset = c * (1 - pct / 100);
   return /*#__PURE__*/ /*#__PURE__*/React.createElement("svg", {
@@ -23552,14 +23554,14 @@ function GaugeDona({
     r: r,
     fill: "none",
     stroke: "#e6e8ee",
-    strokeWidth: "6"
+    strokeWidth: grosor
   }), /*#__PURE__*/React.createElement("circle", {
     cx: size / 2,
     cy: size / 2,
     r: r,
     fill: "none",
-    stroke: AZUL,
-    strokeWidth: "6",
+    stroke: color,
+    strokeWidth: grosor,
     strokeDasharray: c,
     strokeDashoffset: offset,
     strokeLinecap: "round",
@@ -23571,7 +23573,7 @@ function GaugeDona({
     dy: "0.35em",
     fontSize: size * 0.22,
     fontWeight: "700",
-    fill: AZUL
+    fill: color
   }, pct, "%"));
 }
 
@@ -23592,6 +23594,9 @@ function EncuestaDashboardTab({
   const [preguntas, setPreguntas] = useState([]);
   const [respuestas, setRespuestas] = useState([]);
   const [detalle, setDetalle] = useState([]);
+  const [categoriasTodas, setCategoriasTodas] = useState([]); // todos los valores de ubicación/sede posibles (rh_planta_categoria), no solo los que ya tienen respuestas
+  const [configAudiencia, setConfigAudiencia] = useState(null); // {plantas_destino, roles_destino} del recordatorio de la última ronda, o null = todos
+  const [choferesActivos, setChoferesActivos] = useState([]); // [{planta, rol}] — para saber el público REAL esperado
   const [metas, setMetas] = useState({
     corte_rojo: 60,
     corte_verde: 80
@@ -23601,6 +23606,7 @@ function EncuestaDashboardTab({
   const [filtroPuesto, setFiltroPuesto] = useState("__todos__");
   const [filtroUbicacion, setFiltroUbicacion] = useState("__todas__");
   const [filtroPlanta, setFiltroPlanta] = useState("__todas__");
+  const [verDimension, setVerDimension] = useState(null); // nombre de la dimensión abierta en el panel de detalle, o null
   useEffect(() => {
     (async () => {
       setCargando(true);
@@ -23610,17 +23616,26 @@ function EncuestaDashboardTab({
         data: rondas
       }, {
         data: metasData
+      }, {
+        data: categoriasPlanta
       }] = await Promise.all([sbClient.from("rh_encuesta_preguntas").select("*").eq("encuesta_id", encuesta.id).order("orden"), sbClient.from("rh_encuesta_rondas").select("id").eq("encuesta_id", encuesta.id).order("created_at", {
         ascending: false
-      }).limit(1), sbClient.from("rh_dashboard_metas").select("*").eq("encuesta_id", encuesta.id).maybeSingle()]);
+      }).limit(1), sbClient.from("rh_dashboard_metas").select("*").eq("encuesta_id", encuesta.id).maybeSingle(), sbClient.from("rh_planta_categoria").select("categoria")]);
       setPreguntas(calcularCodigosEncuesta(preguntasRaw || []).filter(p => p.tipo === "escala"));
       if (metasData) setMetas(metasData);
+      setCategoriasTodas([...new Set((categoriasPlanta || []).map(c => c.categoria).filter(Boolean))].sort());
       const rondaId = rondas?.[0]?.id || null;
       if (rondaId) {
-        const {
+        const [{
           data: resp
-        } = await sbClient.from("rh_encuesta_respuestas").select("id,planta_origen,ubicacion").eq("ronda_id", rondaId);
+        }, {
+          data: config
+        }, {
+          data: activos
+        }] = await Promise.all([sbClient.from("rh_encuesta_respuestas").select("id,planta_origen,ubicacion").eq("ronda_id", rondaId), sbClient.from("rh_encuesta_recordatorios").select("plantas_destino,roles_destino").eq("ronda_id", rondaId).maybeSingle(), sbClient.from("perfiles").select("planta,rol").eq("activo", true).in("rol", [...ROLES_CHOFER_SET])]);
         setRespuestas(resp || []);
+        setConfigAudiencia(config || {});
+        setChoferesActivos(activos || []);
         const idsResp = (resp || []).map(r => r.id);
         const {
           data: det
@@ -23631,6 +23646,8 @@ function EncuestaDashboardTab({
       } else {
         setRespuestas([]);
         setDetalle([]);
+        setConfigAudiencia(null);
+        setChoferesActivos([]);
       }
       setCargando(false);
     })();
@@ -23666,8 +23683,11 @@ function EncuestaDashboardTab({
     });
   }
   const plantaDe = r => preguntaFiltroPlanta ? plantaPorRespuesta[r.id] || null : r.planta_origen;
-  const opcionesUbicacion = [...new Set(respuestas.map(r => r.ubicacion).filter(Boolean))];
-  const opcionesPlanta = preguntaFiltroPlanta ? preguntaFiltroPlanta.escala_opciones || [] : [...new Set(respuestas.map(r => r.planta_origen).filter(Boolean))].sort();
+  // Los 3 filtros SIEMPRE muestran el universo completo de opciones (aunque todavía no haya
+  // ninguna respuesta para la mayoría) — así Gestión Humana ve de entrada qué plantas/puestos
+  // siguen en 0, en vez de que esa opción ni aparezca.
+  const opcionesUbicacionTodas = categoriasTodas;
+  const opcionesPlantaTodas = preguntaFiltroPlanta ? preguntaFiltroPlanta.escala_opciones || [] : PLANTAS_TODAS.filter(p => p !== "Transversal");
   const respuestasFiltradas = respuestas.filter(r => {
     if (filtroPlanta !== "__todas__" && plantaDe(r) !== filtroPlanta) return false;
     if (filtroUbicacion !== "__todas__" && r.ubicacion !== filtroUbicacion) return false;
@@ -23683,44 +23703,164 @@ function EncuestaDashboardTab({
     opcionesValidasPorPregunta[p.id] = validas;
     top2PorPregunta[p.id] = validas.slice(-2);
   });
-  const calcularTop2 = idsPreguntas => {
+  // Top 2 Box sobre un conjunto de preguntas (opcionalmente acotado a un subconjunto de
+  // respuestas) — numerador/denominador acumulados entre TODAS las preguntas del conjunto, no un
+  // promedio de porcentajes por pregunta. Devuelve también "n" (respuestas válidas contadas) para
+  // mostrar al lado del %, como en los rankings.
+  const calcularTop2 = (idsPreguntas, idsRespuestas) => {
     let numerador = 0,
       denominador = 0;
     detalleFiltrado.forEach(d => {
       if (!idsPreguntas.has(d.pregunta_id)) return;
+      if (idsRespuestas && !idsRespuestas.has(d.respuesta_id)) return;
       const validas = opcionesValidasPorPregunta[d.pregunta_id];
       if (!validas || !validas.includes(d.valor)) return;
       denominador++;
       if (top2PorPregunta[d.pregunta_id].includes(d.valor)) numerador++;
     });
-    return denominador > 0 ? Math.round(numerador / denominador * 100) : null;
+    return {
+      pct: denominador > 0 ? Math.round(numerador / denominador * 100) : null,
+      n: denominador
+    };
   };
-  const pctGeneral = calcularTop2(new Set(preguntasMedibles.map(p => p.id)));
-  const categorias = [...new Set(preguntasMedibles.map(p => p.dimension).filter(Boolean))];
-  const pctPorCategoria = categorias.map(cat => ({
-    categoria: cat,
-    pct: calcularTop2(new Set(preguntasMedibles.filter(p => p.dimension === cat).map(p => p.id)))
-  }));
+  const idsPreguntasMedibles = new Set(preguntasMedibles.map(p => p.id));
+  const general = calcularTop2(idsPreguntasMedibles);
+  const dimensiones = [...new Set(preguntasMedibles.map(p => p.dimension).filter(Boolean))];
+  const rankingDimension = dimensiones.map(dim => ({
+    nombre: dim,
+    ...calcularTop2(new Set(preguntasMedibles.filter(p => p.dimension === dim).map(p => p.id)))
+  })).sort((a, b) => (b.pct ?? -1) - (a.pct ?? -1));
+  // Agrupa las respuestas YA filtradas por un atributo suyo (planta/puesto/ubicación) y calcula el
+  // Top 2 Box de cada grupo — usado para los 3 rankings de abajo. `opcionesCanonicas` fuerza que
+  // aparezcan todas las opciones posibles aunque algún grupo todavía tenga 0 respuestas.
+  const rankingPorAtributo = (obtenerValor, opcionesCanonicas) => {
+    const idsPorGrupo = {};
+    respuestasFiltradas.forEach(r => {
+      const valor = obtenerValor(r);
+      if (!valor) return;
+      (idsPorGrupo[valor] || (idsPorGrupo[valor] = new Set())).add(r.id);
+    });
+    const base = opcionesCanonicas && opcionesCanonicas.length ? opcionesCanonicas : Object.keys(idsPorGrupo);
+    return base.map(valor => ({
+      nombre: valor,
+      ...calcularTop2(idsPreguntasMedibles, idsPorGrupo[valor] || new Set())
+    })).sort((a, b) => (b.pct ?? -1) - (a.pct ?? -1));
+  };
+  const rankingPlanta = rankingPorAtributo(plantaDe, opcionesPlantaTodas);
+  const rankingPuesto = preguntaFiltroPuesto ? rankingPorAtributo(r => puestoPorRespuesta[r.id], preguntaFiltroPuesto.escala_opciones || []) : null;
+  const rankingUbicacion = rankingPorAtributo(r => r.ubicacion, opcionesUbicacionTodas);
+  // Punto más bajo: la pregunta individual (no la dimensión completa) con el % más chico — más
+  // accionable que solo saber la dimensión.
+  let puntoMasBajo = null;
+  preguntasMedibles.forEach(p => {
+    const {
+      pct,
+      n
+    } = calcularTop2(new Set([p.id]));
+    if (pct != null && n > 0 && (puntoMasBajo === null || pct < puntoMasBajo.pct)) puntoMasBajo = {
+      texto: p.texto,
+      pct
+    };
+  });
+  // % de respuestas completadas contra el público REAL esperado — solo se puede calcular un total
+  // confiable cuando el único filtro activo (aparte de Planta) es "Todos/Todas": Planta sí es un
+  // dato real del roster de antemano; Tipo de puesto/Ubicación los revela el chofer recién al
+  // responder, así que no hay forma de saber su total esperado de antemano.
+  const audienciaRonda = choferesActivos.filter(p => audienciaIncluye(configAudiencia || {}, p));
+  const totalConocido = filtroPuesto === "__todos__" && filtroUbicacion === "__todas__";
+  const audienciaEsperada = totalConocido ? filtroPlanta !== "__todas__" ? audienciaRonda.filter(p => p.planta === filtroPlanta).length : audienciaRonda.length : null;
+  const pctCompletado = totalConocido && audienciaEsperada ? Math.min(100, Math.round(respuestasFiltradas.length / audienciaEsperada * 100)) : null;
   const colorSemaforo = pct => {
     if (pct == null) return {
       bg: "#f3f4f6",
-      color: "#9ca3af"
+      color: "#9ca3af",
+      label: null
     };
     if (pct <= metas.corte_rojo) return {
       bg: "#fee2e2",
-      color: "#991b1b"
+      color: "#dc2626",
+      label: "Bajo"
     };
     if (pct >= metas.corte_verde) return {
       bg: "#dcfce7",
-      color: "#166534"
+      color: "#16a34a",
+      label: "Alto"
     };
     return {
       bg: "#fef9c3",
-      color: "#854d0e"
+      color: "#d97706",
+      label: "Regular"
     };
   };
-  const colGeneral = colorSemaforo(pctGeneral);
-  return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+  const colGeneral = colorSemaforo(general.pct);
+  const mejorPlanta = rankingPlanta.find(r => r.pct != null);
+  const mejorDimension = rankingDimension.find(r => r.pct != null);
+  const tarjetaMejor = filtroPlanta === "__todas__" ? {
+    titulo: "Planta mejor evaluada",
+    nombre: mejorPlanta?.nombre,
+    pct: mejorPlanta?.pct
+  } : {
+    titulo: "Mejor dimensión",
+    nombre: mejorDimension?.nombre,
+    pct: mejorDimension?.pct
+  };
+  const renderBarra = (item, key, onClick) => {
+    const col = colorSemaforo(item.pct);
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+      key: key,
+      className: "flex items-center gap-3"
+    }, onClick ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("button", {
+      onClick: onClick,
+      className: "w-32 shrink-0 text-xs font-semibold text-left truncate underline",
+      style: {
+        color: AZUL
+      },
+      title: item.nombre
+    }, item.nombre) :
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
+      className: "w-32 shrink-0 text-xs font-semibold text-gray-700 truncate",
+      title: item.nombre
+    }, item.nombre), /*#__PURE__*/React.createElement("div", {
+      className: "flex-1 h-2.5 rounded-full bg-gray-100 overflow-hidden"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "h-full rounded-full",
+      style: {
+        width: `${item.pct ?? 0}%`,
+        background: col.color
+      }
+    })), /*#__PURE__*/React.createElement("div", {
+      className: "w-12 shrink-0 text-right text-sm font-bold",
+      style: {
+        color: col.color
+      }
+    }, item.pct != null ? `${item.pct}%` : "—"), /*#__PURE__*/React.createElement("div", {
+      className: "w-14 shrink-0 text-[10px] text-gray-400"
+    }, item.n, " resp."), col.label &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("span", {
+      className: "shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full",
+      style: {
+        background: col.bg,
+        color: col.color
+      }
+    }, col.label));
+  };
+  const rangoTexto = `🔴 0–${metas.corte_rojo}% · 🟡 ${Number(metas.corte_rojo) + 1}–${Number(metas.corte_verde) - 1}% · 🟢 ${metas.corte_verde}–100%`;
+  // Items de la dimensión abierta en el panel de detalle — ordenados de peor a mejor para que el
+  // más bajo salte a la vista primero. La etiqueta es la subcategoría (si se cargó en el editor);
+  // si no, se recorta el texto completo de la pregunta para no saturar la lista.
+  const itemsDimension = verDimension ? preguntasMedibles.filter(p => p.dimension === verDimension).map(p => ({
+    nombre: p.subcategoria || (p.texto.length > 36 ? p.texto.slice(0, 36) + "…" : p.texto),
+    textoCompleto: p.texto,
+    ...calcularTop2(new Set([p.id]))
+  })).sort((a, b) => (a.pct ?? 101) - (b.pct ?? 101)) : [];
+  return /*#__PURE__*/ /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "p-6 space-y-5"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-3 items-end"
@@ -23755,7 +23895,7 @@ function EncuestaDashboardTab({
     }
   }, /*#__PURE__*/React.createElement("option", {
     value: "__todas__"
-  }, "Todas"), opcionesUbicacion.map(op =>
+  }, "Todas"), opcionesUbicacionTodas.map(op =>
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("option", {
@@ -23772,20 +23912,24 @@ function EncuestaDashboardTab({
     }
   }, /*#__PURE__*/React.createElement("option", {
     value: "__todas__"
-  }, "Todas"), opcionesPlanta.map(op =>
+  }, "Todas"), opcionesPlantaTodas.map(op =>
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("option", {
     key: op,
     value: op
-  }, op)))), /*#__PURE__*/React.createElement("button", {
+  }, op)))), /*#__PURE__*/React.createElement("div", {
+    className: "ml-auto flex items-center gap-3"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-[11px] text-gray-400"
+  }, rangoTexto), /*#__PURE__*/React.createElement("button", {
     onClick: () => setEditandoMetas(v => !v),
-    className: "ml-auto text-xs font-bold px-3 py-2 rounded-lg border h-fit",
+    className: "text-xs font-bold px-3 py-2 rounded-lg border h-fit shrink-0",
     style: {
       borderColor: "#d5d9e4",
       color: AZUL
     }
-  }, "\u2699 Metas del sem\xE1foro")), editandoMetas &&
+  }, "\u2699 Metas del sem\xE1foro"))), editandoMetas &&
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
@@ -23795,7 +23939,7 @@ function EncuestaDashboardTab({
     }
   }, /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-gray-400 mb-2"
-  }, "Un solo set de metas \u2014 se aplica igual al % general y a cada categor\xEDa."), /*#__PURE__*/React.createElement("div", {
+  }, "Un solo set de metas \u2014 se aplica igual al % general y a cada categor\xEDa/ranking."), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-3 items-end flex-wrap"
   }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
     className: "block text-[10px] font-bold text-gray-400 uppercase mb-1"
@@ -23835,57 +23979,198 @@ function EncuestaDashboardTab({
       background: AMARILLO,
       color: AZUL
     }
-  }, guardandoMetas ? "Guardando..." : "Guardar"))), respuestasFiltradas.length === 0 ?
+  }, guardandoMetas ? "Guardando..." : "Guardar")), /*#__PURE__*/React.createElement("p", {
+    className: "text-[11px] text-gray-400 mt-2"
+  }, rangoTexto)), respuestasFiltradas.length === 0 &&
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
-    className: "text-center py-12 text-gray-400 text-sm"
-  }, "Todav\xEDa no hay respuestas para este filtro.") :
-  /*#__PURE__*/
-  /*#__PURE__*/
-  React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-    className: "rounded-2xl p-6 text-center",
-    style: {
-      background: colGeneral.bg
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-xs font-bold uppercase tracking-wide mb-1",
-    style: {
-      color: colGeneral.color
-    }
-  }, "% de satisfacci\xF3n general"), /*#__PURE__*/React.createElement("div", {
-    className: "text-5xl font-black",
-    style: {
-      color: colGeneral.color
-    }
-  }, pctGeneral != null ? `${pctGeneral}%` : "—"), /*#__PURE__*/React.createElement("div", {
-    className: "text-[11px] text-gray-500 mt-1"
-  }, respuestasFiltradas.length, " respuesta", respuestasFiltradas.length === 1 ? "" : "s", " \xB7 Top 2 Box de todas las preguntas")), /*#__PURE__*/React.createElement("div", {
+    className: "text-sm text-gray-400"
+  }, "A\xFAn no hay respuestas para este filtro \u2014 igual te muestro la estructura completa."), /*#__PURE__*/React.createElement("div", {
     className: "grid gap-3",
     style: {
-      gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))"
+      gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))"
     }
-  }, pctPorCategoria.map(c => {
-    const col = colorSemaforo(c.pct);
-    return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
-      key: c.categoria,
-      className: "rounded-xl p-4",
-      style: {
-        background: col.bg,
-        border: `1px solid ${col.color}33`
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "text-[11px] font-bold uppercase tracking-wide mb-1",
-      style: {
-        color: col.color
-      }
-    }, c.categoria), /*#__PURE__*/React.createElement("div", {
-      className: "text-2xl font-black",
-      style: {
-        color: col.color
-      }
-    }, c.pct != null ? `${c.pct}%` : "—"));
-  }))));
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-xl p-4 flex flex-col justify-center",
+    style: {
+      border: "1px solid #e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1"
+  }, "Respuestas (filtro actual)"), /*#__PURE__*/React.createElement("div", {
+    className: "text-3xl font-black",
+    style: {
+      color: AZUL
+    }
+  }, respuestasFiltradas.length)), /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-xl p-4 flex items-center gap-3",
+    style: {
+      border: "1px solid #e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement(GaugeDona, {
+    pct: general.pct ?? 0,
+    size: 64,
+    color: colGeneral.color
+  }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] font-bold text-gray-400 uppercase tracking-wide"
+  }, "Satisfacci\xF3n general"), /*#__PURE__*/React.createElement("div", {
+    className: "text-[11px] text-gray-400"
+  }, "Top 2 Box"))), /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-xl p-4 flex items-center gap-3",
+    style: {
+      border: "1px solid #e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement(GaugeDona, {
+    pct: pctCompletado ?? 0,
+    size: 64,
+    color: AZUL
+  }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] font-bold text-gray-400 uppercase tracking-wide"
+  }, "% Completado"), /*#__PURE__*/React.createElement("div", {
+    className: "text-[11px] text-gray-400"
+  }, totalConocido ? audienciaEsperada ? `${respuestasFiltradas.length} de ${audienciaEsperada}` : "Sin público definido" : "— (filtro no permite saber el total)"))), /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-xl p-4",
+    style: {
+      border: "1px solid #e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1"
+  }, tarjetaMejor.titulo), /*#__PURE__*/React.createElement("div", {
+    className: "text-lg font-black text-gray-800 truncate"
+  }, tarjetaMejor.nombre || "—"), /*#__PURE__*/React.createElement("div", {
+    className: "text-[11px] text-gray-400"
+  }, tarjetaMejor.pct != null ? `${tarjetaMejor.pct}% Top 2 Box` : "Sin datos")), /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-xl p-4",
+    style: {
+      border: "1px solid #e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1"
+  }, "Punto m\xE1s bajo"), /*#__PURE__*/React.createElement("div", {
+    className: "text-sm font-black text-gray-800",
+    title: puntoMasBajo?.texto
+  }, puntoMasBajo ? puntoMasBajo.texto.length > 40 ? puntoMasBajo.texto.slice(0, 40) + "…" : puntoMasBajo.texto : "—"), /*#__PURE__*/React.createElement("div", {
+    className: "text-[11px] text-gray-400"
+  }, puntoMasBajo ? `${puntoMasBajo.pct}% Top 2 Box` : "Sin datos"))), /*#__PURE__*/React.createElement("div", {
+    className: "grid gap-4",
+    style: {
+      gridTemplateColumns: "minmax(0,1.3fr) minmax(0,1fr)"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-xl p-4",
+    style: {
+      border: "1px solid #e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-sm font-bold mb-0.5",
+    style: {
+      color: AZUL
+    }
+  }, "Satisfacci\xF3n por dimensi\xF3n"), /*#__PURE__*/React.createElement("p", {
+    className: "text-[11px] text-gray-400 mb-3"
+  }, "% que calific\xF3 entre las 2 opciones m\xE1s positivas (Top 2 Box) \u2014 clic en una dimensi\xF3n para ver sus items"), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-3"
+  }, rankingDimension.map((d, i) => renderBarra(d, i, () => setVerDimension(d.nombre))), rankingDimension.length === 0 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("p", {
+    className: "text-xs text-gray-400"
+  }, "Sin preguntas medibles todav\xEDa."))), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-4"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-xl p-4",
+    style: {
+      border: "1px solid #e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-sm font-bold mb-3",
+    style: {
+      color: AZUL
+    }
+  }, "Por planta"), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-3"
+  }, rankingPlanta.map((d, i) => renderBarra(d, i)))), rankingPuesto &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "bg-white rounded-xl p-4",
+    style: {
+      border: "1px solid #e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-sm font-bold mb-3",
+    style: {
+      color: AZUL
+    }
+  }, "Por tipo de puesto"), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-3"
+  }, rankingPuesto.map((d, i) => renderBarra(d, i)))), /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-xl p-4",
+    style: {
+      border: "1px solid #e6e8ee"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-sm font-bold mb-3",
+    style: {
+      color: AZUL
+    }
+  }, "Por ubicaci\xF3n"), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-3"
+  }, rankingUbicacion.map((d, i) => renderBarra(d, i)), rankingUbicacion.length === 0 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("p", {
+    className: "text-xs text-gray-400"
+  }, "Sin plantas/categor\xEDas configuradas.")))))), verDimension &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "fixed inset-0 z-[998]",
+    style: {
+      background: "rgba(0,0,0,0.25)",
+      backdropFilter: "blur(2px)"
+    },
+    onClick: () => setVerDimension(null)
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "fixed top-0 right-0 h-full bg-white shadow-2xl p-6 overflow-y-auto",
+    style: {
+      width: "min(420px, 100vw)",
+      animation: "slideInRight 0.25s ease-out"
+    },
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("style", null, `@keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }`), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setVerDimension(null),
+    className: "mb-4 text-gray-400 hover:text-gray-600 flex items-center gap-1 text-sm"
+  }, /*#__PURE__*/React.createElement(ChevronRight, {
+    size: 18
+  }), " Cerrar"), /*#__PURE__*/React.createElement("h3", {
+    className: "text-xs font-bold text-gray-400 uppercase tracking-wide mb-1"
+  }, "Dimensi\xF3n"), /*#__PURE__*/React.createElement("p", {
+    className: "text-base font-bold mb-4",
+    style: {
+      color: AZUL
+    }
+  }, verDimension), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-gray-400 mb-3"
+  }, "Ordenado de m\xE1s bajo a m\xE1s alto"), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-4"
+  }, itemsDimension.map((item, i) =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    key: i
+  }, renderBarra(item, i), item.nombre !== item.textoCompleto &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("p", {
+    className: "text-[11px] text-gray-400 mt-0.5 pl-1"
+  }, item.textoCompleto))), itemsDimension.length === 0 &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("p", {
+    className: "text-xs text-gray-400"
+  }, "Sin preguntas medibles en esta dimensi\xF3n.")))));
 }
 function EncuestaDetalle({
   encuesta,
@@ -24118,6 +24403,7 @@ function EncuestaPreguntasEditor({
     setTabActiva("editar");
     setDraft({
       texto: p.texto,
+      subcategoria: p.subcategoria || "",
       tipo: p.tipo,
       escala_opciones: p.escala_opciones || [],
       orientacion: p.orientacion_opciones || "horizontal",
@@ -24257,6 +24543,7 @@ function EncuestaPreguntasEditor({
     const reglasLimpias = draft.reglas.filter(r => r.preguntaId && r.opciones.length > 0);
     const payload = {
       texto: draft.texto,
+      subcategoria: draft.subcategoria.trim() || null,
       tipo: draft.tipo,
       escala_opciones: draft.escala_opciones,
       orientacion_opciones: draft.orientacion,
@@ -24487,6 +24774,20 @@ function EncuestaPreguntasEditor({
       style: {
         borderColor: "#d5d9e4",
         minHeight: 50
+      }
+    }), draft.tipo === "escala" &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("input", {
+      value: draft.subcategoria,
+      onChange: e => setDraft(d => ({
+        ...d,
+        subcategoria: e.target.value
+      })),
+      placeholder: "Subcategor\xEDa para el Dashboard (ej. Comedor, Uniformes, Cabina) \u2014 opcional",
+      className: "w-full px-2.5 py-1.5 rounded-lg border text-xs",
+      style: {
+        borderColor: "#d5d9e4"
       }
     }), /*#__PURE__*/React.createElement("div", {
       className: "flex items-center gap-2 flex-wrap"
