@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-11-02T17:03:59.388Z */
+/* UniconApp — Bundle generado el 2026-11-03T05:56:55.502Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 22656 — CERO simplificaciones */
+/* Líneas originales del JSX: 22650 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -11470,10 +11470,10 @@ const PASOS_CAMARIN = [{
   d: "El acuerdo definido para resolverlo, indicando las acciones a realizar y la fecha prevista de resolución."
 }, {
   t: "Doy cierre",
-  d: "Comunico la solución o los avances; si no estoy presente, los comparto con quien lidere la siguiente charla."
+  d: "Comunico la solución o los avances 1 a 1 o a través del canal de avisos en UNI APP (según corresponda)."
 }];
-const FRASES_CAMARIN = ["«¿Qué crees que pasó? ¿Qué necesitas de mí para resolverlo?»", "«Gracias por contármelo, lo valoro mucho.»", "«Voy a coordinar con el área responsable y te daré una respuesta en la fecha acordada. Este es el avance del caso que fue reportado en la última charla por el compañero \"XXX\".»"];
-const QUE_NO_HACER_CAMARIN = ["Cerrar sin un acuerdo concreto.", "No dar seguimiento a los acuerdos en los días siguientes.", "Interrumpir o minimizar los problemas reportados por los compañeros.", "No comunicar el estatus y acuerdos completados al inicio de la siguiente charla semanal.", "Registrar acuerdos separados cuando varios compañeros reportan el mismo problema.", "Registrar incidencias que pueden ser enviadas por UNI APP."];
+const FRASES_CAMARIN = ["«¿Qué crees que pasó? ¿Qué necesitas de mí para resolverlo?»", "«Gracias por contármelo, lo valoro mucho.»", "«Voy a coordinar con el área responsable y te daré una respuesta en la fecha acordada.»"];
+const QUE_NO_HACER_CAMARIN = ["Cerrar sin un acuerdo concreto.", "No dar seguimiento a los acuerdos en los días siguientes.", "Interrumpir o minimizar los problemas reportados por los compañeros.", "No comunicar el estatus y acuerdos completados durante el mes.", "Registrar acuerdos separados cuando varios compañeros reportan el mismo problema.", "Registrar incidencias que pueden ser enviadas por UNI APP."];
 function FilaCampo({
   bg,
   color,
@@ -12435,33 +12435,7 @@ function RitualesLiderazgo({
     }
   }, /*#__PURE__*/React.createElement(ChevronLeft, {
     size: 14
-  }), " Rituales de Liderazgo"), /*#__PURE__*/React.createElement("button", {
-    onClick: abrirComm,
-    className: "w-full flex items-center gap-3 rounded-2xl p-3 mb-4 text-left",
-    style: {
-      background: "#eef1fb"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "w-9 h-9 rounded-full flex items-center justify-center shrink-0",
-    style: {
-      background: AZUL
-    }
-  }, /*#__PURE__*/React.createElement(Radio, {
-    size: 17,
-    color: "white"
-  })), /*#__PURE__*/React.createElement("div", {
-    className: "flex-1 min-w-0"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "font-bold text-sm",
-    style: {
-      color: AZUL_OSC
-    }
-  }, "Comunicaci\xF3n del estatus"), /*#__PURE__*/React.createElement("div", {
-    className: "text-xs text-gray-500"
-  }, "Lo que debes contar en tu pr\xF3xima charla")), /*#__PURE__*/React.createElement(ChevronRight, {
-    size: 18,
-    color: AZUL
-  })), /*#__PURE__*/React.createElement("div", {
+  }), " Rituales de Liderazgo"), /*#__PURE__*/React.createElement("div", {
     className: "flex gap-1 p-1 rounded-xl mb-4",
     style: {
       background: "#e6e8ee"
@@ -12485,7 +12459,7 @@ function RitualesLiderazgo({
   /*#__PURE__*/
   React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
     className: "text-sm text-gray-600 leading-relaxed mb-4"
-  }, "Espacio de escucha de 15 minutos dentro de la charla semanal para recoger las dificultades que afectan a los compa\xF1eros, registrar acuerdos concretos para resolverlas y comunicar su estatus."), /*#__PURE__*/React.createElement("div", {
+  }, "Espacio de escucha mensual de 35 minutos para recoger las dificultades que afectan a los compa\xF1eros, registrar acuerdos concretos para resolverlas y comunicar su estatus."), /*#__PURE__*/React.createElement("div", {
     className: "rounded-xl p-3 mb-5 bg-white border",
     style: {
       borderColor: "#e6e8ee"
@@ -12495,17 +12469,17 @@ function RitualesLiderazgo({
   }, /*#__PURE__*/React.createElement(RefreshCw, {
     size: 14,
     color: "#5c6070"
-  }), " 1 vez por semana (15 minutos antes de finalizar la charla)"), /*#__PURE__*/React.createElement("div", {
+  }), " 1 vez al inicio del mes (con 4 choferes)"), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-2 py-1 text-sm text-gray-700"
   }, /*#__PURE__*/React.createElement(Clock, {
     size: 14,
     color: "#5c6070"
-  }), " 15 minutos"), /*#__PURE__*/React.createElement("div", {
+  }), " 35 minutos"), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-2 py-1 text-sm text-gray-700"
   }, /*#__PURE__*/React.createElement(MapPin, {
     size: 14,
     color: "#5c6070"
-  }), " Zona de reuni\xF3n donde se dicta la charla")), /*#__PURE__*/React.createElement("div", {
+  }), " Ambiente privado en la planta (no comedor)")), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide mb-3",
     style: {
       color: "#1a1d2e"
