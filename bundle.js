@@ -1,6 +1,6 @@
-/* UniconApp — Bundle generado el 2026-11-03T05:56:55.502Z */
+/* UniconApp — Bundle generado el 2026-11-03T07:59:46.160Z */
 /* TRANSPILACIÓN MECÁNICA: JSX→createElement, lucide→SVG, imports→globals */
-/* Líneas originales del JSX: 22650 — CERO simplificaciones */
+/* Líneas originales del JSX: 22823 — CERO simplificaciones */
 
 /* ===== LUCIDE-REACT SVG REPLACEMENTS (same API: size, color, className) ===== */
 const Truck = ({
@@ -23581,6 +23581,10 @@ function EncuestaDashboardTab({
   const [filtroUbicacion, setFiltroUbicacion] = useState("__todas__");
   const [filtroPlanta, setFiltroPlanta] = useState("__todas__");
   const [verDimension, setVerDimension] = useState(null); // nombre de la dimensión abierta en el panel de detalle, o null
+  const [categoriasIA, setCategoriasIA] = useState({}); // { [pregunta_id]: [{nombre, respuesta_ids}, ...] } — cache de Gemini por pregunta abierta
+  const [generandoIA, setGenerandoIA] = useState(null); // pregunta_id en proceso, o null
+  const [errorIA, setErrorIA] = useState({}); // { [pregunta_id]: mensaje }
+  const [verCategoriaIA, setVerCategoriaIA] = useState(null); // { preguntaId, nombre } del tema abierto en el panel de comentarios, o null
   useEffect(() => {
     (async () => {
       setCargando(true);
@@ -23595,8 +23599,19 @@ function EncuestaDashboardTab({
       }] = await Promise.all([sbClient.from("rh_encuesta_preguntas").select("*").eq("encuesta_id", encuesta.id).order("orden"), sbClient.from("rh_encuesta_rondas").select("id").eq("encuesta_id", encuesta.id).order("created_at", {
         ascending: false
       }).limit(1), sbClient.from("rh_dashboard_metas").select("*").eq("encuesta_id", encuesta.id).maybeSingle(), sbClient.from("rh_planta_categoria").select("categoria")]);
-      setPreguntas(calcularCodigosEncuesta(preguntasRaw || []).filter(p => p.tipo === "escala"));
+      setPreguntas(calcularCodigosEncuesta(preguntasRaw || []).filter(p => p.tipo === "escala" || p.tipo === "abierta"));
       if (metasData) setMetas(metasData);
+      const idsAbiertas = (preguntasRaw || []).filter(p => p.tipo === "abierta").map(p => p.id);
+      if (idsAbiertas.length) {
+        const {
+          data: cats
+        } = await sbClient.from("rh_encuesta_comentarios_categorias").select("pregunta_id,categorias").in("pregunta_id", idsAbiertas);
+        const mapa = {};
+        (cats || []).forEach(c => {
+          mapa[c.pregunta_id] = c.categorias;
+        });
+        setCategoriasIA(mapa);
+      }
       setCategoriasTodas([...new Set((categoriasPlanta || []).map(c => c.categoria).filter(Boolean))].sort());
       const rondaId = rondas?.[0]?.id || null;
       if (rondaId) {
@@ -23636,12 +23651,97 @@ function EncuestaDashboardTab({
     setGuardandoMetas(false);
     setEditandoMetas(false);
   };
+  // Le pide a Gemini (mismo proxy que ya usa el bot para leer citaciones, vía Edge Function) que
+  // agrupe los comentarios reales de una pregunta abierta en categorías temáticas — no son las 8
+  // dimensiones de la encuesta, son temas que emergen de lo que la gente realmente escribió. El
+  // resultado se cachea en rh_encuesta_comentarios_categorias para no gastar cuota de Gemini cada
+  // vez que alguien abre el dashboard; "Volver a generar" lo recalcula a mano.
+  const generarCategoriasIA = async pregunta => {
+    setGenerandoIA(pregunta.id);
+    setErrorIA(e => ({
+      ...e,
+      [pregunta.id]: null
+    }));
+    try {
+      const comentariosPregunta = detalle.filter(d => d.pregunta_id === pregunta.id && d.valor && d.valor.trim()).map(d => ({
+        id: d.respuesta_id,
+        texto: d.valor.trim()
+      }));
+      if (comentariosPregunta.length === 0) {
+        setErrorIA(e => ({
+          ...e,
+          [pregunta.id]: "Todavía no hay comentarios para categorizar."
+        }));
+        setGenerandoIA(null);
+        return;
+      }
+      const prompt = `Estos son comentarios de choferes de mixer de concreto respondiendo la pregunta: "${pregunta.texto}"
+
+${comentariosPregunta.map(c => `- (${c.id}) ${c.texto}`).join("\n")}
+
+Agrúpalos en categorías temáticas cortas (2 a 5 palabras cada una, en español, que digan directamente de qué tratan — ej. "Espacios de descanso"). Prioriza agrupar por el lugar o tema principal del que habla el comentario (ej. todo lo que mencione el comedor va junto, sin importar si es sobre la comida, la atención del personal ahí o la limpieza) — evita crear categorías separadas y parecidas entre sí que en realidad hablan de lo mismo; prefiere pocas categorías bien diferenciadas (normalmente entre 3 y 6) en vez de muchas. NO fuerces cada comentario a una categoría temática: los que no compartan un tema claro con otros (ej. "todo bien", "sin comentarios", respuestas vagas o sin información útil) van juntos en una categoría aparte llamada "Otros comentarios" — esa categoría puede ser chica, está bien que así sea. Cada comentario debe quedar en EXACTAMENTE una categoría. El texto entre paréntesis antes de cada comentario es su id (UUID), úsalo tal cual para identificarlo.
+
+Responde ÚNICAMENTE con un array JSON, sin texto adicional ni markdown, con esta forma exacta:
+[{"nombre": "Nombre de la categoría", "respuesta_ids": ["uuid1", "uuid2"]}]`;
+      const resp = await fetchGeminiConReintentos({
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }],
+        generationConfig: {
+          temperature: 0,
+          responseMimeType: "application/json"
+        }
+      });
+      if (!resp.ok) throw new Error(`Gemini respondió ${resp.status}`);
+      const data = await resp.json();
+      const textoRespuesta = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!textoRespuesta) throw new Error("Respuesta vacía de Gemini.");
+      const parsed = JSON.parse(textoRespuesta);
+      if (!Array.isArray(parsed)) throw new Error("Formato inesperado.");
+      await sbClient.from("rh_encuesta_comentarios_categorias").upsert({
+        pregunta_id: pregunta.id,
+        categorias: parsed,
+        generado_en: new Date().toISOString()
+      });
+      setCategoriasIA(m => ({
+        ...m,
+        [pregunta.id]: parsed
+      }));
+    } catch (e) {
+      setErrorIA(err => ({
+        ...err,
+        [pregunta.id]: "No se pudo generar: " + e.message
+      }));
+    }
+    setGenerandoIA(null);
+  };
+  // Automático: en cuanto hay comentarios nuevos que el cache todavía no cubre (encuesta recién
+  // cargada sin categorías, o respuestas nuevas desde la última vez que se generaron), dispara
+  // Gemini solo — sin botón. Si ya están todos cubiertos no vuelve a llamarlo (cuida la cuota
+  // gratuita); si falla, no reintenta solo (requiere "Volver a generar" a mano).
+  useEffect(() => {
+    if (cargando) return;
+    preguntas.filter(p => p.tipo === "abierta").forEach(p => {
+      const totalValidos = detalle.filter(d => d.pregunta_id === p.id && d.valor && d.valor.trim()).length;
+      const cubiertos = (categoriasIA[p.id] || []).reduce((acc, c) => acc + (c.respuesta_ids?.length || 0), 0);
+      if (totalValidos > 0 && totalValidos !== cubiertos && generandoIA !== p.id && !errorIA[p.id]) {
+        generarCategoriasIA(p);
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cargando, preguntas, detalle, categoriasIA]);
   if (cargando) return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "text-center py-12 text-gray-400 text-sm"
   }, "Cargando...");
   const preguntaFiltroPuesto = preguntas.find(p => p.usar_como_filtro_puesto);
   const preguntaFiltroPlanta = preguntas.find(p => p.usar_como_filtro_planta);
-  const preguntasMedibles = preguntas.filter(p => !p.usar_como_filtro_puesto && !p.usar_como_filtro_planta);
+  // "Calificación general" se excluye temporalmente: es redundante con el % general calculado
+  // sobre el resto de dimensiones, así que no debe sumar aparte ni como dimensión propia.
+  const DIMENSIONES_EXCLUIDAS = new Set(["Calificación general"]);
+  const preguntasMedibles = preguntas.filter(p => p.tipo === "escala" && !p.usar_como_filtro_puesto && !p.usar_como_filtro_planta && !DIMENSIONES_EXCLUIDAS.has(p.dimension));
+  const preguntasAbiertas = preguntas.filter(p => p.tipo === "abierta");
   const puestoPorRespuesta = {};
   if (preguntaFiltroPuesto) {
     detalle.forEach(d => {
@@ -23767,17 +23867,6 @@ function EncuestaDashboardTab({
     };
   };
   const colGeneral = colorSemaforo(general.pct);
-  const mejorPlanta = rankingPlanta.find(r => r.pct != null);
-  const mejorDimension = rankingDimension.find(r => r.pct != null);
-  const tarjetaMejor = filtroPlanta === "__todas__" ? {
-    titulo: "Planta mejor evaluada",
-    nombre: mejorPlanta?.nombre,
-    pct: mejorPlanta?.pct
-  } : {
-    titulo: "Mejor dimensión",
-    nombre: mejorDimension?.nombre,
-    pct: mejorDimension?.pct
-  };
   const renderBarra = (item, key, onClick) => {
     const col = colorSemaforo(item.pct);
     return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
@@ -23788,17 +23877,15 @@ function EncuestaDashboardTab({
     /*#__PURE__*/
     React.createElement("button", {
       onClick: onClick,
-      className: "w-32 shrink-0 text-xs font-semibold text-left truncate underline",
+      className: "w-36 shrink-0 text-xs font-semibold text-left underline leading-tight",
       style: {
         color: AZUL
-      },
-      title: item.nombre
+      }
     }, item.nombre) :
     /*#__PURE__*/
     /*#__PURE__*/
     React.createElement("div", {
-      className: "w-32 shrink-0 text-xs font-semibold text-gray-700 truncate",
-      title: item.nombre
+      className: "w-36 shrink-0 text-xs font-semibold text-gray-700 leading-tight"
     }, item.nombre), /*#__PURE__*/React.createElement("div", {
       className: "flex-1 h-2.5 rounded-full bg-gray-100 overflow-hidden"
     }, /*#__PURE__*/React.createElement("div", {
@@ -23813,17 +23900,12 @@ function EncuestaDashboardTab({
         color: col.color
       }
     }, item.pct != null ? `${item.pct}%` : "—"), /*#__PURE__*/React.createElement("div", {
-      className: "w-14 shrink-0 text-[10px] text-gray-400"
-    }, item.n, " resp."), col.label &&
-    /*#__PURE__*/
-    /*#__PURE__*/
-    React.createElement("span", {
-      className: "shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full",
-      style: {
+      className: "w-16 shrink-0 text-center text-[10px] font-bold px-1.5 py-0.5 rounded-full",
+      style: col.label ? {
         background: col.bg,
         color: col.color
-      }
-    }, col.label));
+      } : undefined
+    }, col.label || ""));
   };
   const rangoTexto = `🔴 0–${metas.corte_rojo}% · 🟡 ${Number(metas.corte_rojo) + 1}–${Number(metas.corte_verde) - 1}% · 🟢 ${metas.corte_verde}–100%`;
   // Items de la dimensión abierta en el panel de detalle — ordenados de peor a mejor para que el
@@ -23834,6 +23916,123 @@ function EncuestaDashboardTab({
     textoCompleto: p.texto,
     ...calcularTop2(new Set([p.id]))
   })).sort((a, b) => (a.pct ?? 101) - (b.pct ?? 101)) : [];
+  // Comentarios abiertos (las 2 preguntas de texto libre, en orden: "cosa urgente a mejorar" y
+  // "sugerencias") — las categorías las arma Gemini a partir del texto real (ver
+  // generarCategoriasIA), cacheadas en rh_encuesta_comentarios_categorias para no llamarlo cada
+  // vez que alguien abre el dashboard. Acá solo se recorta a los ids que siguen vigentes con los
+  // filtros activos (planta/sede/puesto) y se calcula el % sobre esos.
+  const datosBloqueComentarios = pregunta => {
+    if (!pregunta) return null;
+    const categorias = categoriasIA[pregunta.id] || null;
+    const idsConComentario = new Set(detalleFiltrado.filter(d => d.pregunta_id === pregunta.id && d.valor && d.valor.trim()).map(d => d.respuesta_id));
+    const total = idsConComentario.size;
+    const filas = categorias ? categorias.map(c => {
+      const ids = (c.respuesta_ids || []).filter(id => idsConComentario.has(id));
+      return {
+        nombre: c.nombre,
+        ids,
+        pct: total > 0 ? Math.round(ids.length / total * 100) : 0
+      };
+    }).filter(f => f.ids.length > 0).sort((a, b) => b.ids.length - a.ids.length) : null;
+    return {
+      pregunta,
+      categorias,
+      filas,
+      total
+    };
+  };
+  const bloqueUrgentes = datosBloqueComentarios(preguntasAbiertas[0]);
+  const bloqueSugerencias = datosBloqueComentarios(preguntasAbiertas[1]);
+  const renderBloqueComentarios = (bloque, titulo) => {
+    if (!bloque) return null;
+    const {
+      pregunta,
+      categorias,
+      filas
+    } = bloque;
+    return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
+      className: "bg-white rounded-xl p-4",
+      style: {
+        border: "1px solid #e6e8ee"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center justify-between gap-2 mb-0.5"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "text-sm font-bold",
+      style: {
+        color: AZUL
+      }
+    }, titulo), categorias &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("button", {
+      onClick: () => generarCategoriasIA(pregunta),
+      disabled: generandoIA === pregunta.id,
+      className: "text-[11px] font-semibold shrink-0 disabled:opacity-40",
+      style: {
+        color: AZUL
+      }
+    }, generandoIA === pregunta.id ? "Generando..." : "↻ Volver a generar")), /*#__PURE__*/React.createElement("p", {
+      className: "text-[11px] text-gray-400 mb-3"
+    }, "Temas generados con IA (Gemini) a partir de los comentarios reales \u2014 clic en uno para leerlos completos"), errorIA[pregunta.id] &&
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("p", {
+      className: "text-xs mb-2",
+      style: {
+        color: "#dc2626"
+      }
+    }, errorIA[pregunta.id]), !categorias ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("button", {
+      onClick: () => generarCategoriasIA(pregunta),
+      disabled: generandoIA === pregunta.id,
+      className: "text-xs font-bold px-3 py-2 rounded-lg border disabled:opacity-40",
+      style: {
+        borderColor: "#d5d9e4",
+        color: AZUL
+      }
+    }, generandoIA === pregunta.id ? "Generando categorías..." : "✨ Generar categorías con IA") : filas.length === 0 ?
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("p", {
+      className: "text-xs text-gray-400"
+    }, "Sin comentarios para este filtro.") :
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
+      className: "space-y-3"
+    }, filas.map((f, i) =>
+    /*#__PURE__*/
+    /*#__PURE__*/
+    React.createElement("div", {
+      key: i,
+      className: "flex items-center gap-3"
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: () => setVerCategoriaIA({
+        preguntaId: pregunta.id,
+        nombre: f.nombre
+      }),
+      className: "w-36 shrink-0 text-xs font-semibold text-left underline leading-tight",
+      style: {
+        color: AZUL
+      }
+    }, f.nombre), /*#__PURE__*/React.createElement("div", {
+      className: "flex-1 h-2.5 rounded-full bg-gray-100 overflow-hidden"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "h-full rounded-full",
+      style: {
+        width: `${f.pct}%`,
+        background: AZUL
+      }
+    })), /*#__PURE__*/React.createElement("div", {
+      className: "w-12 shrink-0 text-right text-sm font-bold",
+      style: {
+        color: AZUL
+      }
+    }, f.pct, "%")))));
+  };
   return /*#__PURE__*/ /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "p-6 space-y-5"
   }, /*#__PURE__*/React.createElement("div", {
@@ -23932,6 +24131,32 @@ function EncuestaDashboardTab({
     }
   }), "%")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
     className: "block text-[10px] font-bold text-gray-400 uppercase mb-1"
+  }, "\uD83D\uDFE1 \xC1mbar entre"), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-1"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    value: Number(metas.corte_rojo) + 1,
+    onChange: e => setMetas(m => ({
+      ...m,
+      corte_rojo: Number(e.target.value) - 1
+    })),
+    className: "w-16 px-2 py-1 rounded-lg border text-sm",
+    style: {
+      borderColor: "#d5d9e4"
+    }
+  }), "% \u2013 ", /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    value: Number(metas.corte_verde) - 1,
+    onChange: e => setMetas(m => ({
+      ...m,
+      corte_verde: Number(e.target.value) + 1
+    })),
+    className: "w-16 px-2 py-1 rounded-lg border text-sm",
+    style: {
+      borderColor: "#d5d9e4"
+    }
+  }), "%")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
+    className: "block text-[10px] font-bold text-gray-400 uppercase mb-1"
   }, "\uD83D\uDFE2 Verde si es \u2265"), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-1"
   }, /*#__PURE__*/React.createElement("input", {
@@ -24010,17 +24235,6 @@ function EncuestaDashboardTab({
     }
   }, /*#__PURE__*/React.createElement("div", {
     className: "text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1"
-  }, tarjetaMejor.titulo), /*#__PURE__*/React.createElement("div", {
-    className: "text-lg font-black text-gray-800 truncate"
-  }, tarjetaMejor.nombre || "—"), /*#__PURE__*/React.createElement("div", {
-    className: "text-[11px] text-gray-400"
-  }, tarjetaMejor.pct != null ? `${tarjetaMejor.pct}% Top 2 Box` : "Sin datos")), /*#__PURE__*/React.createElement("div", {
-    className: "bg-white rounded-xl p-4",
-    style: {
-      border: "1px solid #e6e8ee"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1"
   }, "Punto m\xE1s bajo"), /*#__PURE__*/React.createElement("div", {
     className: "text-sm font-black text-gray-800",
     title: puntoMasBajo?.texto
@@ -24062,7 +24276,7 @@ function EncuestaDashboardTab({
     style: {
       color: AZUL
     }
-  }, "Por planta"), /*#__PURE__*/React.createElement("div", {
+  }, "Ranking de plantas"), /*#__PURE__*/React.createElement("div", {
     className: "space-y-3"
   }, rankingPlanta.map((d, i) => renderBarra(d, i)))), rankingPuesto &&
   /*#__PURE__*/
@@ -24096,7 +24310,47 @@ function EncuestaDashboardTab({
   /*#__PURE__*/
   React.createElement("p", {
     className: "text-xs text-gray-400"
-  }, "Sin plantas/categor\xEDas configuradas.")))))), verDimension &&
+  }, "Sin plantas/categor\xEDas configuradas."))))), renderBloqueComentarios(bloqueUrgentes, "Cosas urgentes a mejorar"), renderBloqueComentarios(bloqueSugerencias, "Sugerencias")), verCategoriaIA &&
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("div", {
+    className: "fixed inset-0 z-[998]",
+    style: {
+      background: "rgba(0,0,0,0.25)",
+      backdropFilter: "blur(2px)"
+    },
+    onClick: () => setVerCategoriaIA(null)
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "fixed top-0 right-0 h-full bg-white shadow-2xl p-6 overflow-y-auto",
+    style: {
+      width: "min(420px, 100vw)",
+      animation: "slideInRight 0.25s ease-out"
+    },
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("style", null, `@keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }`), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setVerCategoriaIA(null),
+    className: "mb-4 text-gray-400 hover:text-gray-600 flex items-center gap-1 text-sm"
+  }, /*#__PURE__*/React.createElement(ChevronRight, {
+    size: 18
+  }), " Cerrar"), /*#__PURE__*/React.createElement("h3", {
+    className: "text-xs font-bold text-gray-400 uppercase tracking-wide mb-1"
+  }, "Tema"), /*#__PURE__*/React.createElement("p", {
+    className: "text-base font-bold mb-4",
+    style: {
+      color: AZUL
+    }
+  }, verCategoriaIA.nombre), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-3"
+  }, ((categoriasIA[verCategoriaIA.preguntaId] || []).find(c => c.nombre === verCategoriaIA.nombre)?.respuesta_ids || []).filter(id => idsRespuestasFiltradas.has(id)).map(id => detalle.find(d => d.pregunta_id === verCategoriaIA.preguntaId && d.respuesta_id === id)?.valor).filter(Boolean).map((texto, i) =>
+  /*#__PURE__*/
+  /*#__PURE__*/
+  React.createElement("p", {
+    key: i,
+    className: "text-sm text-gray-700 italic border-l-4 rounded-r-lg px-3 py-2",
+    style: {
+      borderColor: AZUL
+    }
+  }, "\"", texto, "\""))))), verDimension &&
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement("div", {
@@ -24151,6 +24405,10 @@ function EncuestaDetalle({
   onVolver
 }) {
   const [tab, setTab] = useState("diseno");
+  // El dashboard (Top 2 Box, dimensiones, comentarios con IA, etc.) está hecho a medida de esta
+  // encuesta puntual — asume su estructura exacta (8 dimensiones, 2 preguntas abiertas fijas).
+  // Para cualquier otra encuesta que se lance, no corresponde ofrecerlo tal cual todavía.
+  const tieneDashboard = encuesta.slug === "medicion-ritmo-condiciones-trabajo";
   const TABS = [{
     id: "diseno",
     label: "Diseño"
@@ -24160,10 +24418,10 @@ function EncuestaDetalle({
   }, {
     id: "resultados",
     label: "Resultados"
-  }, {
+  }, ...(tieneDashboard ? [{
     id: "dashboard",
     label: "Dashboard"
-  }];
+  }] : [])];
   return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
     className: "flex-1 flex flex-col overflow-hidden"
   }, /*#__PURE__*/React.createElement("div", {
@@ -24215,7 +24473,7 @@ function EncuestaDetalle({
   /*#__PURE__*/
   React.createElement(EncuestaResultadosTab, {
     encuesta: encuesta
-  }), tab === "dashboard" &&
+  }), tab === "dashboard" && tieneDashboard &&
   /*#__PURE__*/
   /*#__PURE__*/
   React.createElement(EncuestaDashboardTab, {
@@ -24711,6 +24969,11 @@ function EncuestaPreguntasEditor({
     })));
     const preguntaActual = preguntas.find(x => x.id === editando);
     const preguntasAnteriores = preguntas.filter(q => q.tipo === "escala" && q.id !== editando && (q.orden ?? 0) < (preguntaActual?.orden ?? 0));
+    // Los filtros de Planta/Puesto son únicos por encuesta — una vez que otra pregunta ya los
+    // tiene marcados, no tiene sentido ofrecer el casillero en todas las demás; solo se vuelve a
+    // mostrar en todas si se desmarca de la que lo tenía.
+    const otroFiltroPuesto = preguntas.some(q => q.id !== editando && q.usar_como_filtro_puesto);
+    const otroFiltroPlanta = preguntas.some(q => q.id !== editando && q.usar_como_filtro_planta);
     return /*#__PURE__*/ /*#__PURE__*/React.createElement("div", {
       key: p.id,
       className: "bg-white rounded-xl p-3",
@@ -24865,7 +25128,7 @@ function EncuestaPreguntasEditor({
         ...d,
         obligatoria: e.target.checked
       }))
-    }), " Pregunta obligatoria"), draft.tipo === "escala" &&
+    }), " Pregunta obligatoria"), draft.tipo === "escala" && !otroFiltroPuesto &&
     /*#__PURE__*/
     /*#__PURE__*/
     React.createElement("label", {
@@ -24880,7 +25143,7 @@ function EncuestaPreguntasEditor({
       }))
     }), /*#__PURE__*/React.createElement("span", null, "Usar como filtro de \"Tipo de puesto / \xE1rea de trabajo\" en el Dashboard", /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("span", {
       className: "text-[11px] text-gray-400"
-    }, "Solo una pregunta por encuesta puede ser este filtro \u2014 marcar esta desmarca cualquier otra."))), draft.tipo === "escala" &&
+    }, "Solo una pregunta por encuesta puede ser este filtro \u2014 marcar esta desmarca cualquier otra."))), draft.tipo === "escala" && !otroFiltroPlanta &&
     /*#__PURE__*/
     /*#__PURE__*/
     React.createElement("label", {
